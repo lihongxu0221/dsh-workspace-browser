@@ -1,0 +1,142 @@
+/**
+ * dsh-workspace-browser contracts. One registration fills this package:
+ *
+ * - WorkspaceBrowser fills the sidebar shell's `sidebar.workspaces` hole —
+ *   the whole browsing region (section header, search, grouped/flat session
+ *   list, workspace dialogs). It registers this package's viewing store and
+ *   consumes the shell's two-fact owner share (wide / expandSidebar).
+ *
+ * The registration also declares one **directory-flow hole** (`single`
+ * kind): the slot a composed picker package's client half fills with its
+ * picking interaction — a renderless native-chooser driver or an in-app
+ * browsing dialog. This package owns the trigger (the "Add workspace…"
+ * entry, present only while the hole is occupied) and the adoption
+ * semantics (`createWorkspace({ path })`, the retryable error dialog,
+ * Choose again); the occupant owns everything between `open` and the picked
+ * path, including creating a new directory to hand back. That
+ * occupant-owned creation is why adding a workspace has a single route: an
+ * unoccupied hole leaves the surface with no add affordance at all.
+ */
+import type { HostDescriptionSource } from '@deepseek-ai/dsh-client-connection/client'
+import type { HostObservable, PropsHooks, PropsLocale, PropsRenderSlots, PropsRuntime, PropsStore } from '@deepseek-ai/dsh-client-ui-slots'
+// Type-only: pull the owner SlotMap merge into programs that resolve the
+// runtime shares below.
+import type {} from '@deepseek-ai/dsh-client-ui-sidebar/client'
+import type {
+  SessionId, SessionSearchResultItem, WorkspaceId, WorkspaceView,
+} from '@deepseek-ai/dsh-client-runtime/client'
+import type { createWorkspaceViewStore } from '../stores.ts'
+
+/**
+ * Owner share of the directory-flow hole: the complete conversation between
+ * the trigger surface and the picking interaction. The occupant reads `open`
+ * to run/render its interaction and reports exactly one outcome per open.
+ */
+export interface DirectoryFlowOwnerProps {
+  /** True while a picking interaction is requested; flipping back to false withdraws the request. */
+  open: boolean
+  /** True while the owner adopts a picked path (`createWorkspace` in flight); occupants disable their commit affordances. */
+  busy: boolean
+  /** The operator picked a directory (absolute host path); the owner adopts it. */
+  onPicked: (path: string) => void
+  /** The operator dismissed the interaction; the owner just closes the flow. */
+  onCancel: () => void
+  /** The interaction itself failed (chooser missing, listing denied); the owner shows its error surface. */
+  onError: (message: string) => void
+}
+
+declare module '@deepseek-ai/dsh-client-ui-slots' {
+  interface SlotMap {
+    /** Directory-flow hole under the sidebar browsing region (declared by the WorkspaceBrowser entry). */
+    'sidebar.workspaces.directoryFlow': { kind: 'single'; scope: 'root'; owner: DirectoryFlowOwnerProps }
+  }
+}
+
+/**
+ * Directory-picking share the trigger surface consumes. Occupancy rides the
+ * inject face's reserved `hooks` compartment: the renderer binds the source
+ * into the `useDirectoryFlow` selector hook, so an empty hole hides the
+ * "Add workspace…" entry reactively and the surface withdraws an open
+ * flow whose occupant unloaded mid-interaction (nobody is left to cancel).
+ */
+export type DirectoryPickingInjected = {
+  hooks: {
+    /** True while this surface's directory-flow hole is occupied. */
+    directoryFlow: HostObservable<boolean>
+  }
+}
+
+/** Component-side view of the picking share: the bound occupancy selector hook. */
+export type DirectoryPickingHooks = PropsHooks<DirectoryPickingInjected['hooks']>
+
+/**
+ * Browser-private injected share (arrives via the register inject factory).
+ * Data reads use the global framework hooks; these are the Host actions the
+ * browsing region drives.
+ */
+export type WorkspaceBrowserInjected = {
+  hooks: DirectoryPickingInjected['hooks'] & {
+    /** Current generation's Host description, bound by the slot renderer. */
+    hostDescription: HostDescriptionSource
+  }
+  /**
+   * Start a New Session in a Workspace: reuse-or-create its blank session and
+   * open it; without an explicit workspace, inherit the current Session
+   * Workspace, then the recent Workspace, or clear into the New Session view.
+   */
+  startSession: (workspaceId?: WorkspaceId) => void
+  /** Open a real Session. */
+  open: (sessionId: SessionId) => void
+  /**
+   * Search current visible conversation messages. The Host fixes the result
+   * bound; `hasMore` means the query needs narrowing.
+   */
+  searchSessions: (
+    query: string,
+    signal: AbortSignal,
+  ) => Promise<{ items: readonly SessionSearchResultItem[]; hasMore: boolean }>
+  /** Maximum number of merged rows rendered for one search. */
+  searchResultLimit: number
+  /** Rename a Session (explicit user title; resolves on host acceptance). */
+  renameSession: (sessionId: SessionId, title: string) => Promise<void>
+  /** Fork a Session at its last completed turn and open the child. */
+  forkSession: (sessionId: SessionId) => void
+  /** Rename a Host Workspace (rejects on name conflict; resolves on durability). */
+  renameWorkspace: (workspaceId: WorkspaceId, title: string) => Promise<void>
+  /** Delete only a Host Workspace registration; directory and Session logs remain. */
+  deleteWorkspace: (workspaceId: WorkspaceId) => Promise<void>
+  /**
+   * Reorder a Workspace in the durable registry display order.
+   * Omitted anchor appends to the end.
+   */
+  insertWorkspaceBefore: (workspaceId: WorkspaceId, beforeWorkspaceId?: WorkspaceId) => Promise<void>
+  /**
+   * Archive a Session into the registry-global set: hidden from grouping
+   * surfaces, log and accounting slot retained. Archiving the current
+   * session clears the selection into the New Session view state.
+   */
+  archiveSession: (sessionId: SessionId) => Promise<void>
+  /**
+   * Reorder a session inside its Workspace account (DOM-insertBefore
+   * semantics: omitted anchor appends to the end). The view refreshes from
+   * the Host response/changed frame; failures leave the order unchanged.
+   */
+  insertSessionBefore: (workspaceId: WorkspaceId, sessionId: SessionId, beforeSessionId?: SessionId) => Promise<void>
+  /** Adopt a picked host directory as a real Workspace before targeting a Session. */
+  createWorkspace: (input: { path: string }) => Promise<WorkspaceView>
+  /** Add an extra folder to an existing Workspace. */
+  addFolder: (workspaceId: WorkspaceId, path: string) => Promise<WorkspaceView>
+  /** Remove an extra folder from a Workspace. The directory is kept. */
+  removeFolder: (workspaceId: WorkspaceId, path: string) => Promise<WorkspaceView>
+  /** Make an owned extra folder the primary directory (new-session cwd). */
+  setPrimaryFolder: (workspaceId: WorkspaceId, path: string) => Promise<WorkspaceView>
+}
+
+/** Full browser props: shell owner share + viewing store + injected actions + the locale seat. */
+export type WorkspaceBrowserProps =
+  PropsRuntime<'sidebar.workspaces'>
+  & PropsRenderSlots<'sidebar.workspaces.directoryFlow'>
+  & PropsStore<ReturnType<typeof createWorkspaceViewStore>>
+  & Omit<WorkspaceBrowserInjected, 'hooks'>
+  & PropsHooks<WorkspaceBrowserInjected['hooks']>
+  & PropsLocale<'workspace'>
