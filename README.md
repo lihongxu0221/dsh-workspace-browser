@@ -1,8 +1,18 @@
 # dsh-workspace-browser
 
-Standalone extraction of the DeepSeek Harness workspace browser — the sidebar's **Workspace / session tree** (`WorkspaceBrowser`) plus its **add-workspace flow** (`WorkspacePickFlow`) — as an independent Cordis client plugin. The source is lifted from `packages/client/ui-workspace` and reduced to a single slot registration; the original repository is not modified.
+Standalone extraction of the DeepSeek Harness workspace browser — the sidebar's **Workspace / session tree** (`WorkspaceBrowser`) plus its **add-workspace flow** (`WorkspacePickFlow`) — as an independent Cordis client plugin.
 
-`WorkspaceBrowser` fills the `sidebar.workspaces` slot with the grouped/flat session tree, session search, Workspace add/rename/edit/reorder, extra-folder and primary-folder management, and the Workspace row menu.
+This extraction is based on the **winexeBuilder branch** of deepseek-harness, where the sidebar tree gained the fold/pin/Recents view, the Codex-style project editor, and primary/extra-folder management. The plugin source is lifted from `packages/client/ui-workspace` on that branch and reduced to a single `sidebar.workspaces` registration. The harness repository is not modified.
+
+## Required: winexeBuilder data layer
+
+The folded/pinned tree, edit dialog, and primary/extra-folder handles depend on data-layer additions that exist **only on the winexeBuilder branch** (not `master`):
+
+- `workspace/workspace` — `WorkspaceView.folders`, primary folder, extra folders (`src/folders.ts`).
+- `client/runtime` — `ctx.workspaces.addFolder` / `removeFolder` / `setPrimaryFolder`.
+- `host/apiproxy` — the workspace API for folders / primary folder.
+
+To run this plugin the harness must be the winexeBuilder branch (or otherwise include those changes); otherwise `ctx.workspaces.addFolder(...)` and friends do not exist and the plugin will not typecheck or run.
 
 ## Layout
 
@@ -35,16 +45,16 @@ The owner contract `DirectoryFlowOwnerProps` is exported from this package so a 
 
 ## Local development against deepseek-harness
 
-The harness packages are not yet published to npm, and their internal edges use the `workspace:` protocol, so `npm install` cannot resolve them from registry. Two local paths:
+The harness packages are not yet published to npm and their internal edges use the `workspace:` protocol, so `npm install` cannot resolve them from registry. Two paths:
 
-1. **Typecheck** (no install): `tsconfig.json` extends `../deepseek-harness/tsconfig.base.json`, so `tsc -p tsconfig.json` resolves `@deepseek-ai/*` straight to the adjacent harness source. Run from this repo:
+1. **Typecheck**: `tsconfig.json` extends `../deepseek-harness/tsconfig.base.json` (on the winexeBuilder branch) to resolve `@deepseek-ai/*` against the harness source graph. Run it from inside the harness:
 
    ```
-   pnpm exec tsc -p tsconfig.json
+   pnpm exec tsc -p ../dsh-workspace-browser/tsconfig.json
    ```
 
-2. **Package linking**: once the harness packages are published, switch `peerDependencies` to the npm registry and `pnpm install`. Until then, add this package to a harness `cordis.yml` profile (or use `pnpm link`) to load it.
+2. **Package linking**: once the harness packages publish, switch `peerDependencies` to the npm registry and `pnpm install`. Until then, add this package to a harness `cordis.yml` profile (or use `pnpm link`) to load it.
 
 ## Loading into a harness profile
 
-Add the package name to the web profile's `dsh.client` rows (as the harness does for `ui-workspace`). Because the `sidebar.workspaces` slot is owned by `ui-sidebar`, the existing `ui-workspace` browser and this extraction both claim the same hole — load one or the other, not both.
+Add the package name to the web profile's `dsh.client` rows (as the harness does for `ui-workspace`). Because `sidebar.workspaces` is owned by `ui-sidebar`, the existing `ui-workspace` browser and this extraction both claim the same hole — load one or the other, not both.
