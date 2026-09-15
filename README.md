@@ -1,60 +1,98 @@
 # dsh-workspace-browser
 
-Standalone extraction of the DeepSeek Harness workspace browser — the sidebar's **Workspace / session tree** (`WorkspaceBrowser`) plus its **add-workspace flow** (`WorkspacePickFlow`) — as an independent Cordis client plugin.
+Standalone extraction of the DeepSeek Harness workspace plugin — the sidebar **Workspace / session tree** (`WorkspaceBrowser`), **Recents**, extra-folder **project editor**, and the conversation-hero **WorkspacePicker** — as an independent Cordis client plugin.
 
-This extraction is based on the **winexeBuilder branch** of deepseek-harness, where the sidebar tree gained the fold/pin/Recents view, the Codex-style project editor, and primary/extra-folder management. The plugin source is lifted from `packages/client/ui-workspace` on that branch and reduced to a single `sidebar.workspaces` registration. The harness repository is not modified.
+This extraction is based on the **winexeNew** branch of deepseek-harness (`packages/client/ui-workspace`). The harness repository is not modified.
 
-## Required: winexeBuilder data layer
+## Required: winexeNew data layer
 
-The folded/pinned tree, edit dialog, and primary/extra-folder handles depend on data-layer additions that exist **only on the winexeBuilder branch** (not `master`):
+Fold/pin/Recents, the project editor, and primary/extra-folder handles depend on Workspace Controller APIs that exist on **winexeNew** (not a stock `master` without those changes):
 
 - `workspace/workspace` — `WorkspaceView.folders`, primary folder, extra folders (`src/folders.ts`).
-- `client/runtime` — `ctx.workspaces.addFolder` / `removeFolder` / `setPrimaryFolder`.
-- `host/apiproxy` — the workspace API for folders / primary folder.
+- `api/workspace-controller` — `addFolder` / `removeFolder` / `setPrimaryFolder`.
+- Client split packages — `dsh-api-session-controller`, `dsh-api-workspace-controller`, `dsh-client-store`, `dsh-util-workspace-path` (there is no `dsh-client-runtime` on this branch).
 
-To run this plugin the harness must be the winexeBuilder branch (or otherwise include those changes); otherwise `ctx.workspaces.addFolder(...)` and friends do not exist and the plugin will not typecheck or run.
+To run this plugin the harness must be winexeNew (or otherwise include those packages); otherwise `ctx.workspaces.addFolder(...)` and friends do not exist and the plugin will not typecheck or run.
 
 ## Layout
 
 ```
 src/
   index.ts                 node half (empty apply — host lifecycle placeholder)
-  invariant.ts             invariant companion
   client/
-    index.ts               apply: registers sidebar.workspaces
-    contract/slots.ts      DirectoryFlowOwnerProps + browser prop/inject shares
-    WorkspaceBrowser.tsx   the sidebar tree region
-    WorkspacePickFlow.tsx  add-workspace menu + directory-flow error dialog
+    index.ts               apply: provideRoot + sidebar.workspaces + conversation.hero.workspace
+    contract/slots.ts      DirectoryFlowOwnerProps + browser/picker prop/inject shares
+    navigation.ts          ctx.uiWorkspace (open / start / fork / archive)
+    rows/WorkspaceBrowser.tsx
+    WorkspacePicker.tsx    add-workspace menu + directory-flow error dialog + hero wrapper
     WorkspaceEditDialog.tsx
-    tree.ts / stores.ts / rows/ / locales.ts
+    tree.ts / stores.ts / subagent-lineage.ts / locales.ts
     *.module.css
 ```
 
 ## Registration
 
-The plugin declares one slot entry and one `single` child hole:
+The plugin declares two slot entries and two `single` child holes:
 
 - `sidebar.workspaces` → `WorkspaceBrowser` (owned by `ui-sidebar`)
 - `sidebar.workspaces.directoryFlow` → filled by a directory-picker occupant (`-native` / `-browse`)
+- `conversation.hero.workspace` → `WorkspacePicker` (owned by `ui-conversation`)
+- `conversation.hero.workspace.directoryFlow` → the same occupant family
+
+It also binds the global `useWorkspaces` hook (`slots.provideRoot`) and publishes `ctx.uiWorkspace`.
 
 The owner contract `DirectoryFlowOwnerProps` is exported from this package so a composed directory-picker can type its occupant.
 
+## Mutual exclusion
+
+Because `sidebar.workspaces`, `conversation.hero.workspace`, the `workspace` locale namespace, and `ctx.uiWorkspace` are the same identities as in-tree `@deepseek-ai/dsh-client-ui-workspace`, load **one or the other**, not both.
+
 ## Dependencies (peer)
 
-`@deepseek-ai/dsh-client-runtime`, `dsh-client-ui-slots`, `dsh-client-ui-sidebar`, `dsh-client-ui-primitives`, `dsh-client-connection`, `dsh-client-locale`, `dsh-invariants`, and `@deepseek-ai/cordis`. These are deepseek-harness workspace packages at `0.1.0-rc.8`.
+`@deepseek-ai/cordis`, `dsh-api-remotes`, `dsh-api-session-controller`, `dsh-api-workspace-controller`, `dsh-client-connection`, `dsh-client-locale`, `dsh-client-store`, `dsh-client-ui-conversation`, `dsh-client-ui-layout`, `dsh-client-ui-primitives`, `dsh-client-ui-renderer`, `dsh-client-ui-session`, `dsh-client-ui-sidebar`, `dsh-client-ui-slots`, `dsh-schedule`, `dsh-session`, and `dsh-util-workspace-path`. These are deepseek-harness workspace packages on winexeNew.
 
 ## Local development against deepseek-harness
 
 The harness packages are not yet published to npm and their internal edges use the `workspace:` protocol, so `npm install` cannot resolve them from registry. Two paths:
 
-1. **Typecheck**: `tsconfig.json` extends `../deepseek-harness/tsconfig.base.json` (on the winexeBuilder branch) to resolve `@deepseek-ai/*` against the harness source graph. Run it from inside the harness:
+1. **Typecheck**: `tsconfig.json` extends `../../deepseek-harness/tsconfig.base.client.json` and maps `@deepseek-ai/*` to winexeNew `lib/types` (checkout `D:\GitLocal\deepseek-harness`). From the harness:
 
    ```
-   pnpm exec tsc -p ../dsh-workspace-browser/tsconfig.json
+   .\node_modules\.bin\tsc.cmd -p ..\DSH\dsh-workspace-browser\tsconfig.json
    ```
 
-2. **Package linking**: once the harness packages publish, switch `peerDependencies` to the npm registry and `pnpm install`. Until then, add this package to a harness `cordis.yml` profile (or use `pnpm link`) to load it.
+2. **Package linking**: once the harness packages publish, switch `peerDependencies` to the npm registry and `pnpm install`. Until then, add this package to a harness `cordis.yml` profile (or use `pnpm link`) to load it **in place of** `ui-workspace`.
 
-## Loading into a harness profile
+## Running in DSH Web GUI
 
-Add the package name to the web profile's `dsh.client` rows (as the harness does for `ui-workspace`). Because `sidebar.workspaces` is owned by `ui-sidebar`, the existing `ui-workspace` browser and this extraction both claim the same hole — load one or the other, not both.
+This package includes the patch file `cordis.patch.yml` and pre-built `lib/` artifacts.
+
+### Method 1: Start with `--patch` overlay (Quickest)
+
+From `D:\GitLocal\deepseek-harness`:
+
+```powershell
+pnpm dsh web --patch D:\GitLocal\DSH\dsh-workspace-browser\cordis.patch.yml
+```
+
+Open or hard-refresh `http://127.0.0.1:8080` in your browser.
+
+To verify config layer resolution:
+
+```powershell
+pnpm dsh web --patch D:\GitLocal\DSH\dsh-workspace-browser\cordis.patch.yml --dump-config
+```
+
+You should see `ui-workspace` with `disabled: true` and `ui-workspace-browser` inserted.
+
+### Method 2: Install into the profile permanently
+
+```powershell
+pnpm dsh plugin --profile web add D:\GitLocal\DSH\dsh-workspace-browser
+```
+
+## Known gaps
+
+- No package tests (in-tree coverage stays in `packages/client/ui-workspace/tests`).
+- Typecheck reads harness `lib/types` plus `src/client/harness-lib-shims.d.ts` for `IWorkspaces.unarchiveSession` (present in winexeNew source, missing from the last emit).
+- Future in-tree `ui-workspace` changes are not synced automatically.

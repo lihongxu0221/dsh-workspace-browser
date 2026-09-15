@@ -1,34 +1,40 @@
 /**
- * dsh-workspace-browser contracts. One registration fills this package:
+ * ui-workspace contracts. Two registrations share this package:
  *
  * - WorkspaceBrowser fills the sidebar shell's `sidebar.workspaces` hole —
  *   the whole browsing region (section header, search, grouped/flat session
  *   list, workspace dialogs). It registers this package's viewing store and
  *   consumes the shell's two-fact owner share (wide / expandSidebar).
+ * - WorkspacePicker fills the conversation empty-state hole (menu + error
+ *   dialog shared with the browser).
  *
- * The registration also declares one **directory-flow hole** (`single`
+ * Each registration also declares one **directory-flow hole** (`single`
  * kind): the slot a composed picker package's client half fills with its
  * picking interaction — a renderless native-chooser driver or an in-app
- * browsing dialog. This package owns the trigger (the "Add workspace…"
+ * browsing dialog. ui-workspace owns the trigger (the "Add workspace…"
  * entry, present only while the hole is occupied) and the adoption
  * semantics (`createWorkspace({ path })`, the retryable error dialog,
- * Choose again); the occupant owns everything between `open` and the picked
- * path, including creating a new directory to hand back. That
- * occupant-owned creation is why adding a workspace has a single route: an
- * unoccupied hole leaves the surface with no add affordance at all.
+ * Choose again); the occupant owns everything between `open` and the picked path,
+ * including creating a new directory to hand back. That occupant-owned
+ * creation is why adding a workspace has a single route: an unoccupied hole
+ * leaves the surface with no add affordance at all.
+ * Two holes exist because the two menu surfaces are independent slot entries
+ * and a hole has exactly one declaring entry — they carry the same owner
+ * contract and the same occupant.
  */
-import type { HostDescriptionSource } from '@deepseek-ai/dsh-client-connection/client'
 import type { HostObservable, PropsHooks, PropsLocale, PropsRenderSlots, PropsRuntime, PropsStore } from '@deepseek-ai/dsh-client-ui-slots'
-// Type-only: pull the owner SlotMap merge into programs that resolve the
+// Type-only: pull the owner SlotMap merges into programs that resolve the
 // runtime shares below.
 import type {} from '@deepseek-ai/dsh-client-ui-sidebar/client'
-import type {
-  SessionId, SessionSearchResultItem, WorkspaceId, WorkspaceView,
-} from '@deepseek-ai/dsh-client-runtime/client'
+import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
+import type { SessionSearchResultItem } from '@deepseek-ai/dsh-api-session-controller/client'
+import type { RemoteHostFacts } from '@deepseek-ai/dsh-api-remotes/client'
+import type { WorkspaceId, WorkspaceView } from '@deepseek-ai/dsh-api-workspace-controller/client'
+import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type { createWorkspaceViewStore } from '../stores.ts'
 
 /**
- * Owner share of the directory-flow hole: the complete conversation between
+ * Owner share of the directory-flow holes: the complete conversation between
  * the trigger surface and the picking interaction. The occupant reads `open`
  * to run/render its interaction and reports exactly one outcome per open.
  */
@@ -47,13 +53,20 @@ export interface DirectoryFlowOwnerProps {
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface SlotMap {
+    /** Directory-flow hole under the conversation empty-state picker (declared by the WorkspacePicker entry). */
+    'conversation.hero.workspace.directoryFlow': { kind: 'single'; scope: 'root'; owner: DirectoryFlowOwnerProps }
     /** Directory-flow hole under the sidebar browsing region (declared by the WorkspaceBrowser entry). */
     'sidebar.workspaces.directoryFlow': { kind: 'single'; scope: 'root'; owner: DirectoryFlowOwnerProps }
   }
 }
 
+/** The two directory-flow holes; a flow package's client half registers its one component into both. */
+export type DirectoryFlowSlotName =
+  | 'conversation.hero.workspace.directoryFlow'
+  | 'sidebar.workspaces.directoryFlow'
+
 /**
- * Directory-picking share the trigger surface consumes. Occupancy rides the
+ * Directory-picking share both trigger surfaces consume. Occupancy rides the
  * inject face's reserved `hooks` compartment: the renderer binds the source
  * into the `useDirectoryFlow` selector hook, so an empty hole hides the
  * "Add workspace…" entry reactively and the surface withdraws an open
@@ -76,8 +89,13 @@ export type DirectoryPickingHooks = PropsHooks<DirectoryPickingInjected['hooks']
  */
 export type WorkspaceBrowserInjected = {
   hooks: DirectoryPickingInjected['hooks'] & {
-    /** Current generation's Host description, bound by the slot renderer. */
-    hostDescription: HostDescriptionSource
+    /**
+     * Fixed Host facts, reached through a hook rather than injected as values:
+     * the renderer memoizes an entry's inject result for the registration's
+     * lifetime, so facts read there would freeze at whatever the first render
+     * saw. Select the field the surface needs (`info => info.home`).
+     */
+    hostInfo: HostObservable<RemoteHostFacts>
   }
   /**
    * Start a New Session in a Workspace: reuse-or-create its blank session and
@@ -116,12 +134,6 @@ export type WorkspaceBrowserInjected = {
    * session clears the selection into the New Session view state.
    */
   archiveSession: (sessionId: SessionId) => Promise<void>
-  /**
-   * Reorder a session inside its Workspace account (DOM-insertBefore
-   * semantics: omitted anchor appends to the end). The view refreshes from
-   * the Host response/changed frame; failures leave the order unchanged.
-   */
-  insertSessionBefore: (workspaceId: WorkspaceId, sessionId: SessionId, beforeSessionId?: SessionId) => Promise<void>
   /** Adopt a picked host directory as a real Workspace before targeting a Session. */
   createWorkspace: (input: { path: string }) => Promise<WorkspaceView>
   /** Add an extra folder to an existing Workspace. */
@@ -139,4 +151,26 @@ export type WorkspaceBrowserProps =
   & PropsStore<ReturnType<typeof createWorkspaceViewStore>>
   & Omit<WorkspaceBrowserInjected, 'hooks'>
   & PropsHooks<WorkspaceBrowserInjected['hooks']>
+  & PropsLocale<'workspace'>
+
+/**
+ * Picker-private injected share. Pick semantics remain in the owner's onPick
+ * callback; this callback creates only the real Host Workspace. A type alias
+ * supplies the implicit index signature required by the registry.
+ */
+export type WorkspacePickerInjected = DirectoryPickingInjected & {
+  /** Adopt a picked host directory as a real Workspace before targeting a Session. */
+  createWorkspace: (input: { path: string }) => Promise<WorkspaceView>
+}
+
+/**
+ * Full picker props: the owner share plus the creation callback and the
+ * locale seat. The two picker holes (blank-session hero / New-Session view)
+ * share one owner currency, so one composed type serves both registrations.
+ */
+export type WorkspacePickerProps =
+  PropsRuntime<'conversation.hero.workspace'>
+  & PropsRenderSlots<'conversation.hero.workspace.directoryFlow'>
+  & Omit<WorkspacePickerInjected, 'hooks'>
+  & DirectoryPickingHooks
   & PropsLocale<'workspace'>

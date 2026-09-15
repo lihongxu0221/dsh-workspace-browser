@@ -1,0 +1,12 @@
+# Cordis patch to swap in-tree ui-workspace for this standalone plugin.
+# Usage:
+#   pnpm dsh web --patch D:\GitLocal\DSH\dsh-workspace-browser\cordis.patch.yml
+
+# 1. Disable the in-tree workspace plugin
+- id: ui-workspace
+  disabled: true
+
+# 2. Insert the standalone workspace-browser plugin
+- insert:
+    - id: ui-workspace-browser
+      name: 'D:/GitLocal/DSH/dsh-workspace-browser'
