@@ -1395,8 +1395,10 @@ export function WorkspaceBrowser({
     void (async () => {
       try {
         // Folder writes belong to the project editor, which is only offered when
-        // the host exposes the folder APIs; keep this path inert without them.
-        if (addFolder === undefined || removeFolder === undefined || setPrimaryFolder === undefined) return
+        // some folder API exists (the host's or the plugin's own). Keep this path
+        // inert without one; a missing setPrimaryFolder only disables that one
+        // control, because new-Session directories stay the host's decision.
+        if (addFolder === undefined || removeFolder === undefined) return
         let snapshot = editTarget
         const rememberHost = (view: WorkspaceView & { folders?: readonly string[] }, added?: string) => {
           const folders = view.folders ?? (added === undefined
@@ -1423,7 +1425,7 @@ export function WorkspaceBrowser({
           })
         }
         for (const folder of toAdd) rememberHost(await addFolder(workspaceId, folder), folder)
-        if (primaryNeeded) {
+        if (primaryNeeded && setPrimaryFolder !== undefined) {
           const view = await setPrimaryFolder(workspaceId, editPath)
           const projected = workspaceExtraFolders(view)
           rememberHost({
@@ -1713,14 +1715,16 @@ export function WorkspaceBrowser({
           setEditFolders(folders => folders.filter(item => item !== folder))
           setEditError(null)
         }}
-        onSetPrimary={(folder) => {
-          setEditFolders((folders) => {
-            const without = folders.filter(item => item !== folder)
-            return editPath === '' ? without : [editPath, ...without]
-          })
-          setEditPath(folder)
-          setEditError(null)
-        }}
+        {...(setPrimaryFolder === undefined ? {} : {
+          onSetPrimary: (folder: string) => {
+            setEditFolders((folders) => {
+              const without = folders.filter(item => item !== folder)
+              return editPath === '' ? without : [editPath, ...without]
+            })
+            setEditPath(folder)
+            setEditError(null)
+          },
+        })}
         t={t}
       />
 

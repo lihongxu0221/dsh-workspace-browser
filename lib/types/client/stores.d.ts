@@ -37,12 +37,6 @@ type WorkspaceViewState = {
      * Sessions to a Workspace by matching their cwd against this list.
      */
     extraFoldersByWorkspace: Record<string, string[]>;
-    /**
-     * Plugin-level primary folder per Workspace. It cannot repoint the host
-     * workspace, but it is the cwd new Sessions are created with, so "set as
-     * primary" keeps its user-visible meaning on a host without the API.
-     */
-    primaryFolderByWorkspace: Record<string, string>;
 };
 type SessionOrderSource = {
     members: Readonly<Record<string, readonly SessionId[]>>;
@@ -68,10 +62,8 @@ type WorkspaceViewActions = {
     setRecentsOpen: (draft: WorkspaceViewState, open: boolean) => void;
     /** Register one extra source folder for a Workspace (plugin-owned). */
     addExtraFolder: (draft: WorkspaceViewState, workspaceId: string, path: string) => void;
-    /** Drop one extra source folder; also clears it as the primary when it was. */
+    /** Drop one extra source folder. */
     removeExtraFolder: (draft: WorkspaceViewState, workspaceId: string, path: string) => void;
-    /** Remember the folder new Sessions for this Workspace are created in. */
-    setExtraPrimary: (draft: WorkspaceViewState, workspaceId: string, path: string) => void;
 };
 /**
  * Create the workspace browser viewing store handle.

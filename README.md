@@ -10,13 +10,15 @@ The deployed client (**0.2.0-rc.2**, the 2026-09-29 Desktop build) ships a works
 
 ## Source folders on a host without the folder API
 
-`addFolder` / `removeFolder` / `setPrimaryFolder` and the `folders` projection on a workspace view exist only on the newer workspace controller; the shipped host has none of them. The plugin owns the feature there:
+`addFolder` / `removeFolder` / `setPrimaryFolder` and the `folders` projection on a workspace view exist only on the newer workspace controller; the shipped host has none of them. The plugin owns the first two there:
 
 - the folder list lives in the plugin's own persisted viewing store (`persist: 'dsh.workspace.view.v5'`);
 - the browser merges those folders into the Workspace list it derives from (`mergePluginFolders` in [src/client/tree.ts](src/client/tree.ts)) and attributes Sessions to a Workspace by matching their `cwd` against the list — the host leaves such Sessions ungrouped, so only unclaimed ones are borrowed;
-- *set as primary* remembers a folder and creates new Sessions with that cwd (`sessions.create({ workspaceId, cwd })` in [src/client/navigation.ts](src/client/navigation.ts)), keeping the user-visible meaning — new Sessions land there — while the host workspace path stays untouched.
+- adding and removing folders works from the project editor exactly as it does on a newer host.
 
-Where the host *does* expose the folder API ([src/client/host-capabilities.d.ts](src/client/host-capabilities.d.ts) declares the three methods optional), the same editor actions route to it instead.
+*Set as primary* stays a host capability and is hidden where the host lacks it: a Session's directory is the host's decision, and the shipped host refuses a Session created with a `cwd` outside every registered Workspace (measured: the request fails and no Session appears). The plugin therefore leaves New Session on the Workspace path rather than breaking it.
+
+Where the host *does* expose the folder API ([src/client/host-capabilities.d.ts](src/client/host-capabilities.d.ts) declares the three methods optional), all three editor actions route to it instead.
 
 The tag `appgen-0.3.0` keeps an earlier parity-only build (exactly the host's own feature set) for a host that lacks the newer client module table.
 
@@ -63,7 +65,7 @@ node scripts/build-client.mjs   # harness client preset: lib/types -> lib/client
 
 ## Known gaps
 
-- **The plugin-level primary folder is not a host path change.** It decides the cwd of *new* Sessions; anything else that resolves the Workspace's directory still sees the host path, because the shipped host has no API to repoint it.
+- **"Set as primary" is host-only.** The shipped host decides a Session's directory and refuses a cwd outside every registered Workspace, so the plugin hides that control there instead of offering a button that cannot work. On a host with the folder API it is offered and honoured.
 - **Folder membership is matched by Session `cwd`**, and only Sessions the host left ungrouped are borrowed. A Session that the host already groups under its own Workspace stays there.
 - `src/` is vendored from `winexeNew` rather than hand-written: re-vendor it when moving to another host generation and keep the capability probes.
 - No package tests; the in-tree suite stays in `packages/client/ui-workspace/tests` at the vendored revision.

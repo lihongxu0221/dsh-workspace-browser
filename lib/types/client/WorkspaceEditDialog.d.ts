@@ -39,7 +39,8 @@ export declare function WorkspaceEditDialog({ open, title, path, folders, busy, 
     onRemoveProject: () => void;
     onAddFolder: () => void;
     onRemoveFolder: (path: string) => void;
-    onSetPrimary: (path: string) => void;
+    /** Promote an extra folder to primary; absent when the host cannot repoint a Workspace. */
+    onSetPrimary?: ((path: string) => void) | undefined;
     t: EditTranslate;
 }): import("react").JSX.Element;
 export {};

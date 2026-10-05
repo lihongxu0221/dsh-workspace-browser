@@ -58,7 +58,8 @@ export function WorkspaceEditDialog({
   onRemoveProject: () => void
   onAddFolder: () => void
   onRemoveFolder: (path: string) => void
-  onSetPrimary: (path: string) => void
+  /** Promote an extra folder to primary; absent when the host cannot repoint a Workspace. */
+  onSetPrimary?: ((path: string) => void) | undefined
   t: EditTranslate
 }) {
   const trimmed = title.trim()
@@ -122,14 +123,16 @@ export function WorkspaceEditDialog({
           <li className={css.folderRow} key={folder}>
             <IconFolderCloseRegular />
             <span className={css.folderName} title={folder}>{folderLabel(folder)}</span>
-            <button
-              type="button"
-              className={css.setPrimary}
-              disabled={busy}
-              onClick={() => { onSetPrimary(folder) }}
-            >
-              {t('edit.project.setPrimary')}
-            </button>
+            {onSetPrimary === undefined ? null : (
+              <button
+                type="button"
+                className={css.setPrimary}
+                disabled={busy}
+                onClick={() => { onSetPrimary(folder) }}
+              >
+                {t('edit.project.setPrimary')}
+              </button>
+            )}
             <button
               type="button"
               className={css.removeFolder}

@@ -40,12 +40,6 @@ type WorkspaceViewState = {
    * Sessions to a Workspace by matching their cwd against this list.
    */
   extraFoldersByWorkspace: Record<string, string[]>
-  /**
-   * Plugin-level primary folder per Workspace. It cannot repoint the host
-   * workspace, but it is the cwd new Sessions are created with, so "set as
-   * primary" keeps its user-visible meaning on a host without the API.
-   */
-  primaryFolderByWorkspace: Record<string, string>
 }
 
 type SessionOrderSource = {
@@ -90,10 +84,8 @@ type WorkspaceViewActions = {
   setRecentsOpen: (draft: WorkspaceViewState, open: boolean) => void
   /** Register one extra source folder for a Workspace (plugin-owned). */
   addExtraFolder: (draft: WorkspaceViewState, workspaceId: string, path: string) => void
-  /** Drop one extra source folder; also clears it as the primary when it was. */
+  /** Drop one extra source folder. */
   removeExtraFolder: (draft: WorkspaceViewState, workspaceId: string, path: string) => void
-  /** Remember the folder new Sessions for this Workspace are created in. */
-  setExtraPrimary: (draft: WorkspaceViewState, workspaceId: string, path: string) => void
 }
 
 /** Copy read-only projections into the persisted mutable store representation. */
@@ -119,7 +111,6 @@ export function createWorkspaceViewStore(): EngineStoreHandle<WorkspaceViewState
       workspacesOpen: true,
       recentsOpen: true,
       extraFoldersByWorkspace: {},
-      primaryFolderByWorkspace: {},
     }),
     persist: 'dsh.workspace.view.v5',
     actions: {
@@ -151,10 +142,6 @@ export function createWorkspaceViewStore(): EngineStoreHandle<WorkspaceViewState
         const extraRetained = Object.entries(extra).filter(([key]) => retained.has(key))
         if (extraRetained.length !== Object.keys(extra).length) d.extraFoldersByWorkspace = Object.fromEntries(extraRetained)
         else d.extraFoldersByWorkspace = extra
-        const primary = d.primaryFolderByWorkspace ?? {}
-        const primaryRetained = Object.entries(primary).filter(([key]) => retained.has(key))
-        if (primaryRetained.length !== Object.keys(primary).length) d.primaryFolderByWorkspace = Object.fromEntries(primaryRetained)
-        else d.primaryFolderByWorkspace = primary
       },
       syncSessionOrders: (d, orders) => {
         if (d.orderBy !== 'manual') return
@@ -197,14 +184,6 @@ export function createWorkspaceViewStore(): EngineStoreHandle<WorkspaceViewState
         if (remaining.length === 0) delete byWorkspace[workspaceId]
         else byWorkspace[workspaceId] = remaining
         d.extraFoldersByWorkspace = byWorkspace
-        if (d.primaryFolderByWorkspace?.[workspaceId] === path) {
-          const primary = { ...d.primaryFolderByWorkspace }
-          delete primary[workspaceId]
-          d.primaryFolderByWorkspace = primary
-        }
-      },
-      setExtraPrimary: (d, workspaceId: string, path: string) => {
-        d.primaryFolderByWorkspace = { ...d.primaryFolderByWorkspace, [workspaceId]: path }
       },
     },
   })

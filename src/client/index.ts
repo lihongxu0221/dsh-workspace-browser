@@ -117,7 +117,6 @@ export function apply(ctx: Context): void {
   const notify = (toast: RowToast): void => { rowToast.set({ ...toast, seq: ++toastSeq }) }
   const uiWorkspace = new UiWorkspaceService(
     ctx, ctx.remote.directoryPicker, workspaces, sessions, viewInstance.actions, notify,
-    workspaceId => viewInstance.store.getSnapshot().primaryFolderByWorkspace?.[workspaceId],
   )
   ctx.slots.provideRoot({ hooks: { workspaces: workspaces.list } })
   ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-workspace: dictionaries')
@@ -230,9 +229,11 @@ export function apply(ctx: Context): void {
     showArchived: () => { viewInstance.actions.setArchivedFilter('show') },
   })
   // Extra source folders: the newer host owns them; the shipped 0.2.0-rc.2 host
-  // has none of the three methods, so the plugin keeps the folder list in its
+  // has none of the folder methods, so the plugin keeps the folder list in its
   // own persisted viewing store and answers with a view carrying that list.
-  // Either way the project editor works; only who owns the projection differs.
+  // `setPrimaryFolder` stays host-only: new Sessions take their directory from
+  // the host, and this host refuses a cwd outside every registered Workspace, so
+  // the editor offers "set as primary" only where the host can honour it.
   const folderView = (workspaceId: WorkspaceId): WorkspaceView & { readonly folders: readonly string[] } => {
     const view = workspaces.list.getSnapshot().items.find(item => item.workspaceId === workspaceId)
     if (view === undefined) throw new Error('unknown workspace')
@@ -248,12 +249,12 @@ export function apply(ctx: Context): void {
       viewInstance.actions.removeExtraFolder(workspaceId, path)
       return folderView(workspaceId)
     },
-    setPrimaryFolder: async (workspaceId: WorkspaceId, path: string): Promise<WorkspaceView> => {
-      viewInstance.actions.setExtraPrimary(workspaceId, path)
-      return folderView(workspaceId)
-    },
   }
-  const folderApi = typeof workspaces.addFolder === 'function'
+  const folderApi: {
+    addFolder: (workspaceId: WorkspaceId, path: string) => Promise<WorkspaceView>
+    removeFolder: (workspaceId: WorkspaceId, path: string) => Promise<WorkspaceView>
+    setPrimaryFolder?: (workspaceId: WorkspaceId, path: string) => Promise<WorkspaceView>
+  } = typeof workspaces.addFolder === 'function'
     && typeof workspaces.removeFolder === 'function'
     && typeof workspaces.setPrimaryFolder === 'function'
     ? {
@@ -280,7 +281,7 @@ export function apply(ctx: Context): void {
     createWorkspace: input => workspaces.create(input),
     addFolder: folderApi.addFolder,
     removeFolder: folderApi.removeFolder,
-    setPrimaryFolder: folderApi.setPrimaryFolder,
+    ...(folderApi.setPrimaryFolder === undefined ? {} : { setPrimaryFolder: folderApi.setPrimaryFolder }),
     requestSearch: shortcutControls.search,
     requestAddWorkspace: shortcutControls.add,
     closeAddWorkspace: shortcutControls.closeAdd,

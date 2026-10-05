@@ -145,8 +145,6 @@ class UiWorkspaceService extends Service implements UiWorkspace {
    * @param sessions - pure Session Controller.
    * @param view - the browser's viewing-store write set (one instance shared with its registration).
    * @param notify - show one notice through the Workspace notice channel.
-   * @param primaryFolderOf - plugin-level primary folder per Workspace, when the
-   * user picked one; new Sessions are created there.
    */
   constructor(
     ctx: Context,
@@ -155,7 +153,6 @@ class UiWorkspaceService extends Service implements UiWorkspace {
     private readonly sessions: ISessions,
     private readonly view: Pick<WorkspaceViewStoreActions, 'pinSessionOrder'>,
     private readonly notify: (toast: RowToast) => void,
-    private readonly primaryFolderOf: (workspaceId: WorkspaceId) => string | undefined = () => undefined,
   ) {
     super(ctx, 'uiWorkspace')
     ctx.effect(() => {
@@ -188,20 +185,15 @@ class UiWorkspaceService extends Service implements UiWorkspace {
   private reuseOrCreateBlank(workspace: WorkspaceView): Promise<SessionId> {
     const archived = this.workspaces.list.getSnapshot().archivedSessionIds
     const sessions = this.sessions.list.getSnapshot()
-    // A plugin-level primary folder (set from the project editor on a host
-    // without the folder API) is where new Sessions land; the host workspace
-    // path stays untouched, and the browser attributes the Session by cwd.
-    const primary = this.primaryFolderOf(workspace.workspaceId)
-    const cwd = primary ?? workspace.path
     for (const id of sessions.ids) {
       const summary = sessions.byId[id]
-      if (summary === undefined || !summary.blank || summary.cwd !== cwd
+      if (summary === undefined || !summary.blank || summary.cwd !== workspace.path
         || !workspace.sessionIds.includes(id) || archived.includes(id)) continue
       return this.reuseBlank(workspace.workspaceId, id)
     }
-    return primary === undefined
-      ? this.sessions.create({ workspaceId: workspace.workspaceId })
-      : this.sessions.create({ workspaceId: workspace.workspaceId, cwd: primary })
+    // Only the Workspace id is requested: a Session's directory is the host's
+    // decision, and a cwd outside every registered Workspace is refused there.
+    return this.sessions.create({ workspaceId: workspace.workspaceId })
   }
 
   private async reuseBlank(workspaceId: WorkspaceId, sessionId: SessionId): Promise<SessionId> {
