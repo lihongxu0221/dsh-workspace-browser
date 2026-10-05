@@ -9,7 +9,7 @@
  * menu in between; the flow and its error dialog live in WorkspacePicker
  * (same package — direct composition, no slot between them).
  */
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import clsx from 'clsx'
 import {
   Button, IconCloseFill14, IconPersonalizationOutline16,
@@ -107,10 +107,11 @@ function ViewOptionsMenu({ groupBy, orderBy, onGroupPick, onOrderPick, t }: {
   t: WorkspaceBrowserProps['t']
 }) {
   const [open, setOpen] = useState(false)
+  const handleClose = useCallback(() => { setOpen(false) }, [])
   return (
     <Menu
       open={open}
-      onClose={() => { setOpen(false) }}
+      onClose={handleClose}
       items={[
         { type: 'label' as const, id: 'group-by', text: t('groupBy.label') },
         { id: 'workspace', label: t('groupBy.workspace') },
