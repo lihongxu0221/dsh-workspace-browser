@@ -1,0 +1,6 @@
+# This repo publishes built artifacts whose source text is inlined (the client
+# bundle's sourcemap carries `sourcesContent`), and scripts/build-client.mjs pins
+# the region banner to a checkout-independent form. A CRLF checkout would still
+# make a rebuild's lib/client.js.map differ from the committed one, so check out
+# every text file with LF regardless of the platform's core.autocrlf setting.
+* text=auto eol=lf
