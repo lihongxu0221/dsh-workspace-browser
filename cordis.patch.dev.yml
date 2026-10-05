@@ -1,0 +1,12 @@
+# Development overlay for a harness checkout: the same swap as
+# `cordis.patch.yml`, but naming this checkout by absolute path so it loads
+# without installing the package as a bundle first.
+#
+# Usage (from the harness checkout):
+#   pnpm dsh web --patch D:\GitLocal\DSH\dsh-workspace-browser\cordis.patch.dev.yml
+- id: ui-workspace
+  disabled: true
+
+- insert:
+    - id: ui-workspace-browser
+      name: 'D:/GitLocal/DSH/dsh-workspace-browser'

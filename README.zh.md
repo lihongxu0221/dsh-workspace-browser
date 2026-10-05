@@ -65,14 +65,17 @@ harness 包尚未发布到 npm，且内部依赖使用 `workspace:` 协议，因
 
 ## 在 DSH Web GUI 中使用
 
-本包自带配置补丁 `cordis.patch.yml` 与构建好的产物 `lib/`。
+本包自带配置补丁与构建好的产物 `lib/`。
+
+- `cordis.patch.yml` — `dsh.bundle.patch` 声明的组合包补丁，按包名插入插件行，安装后的副本加载的就是它。必须留在 `files` 里，否则打包出来的包（git / npm 安装）不含该文件，DSH 会以 `failed to read overlay` 拒绝安装。
+- `cordis.patch.dev.yml` — 同样的替换，但用绝对路径，供不安装、直接跑本目录时使用。
 
 ### 方式一：命令行启动时挂载补丁（最快捷）
 
 在 `deepseek-harness` 根目录下执行：
 
 ```powershell
-pnpm dsh web --patch D:\GitLocal\DSH\dsh-workspace-browser\cordis.patch.yml
+pnpm dsh web --patch D:\GitLocal\DSH\dsh-workspace-browser\cordis.patch.dev.yml
 ```
 
 启动后在浏览器访问或整页刷新 `http://127.0.0.1:8080`，即可看到本插件生效。
@@ -80,7 +83,7 @@ pnpm dsh web --patch D:\GitLocal\DSH\dsh-workspace-browser\cordis.patch.yml
 验证配置是否正确覆盖：
 
 ```powershell
-pnpm dsh web --patch D:\GitLocal\DSH\dsh-workspace-browser\cordis.patch.yml --dump-config
+pnpm dsh web --patch D:\GitLocal\DSH\dsh-workspace-browser\cordis.patch.dev.yml --dump-config
 ```
 
 在输出中应能看到原版 `ui-workspace` 的 `disabled: true`，且新增加了本插件 `ui-workspace-browser`。
@@ -88,11 +91,14 @@ pnpm dsh web --patch D:\GitLocal\DSH\dsh-workspace-browser\cordis.patch.yml --du
 ### 方式二：持久安装进 profile
 
 ```powershell
-pnpm dsh plugin --profile web add D:\GitLocal\DSH\dsh-workspace-browser
+dsh plugin --profile desktop add github:lihongxu0221/dsh-workspace-browser
 ```
+
+DSH 校验通过后会把 `cordis.patch.yml` 作为 profile 层追加进去；本地目录同样可以（`dsh plugin --profile desktop add D:\GitLocal\DSH\dsh-workspace-browser`）。
 
 ## 已知缺口
 
 - 无包内测试（in-tree 覆盖仍在 `packages/client/ui-workspace/tests`）。
 - 类型检查读 harness `lib/types`，并用 `src/client/harness-lib-shims.d.ts` 补上 `IWorkspaces.unarchiveSession`（winexeNew 源码有，最近一次 emit 没有）。
 - 后续 in-tree `ui-workspace` 变更不会自动同步。
+- `files` 是白名单，profile 安装拿到的只有打包内容：运行时要从包目录读取的任何文件（现在是补丁文件，以后可能是数据文件）都必须列进去。

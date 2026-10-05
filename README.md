@@ -65,14 +65,17 @@ The harness packages are not yet published to npm and their internal edges use t
 
 ## Running in DSH Web GUI
 
-This package includes the patch file `cordis.patch.yml` and pre-built `lib/` artifacts.
+This package includes the patch files and pre-built `lib/` artifacts.
+
+- `cordis.patch.yml` — the bundle patch declared by `dsh.bundle.patch`. It inserts the row by package name, so it is what an installed copy loads. It must stay in `files`, otherwise the packed package (git/npm install) ships without it and DSH rejects the installation with `failed to read overlay`.
+- `cordis.patch.dev.yml` — the same swap with an absolute path, for running this checkout without installing it.
 
 ### Method 1: Start with `--patch` overlay (Quickest)
 
 From `D:\GitLocal\deepseek-harness`:
 
 ```powershell
-pnpm dsh web --patch D:\GitLocal\DSH\dsh-workspace-browser\cordis.patch.yml
+pnpm dsh web --patch D:\GitLocal\DSH\dsh-workspace-browser\cordis.patch.dev.yml
 ```
 
 Open or hard-refresh `http://127.0.0.1:8080` in your browser.
@@ -80,7 +83,7 @@ Open or hard-refresh `http://127.0.0.1:8080` in your browser.
 To verify config layer resolution:
 
 ```powershell
-pnpm dsh web --patch D:\GitLocal\DSH\dsh-workspace-browser\cordis.patch.yml --dump-config
+pnpm dsh web --patch D:\GitLocal\DSH\dsh-workspace-browser\cordis.patch.dev.yml --dump-config
 ```
 
 You should see `ui-workspace` with `disabled: true` and `ui-workspace-browser` inserted.
@@ -88,11 +91,14 @@ You should see `ui-workspace` with `disabled: true` and `ui-workspace-browser` i
 ### Method 2: Install into the profile permanently
 
 ```powershell
-pnpm dsh plugin --profile web add D:\GitLocal\DSH\dsh-workspace-browser
+dsh plugin --profile desktop add github:lihongxu0221/dsh-workspace-browser
 ```
+
+DSH validates the package, then appends `cordis.patch.yml` as a profile layer. A local checkout works too (`dsh plugin --profile desktop add D:\GitLocal\DSH\dsh-workspace-browser`).
 
 ## Known gaps
 
 - No package tests (in-tree coverage stays in `packages/client/ui-workspace/tests`).
 - Typecheck reads harness `lib/types` plus `src/client/harness-lib-shims.d.ts` for `IWorkspaces.unarchiveSession` (present in winexeNew source, missing from the last emit).
 - Future in-tree `ui-workspace` changes are not synced automatically.
+- `files` is an allowlist, and the packed package is all a profile install gets: anything the runtime reads from the package directory (the patch file now, any data file later) must be listed there.

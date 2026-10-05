@@ -1,12 +1,14 @@
-# Cordis patch to swap in-tree ui-workspace for this standalone plugin.
-# Usage:
-#   pnpm dsh web --patch D:\GitLocal\DSH\dsh-workspace-browser\cordis.patch.yml
-
-# 1. Disable the in-tree workspace plugin
+# Bundle patch: swap the in-tree workspace UI for this standalone plugin.
+# Declared by `dsh.bundle.patch`, so DSH applies it as a profile layer whenever
+# this package is installed as a bundle.
+#
+# The row is a bare plugin by package name: the node half (exports ".") runs in
+# the host process, and the `dsh.client` declaration loads the browser half in
+# the web GUI. Load this plugin or @deepseek-ai/dsh-client-ui-workspace, never
+# both — they claim the same slots, locale namespace, and ctx.uiWorkspace.
 - id: ui-workspace
   disabled: true
 
-# 2. Insert the standalone workspace-browser plugin
 - insert:
     - id: ui-workspace-browser
-      name: 'D:/GitLocal/DSH/dsh-workspace-browser'
+      name: '@deepseek-ai/dsh-client-ui-workspace-browser'
