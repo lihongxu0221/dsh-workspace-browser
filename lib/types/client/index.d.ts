@@ -1,19 +1,9 @@
-/**
- * Workspace plugin, browser half. Two registrations: WorkspaceBrowser fills
- * the sidebar shell's `sidebar.workspaces` hole (the whole browsing region),
- * and WorkspacePicker fills the conversation hero's picker hole
- * (`conversation.hero.workspace` — both hero forms). Both read real Host
- * Workspaces through the global useWorkspaces hook, and each declares its
- * own `single` directory-flow child hole for the composed picker package's
- * client half (see the contract module doc). Export discipline:
- * packages/client/AGENTS.md.
- */
 import type { Context } from '@deepseek-ai/cordis';
 import type { WorkspaceSnapshot } from '@deepseek-ai/dsh-api-workspace-controller/client';
 import type { SnapshotSelectorHook } from '@deepseek-ai/dsh-client-ui-slots';
 import { type WorkspaceKey } from './locales.ts';
 export type { UiWorkspace } from './navigation.ts';
-export type { DirectoryFlowOwnerProps, DirectoryFlowSlotName, DirectoryPickingHooks, DirectoryPickingInjected, WorkspaceBrowserInjected, WorkspaceBrowserProps, WorkspacePickerInjected, WorkspacePickerProps, } from './contract/slots.ts';
+export type { DirectoryFlowOwnerProps, DirectoryFlowSlotName, DirectoryPickingHooks, DirectoryPickingInjected, MenuOpenState, RowToast, SessionRenameTarget, SessionRowOwnerProps, UseMenuOpenState, WorkspaceBrowserInjected, SessionRowScheduleOwnerProps, WorkspaceBrowserProps, WorkspacePickerInjected, WorkspacePickerProps, } from './contract/slots.ts';
 export type { WorkspaceKey } from './locales.ts';
 declare module '@deepseek-ai/dsh-client-ui-slots' {
     interface GlobalStandardProps {
@@ -23,6 +13,11 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
     interface LocaleNamespaceMap {
         /** The workspace browsing region and pick/create flow copy. */
         workspace: WorkspaceKey;
+    }
+}
+declare module '@deepseek-ai/dsh-api-session-controller/client' {
+    interface SessionReferenceSourceMap {
+        workspaceOperation: unknown;
     }
 }
 /**

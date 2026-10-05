@@ -1,104 +1,61 @@
 # dsh-workspace-browser
 
-Standalone extraction of the DeepSeek Harness workspace plugin — the sidebar **Workspace / session tree** (`WorkspaceBrowser`), **Recents**, extra-folder **project editor**, and the conversation-hero **WorkspacePicker** — as an independent Cordis client plugin.
+Standalone extraction of the dsh web client's workspace plugin — the sidebar **Workspaces / Recents** tree with its row actions (pin, rename, fork, archive) and the conversation-hero **workspace picker** — packaged as an independent Cordis client plugin.
 
-This extraction is based on the **winexeNew** branch of deepseek-harness (`packages/client/ui-workspace`). The harness repository is not modified.
+## Target generation
 
-## Required: winexeNew data layer
+Vendored from the harness revision that built the **dsh 0.2.0-rc.2** client: `c1b47e41fc` (`release(dsh): 0.2.0-rc.2`), whose in-tree package is `@deepseek-ai/dsh-client-ui-workspace@0.2.0-rc.2`. The 2026-09-29 Desktop build runs exactly this code: its `//#region lib/types/client/...` module list, its `dsh.client.inject` list, and its `lib/index.js` node half all match this revision byte for byte.
 
-Fold/pin/Recents, the project editor, and primary/extra-folder handles depend on Workspace Controller APIs that exist on **winexeNew** (not a stock `master` without those changes):
-
-- `workspace/workspace` — `WorkspaceView.folders`, primary folder, extra folders (`src/folders.ts`).
-- `api/workspace-controller` — `addFolder` / `removeFolder` / `setPrimaryFolder`.
-- Client split packages — `dsh-api-session-controller`, `dsh-api-workspace-controller`, `dsh-client-store`, `dsh-util-workspace-path` (there is no `dsh-client-runtime` on this branch).
-
-To run this plugin the harness must be winexeNew (or otherwise include those packages); otherwise `ctx.workspaces.addFolder(...)` and friends do not exist and the plugin will not typecheck or run.
+Load it against that generation, or one that still carries the same client module table. A bundle that requires UI atoms its host does not export never registers its slots — and because `cordis.patch.yml` disables the in-tree `ui-workspace` row, the sidebar's workspace region then renders **empty**. That is the failure mode this port fixes; check a new generation before switching, as described under [Verification](#verification).
 
 ## Layout
 
 ```
-src/
-  index.ts                 node half (empty apply — host lifecycle placeholder)
-  client/
-    index.ts               apply: provideRoot + sidebar.workspaces + conversation.hero.workspace
-    contract/slots.ts      DirectoryFlowOwnerProps + browser/picker prop/inject shares
-    navigation.ts          ctx.uiWorkspace (open / start / fork / archive)
-    rows/WorkspaceBrowser.tsx
-    WorkspacePicker.tsx    add-workspace menu + directory-flow error dialog + hero wrapper
-    WorkspaceEditDialog.tsx
-    tree.ts / stores.ts / subagent-lineage.ts / locales.ts
-    *.module.css
+src/index.ts                  node half — empty apply so the row exists in the host composition
+src/client/index.ts           apply: registrations + the ctx.uiWorkspace service
+src/client/contract/slots.ts  slot owner/occupant contracts
+src/client/rows/…             WorkspaceBrowser, Rows, AnimatedRows
+src/client/session-actions/…  pin / rename / fork / archive rows, toast
+src/client/navigation.ts      workspace archive + directory-flow capability
+src/client/{tree,stores,pin-order,shortcuts,locales}.ts
+cordis.patch.yml              bundle patch: disable ui-workspace, insert this plugin
+cordis.patch.dev.yml          the same swap with an absolute path, for `--patch` runs
+scripts/build-client.mjs      emits lib/client.js through the harness client preset
 ```
 
-## Registration
-
-The plugin declares two slot entries and two `single` child holes:
-
-- `sidebar.workspaces` → `WorkspaceBrowser` (owned by `ui-sidebar`)
-- `sidebar.workspaces.directoryFlow` → filled by a directory-picker occupant (`-native` / `-browse`)
-- `conversation.hero.workspace` → `WorkspacePicker` (owned by `ui-conversation`)
-- `conversation.hero.workspace.directoryFlow` → the same occupant family
-
-It also binds the global `useWorkspaces` hook (`slots.provideRoot`) and publishes `ctx.uiWorkspace`.
-
-The owner contract `DirectoryFlowOwnerProps` is exported from this package so a composed directory-picker can type its occupant.
-
-## Mutual exclusion
-
-Because `sidebar.workspaces`, `conversation.hero.workspace`, the `workspace` locale namespace, and `ctx.uiWorkspace` are the same identities as in-tree `@deepseek-ai/dsh-client-ui-workspace`, load **one or the other**, not both.
-
-## Dependencies (peer)
-
-`@deepseek-ai/cordis`, `dsh-api-remotes`, `dsh-api-session-controller`, `dsh-api-workspace-controller`, `dsh-client-connection`, `dsh-client-locale`, `dsh-client-store`, `dsh-client-ui-conversation`, `dsh-client-ui-layout`, `dsh-client-ui-primitives`, `dsh-client-ui-renderer`, `dsh-client-ui-session`, `dsh-client-ui-sidebar`, `dsh-client-ui-slots`, `dsh-schedule`, `dsh-session`, and `dsh-util-workspace-path`. These are deepseek-harness workspace packages on winexeNew.
-
-## Local development against deepseek-harness
-
-The harness packages are not yet published to npm and their internal edges use the `workspace:` protocol, so `npm install` cannot resolve them from registry. Two paths:
-
-1. **Typecheck**: `tsconfig.json` extends `../../deepseek-harness/tsconfig.base.client.json` and maps `@deepseek-ai/*` to winexeNew `lib/types` (checkout `D:\GitLocal\deepseek-harness`). From the harness:
-
-   ```
-   .\node_modules\.bin\tsc.cmd -p ..\DSH\dsh-workspace-browser\tsconfig.json
-   ```
-
-2. **Package linking**: once the harness packages publish, switch `peerDependencies` to the npm registry and `pnpm install`. Until then, add this package to a harness `cordis.yml` profile (or use `pnpm link`) to load it **in place of** `ui-workspace`.
-
-## Running in DSH Web GUI
-
-This package includes the patch files and pre-built `lib/` artifacts.
-
-- `cordis.patch.yml` — the bundle patch declared by `dsh.bundle.patch`. It inserts the row by package name, so it is what an installed copy loads. It must stay in `files`, otherwise the packed package (git/npm install) ships without it and DSH rejects the installation with `failed to read overlay`.
-- `cordis.patch.dev.yml` — the same swap with an absolute path, for running this checkout without installing it.
-
-### Method 1: Start with `--patch` overlay (Quickest)
-
-From `D:\GitLocal\deepseek-harness`:
-
-```powershell
-pnpm dsh web --patch D:\GitLocal\DSH\dsh-workspace-browser\cordis.patch.dev.yml
-```
-
-Open or hard-refresh `http://127.0.0.1:8080` in your browser.
-
-To verify config layer resolution:
-
-```powershell
-pnpm dsh web --patch D:\GitLocal\DSH\dsh-workspace-browser\cordis.patch.dev.yml --dump-config
-```
-
-You should see `ui-workspace` with `disabled: true` and `ui-workspace-browser` inserted.
-
-### Method 2: Install into the profile permanently
+## Install
 
 ```powershell
 dsh plugin --profile desktop add github:lihongxu0221/dsh-workspace-browser
 ```
 
-DSH validates the package, then appends `cordis.patch.yml` as a profile layer. A local checkout works too (`dsh plugin --profile desktop add D:\GitLocal\DSH\dsh-workspace-browser`).
+The plugin manager in the GUI does the same. `cordis.patch.yml` is declared by `dsh.bundle.patch`, so it must stay in `files`: a packed package (git or npm install) that lacks it is rejected with `failed to read overlay`.
 
-## Known gaps
+Because this plugin claims the same slots, locale namespace (`workspace`) and `ctx.uiWorkspace` service as the in-tree plugin, the patch disables `ui-workspace` and loads this one instead — never both.
 
-- No package tests (in-tree coverage stays in `packages/client/ui-workspace/tests`).
-- Typecheck reads harness `lib/types` plus `src/client/harness-lib-shims.d.ts` for `IWorkspaces.unarchiveSession` (present in winexeNew source, missing from the last emit).
-- Future in-tree `ui-workspace` changes are not synced automatically.
-- `files` is an allowlist, and the packed package is all a profile install gets: anything the runtime reads from the package directory (the patch file now, any data file later) must be listed there.
+## Build
+
+```powershell
+pnpm install
+pnpm run typecheck              # against the generation pinned in devDependencies
+pnpm run build                  # tsc: src -> lib/types (the client preset consumes this)
+node scripts/build-client.mjs   # harness client preset: lib/types -> lib/client.js + lib/index.js
+```
+
+`scripts/build-client.mjs` uses the client-bundle preset from a dsh source checkout (`packages/client/tsdown.client.ts`, default `..\..\deepseek-harness`, override with `$DSH_HARNESS` or an argument). The preset resolves a package through `packages/<group>/<dir>/package.json`, so the script stages a temporary face package inside the checkout, links this repo's `node_modules` into it, runs tsdown for the Client face, copies the artifacts back, and deletes the staging directory. The checkout itself is left untouched.
+
+## Verification
+
+The gate that catches a wrong generation is the pinned type surface: `devDependencies` fixes every `@deepseek-ai/*` package to the target generation (`0.2.0-rc.2`), so `pnpm run typecheck` fails on any atom, prop or service that generation does not have. Before switching generations, re-pin those versions and fix what the typecheck reports.
+
+For a runtime-level check, compare what the bundle requires against the host build:
+
+1. Extract the host's own copy of the plugin — `dsh/node_modules/@deepseek-ai/dsh-client-ui-workspace/lib/client.js` inside `resources/app.asar` — and its `lib/index.js`.
+2. Diff the required member sets per external module (`_deepseek_ai_dsh_client_ui_primitives.X`, `_deepseek_ai_dsh_client_store.X`, `_deepseek_ai_cordis.X`, `react.X`, `react_jsx_runtime.X`) and the `//#region lib/types/...` module list between that file and `lib/client.js`. Both must be equal or a subset; extra members mean the host cannot satisfy the bundle.
+3. Check each required primitives symbol against the host's export list (the single `export { … }` line that names `IconSearchOutlineMedium`).
+
+## Known gaps and deliberate differences
+
+- **No extra folders, no project editor.** Those are newer harness features (`addFolder` / `removeFolder` / `setPrimaryFolder` on the workspace controller); the 0.2.0-rc.2 host does not implement them, so this generation's UI has no project editor and no editable source-folder list.
+- `src/` is vendored from a released revision rather than hand-written: re-vendor it when moving to another generation instead of patching around the differences.
+- No package tests; the in-tree suite stays in `packages/client/ui-workspace/tests` at the vendored revision.

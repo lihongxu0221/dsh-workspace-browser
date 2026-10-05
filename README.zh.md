@@ -1,104 +1,61 @@
 # dsh-workspace-browser
 
-DeepSeek Harness 工作区插件的独立抽取：侧边栏 **Workspace / Session 树**（`WorkspaceBrowser`）、**最近会话**、额外文件夹的 **项目编辑器**，以及会话英雄区的 **WorkspacePicker**，作为一个独立的 Cordis client 插件。
+dsh Web 客户端工作区插件的独立抽取：侧边栏 **Workspaces / Recents** 树（置顶、重命名、派生、归档等行操作）与会话英雄区的 **workspace picker**，打包为独立的 Cordis client 插件。
 
-本次抽取基于 deepseek-harness 的 **winexeNew** 分支（`packages/client/ui-workspace`）；harness 仓库未被修改。
+## 目标世代
 
-## 必需：winexeNew 数据层
+源码取自构建 **dsh 0.2.0-rc.2** 客户端的那个 harness 修订：`c1b47e41fc`（`release(dsh): 0.2.0-rc.2`），其树内包为 `@deepseek-ai/dsh-client-ui-workspace@0.2.0-rc.2`。2026-09-29 的桌面端构建跑的正是这份代码：它的 `//#region lib/types/client/...` 模块清单、`dsh.client.inject` 列表、以及 `lib/index.js`（node 半边）都与该修订逐字节一致。
 
-折叠／置顶／Recents、项目编辑器，以及主目录／额外文件夹控制，依赖 **winexeNew** 上的 Workspace Controller API（不含这些改动的 `master` 不够）：
+请在这一代（或仍带同一套客户端模块表的后续世代）上加载。若 bundle 需要的 UI 原子在宿主里不存在，它的 slot 根本不会注册；而 `cordis.patch.yml` 又关掉了树内的 `ui-workspace` 行，于是侧边栏的工作区区域**整块空白**——这正是本次移植要修掉的现象。切到新世代前请按 [兼容性验证](#兼容性验证) 先核对。
 
-- `workspace/workspace` — `WorkspaceView.folders`、主目录、额外文件夹（`src/folders.ts`）。
-- `api/workspace-controller` — `addFolder` / `removeFolder` / `setPrimaryFolder`。
-- Client 拆分包 — `dsh-api-session-controller`、`dsh-api-workspace-controller`、`dsh-client-store`、`dsh-util-workspace-path`（该分支没有 `dsh-client-runtime`）。
-
-要运行此插件，harness 必须是 winexeNew（或已另外包含上述包）；否则 `ctx.workspaces.addFolder(...)` 等方法不存在，插件无法通过类型检查或运行。
-
-## 结构
+## 目录
 
 ```
-src/
-  index.ts                 node 侧（空 apply —— 宿主生命周期占位）
-  client/
-    index.ts               apply：provideRoot + sidebar.workspaces + conversation.hero.workspace
-    contract/slots.ts      DirectoryFlowOwnerProps + 浏览器／选择器 prop/inject 份额
-    navigation.ts          ctx.uiWorkspace（打开／新建／分叉／归档）
-    rows/WorkspaceBrowser.tsx
-    WorkspacePicker.tsx    添加工作区菜单 + 目录流错误弹窗 + 英雄区包装
-    WorkspaceEditDialog.tsx
-    tree.ts / stores.ts / subagent-lineage.ts / locales.ts
-    *.module.css
+src/index.ts                  node 半边——空 apply，仅让该行出现在宿主组合里
+src/client/index.ts           apply：插槽注册 + ctx.uiWorkspace 服务
+src/client/contract/slots.ts  插槽 owner/occupant 契约
+src/client/rows/…             WorkspaceBrowser、Rows、AnimatedRows
+src/client/session-actions/…  置顶 / 重命名 / 派生 / 归档 行操作与提示
+src/client/navigation.ts      工作区归档与目录选择能力
+src/client/{tree,stores,pin-order,shortcuts,locales}.ts
+cordis.patch.yml              组合包补丁：停用 ui-workspace，插入本插件
+cordis.patch.dev.yml          同样替换，但用绝对路径，供 --patch 使用
+scripts/build-client.mjs      经 harness 的 client 预设产出 lib/client.js
 ```
 
-## 注册
-
-该插件声明两个 slot 入口和两个 `single` 子 hole：
-
-- `sidebar.workspaces` → `WorkspaceBrowser`（由 `ui-sidebar` 声明）
-- `sidebar.workspaces.directoryFlow` → 由目录选择占用方（`-native` / `-browse`）填充
-- `conversation.hero.workspace` → `WorkspacePicker`（由 `ui-conversation` 声明）
-- `conversation.hero.workspace.directoryFlow` → 同一占用方家族
-
-同时绑定全局 `useWorkspaces` hook（`slots.provideRoot`）并发布 `ctx.uiWorkspace`。
-
-属主契约 `DirectoryFlowOwnerProps` 从本包导出，供组合的目录选择器为其占用方做类型标注。
-
-## 互斥
-
-`sidebar.workspaces`、`conversation.hero.workspace`、`workspace` locale 命名空间和 `ctx.uiWorkspace` 与 in-tree `@deepseek-ai/dsh-client-ui-workspace` 是同一组身份，**二选一加载，不可同时**。
-
-## 依赖（peer）
-
-`@deepseek-ai/cordis`、`dsh-api-remotes`、`dsh-api-session-controller`、`dsh-api-workspace-controller`、`dsh-client-connection`、`dsh-client-locale`、`dsh-client-store`、`dsh-client-ui-conversation`、`dsh-client-ui-layout`、`dsh-client-ui-primitives`、`dsh-client-ui-renderer`、`dsh-client-ui-session`、`dsh-client-ui-sidebar`、`dsh-client-ui-slots`、`dsh-schedule`、`dsh-session` 与 `dsh-util-workspace-path`。这些都是 winexeNew 上的 deepseek-harness workspace 包。
-
-## 针对 deepseek-harness 的本地开发
-
-harness 包尚未发布到 npm，且内部依赖使用 `workspace:` 协议，因此 `npm install` 无法从 registry 解析。两条路径：
-
-1. **类型检查**：`tsconfig.json` extends `../../deepseek-harness/tsconfig.base.client.json`，并把 `@deepseek-ai/*` 映射到 winexeNew 的 `lib/types`（checkout：`D:\GitLocal\deepseek-harness`）。从 harness 运行：
-
-   ```
-   .\node_modules\.bin\tsc.cmd -p ..\DSH\dsh-workspace-browser\tsconfig.json
-   ```
-
-2. **包链接**：harness 包发布后，把 `peerDependencies` 切到 npm registry 再 `pnpm install`。在此之前，把本包加入 harness 的 `cordis.yml` profile（或用 `pnpm link`），并 **替换** `ui-workspace`。
-
-## 在 DSH Web GUI 中使用
-
-本包自带配置补丁与构建好的产物 `lib/`。
-
-- `cordis.patch.yml` — `dsh.bundle.patch` 声明的组合包补丁，按包名插入插件行，安装后的副本加载的就是它。必须留在 `files` 里，否则打包出来的包（git / npm 安装）不含该文件，DSH 会以 `failed to read overlay` 拒绝安装。
-- `cordis.patch.dev.yml` — 同样的替换，但用绝对路径，供不安装、直接跑本目录时使用。
-
-### 方式一：命令行启动时挂载补丁（最快捷）
-
-在 `deepseek-harness` 根目录下执行：
-
-```powershell
-pnpm dsh web --patch D:\GitLocal\DSH\dsh-workspace-browser\cordis.patch.dev.yml
-```
-
-启动后在浏览器访问或整页刷新 `http://127.0.0.1:8080`，即可看到本插件生效。
-
-验证配置是否正确覆盖：
-
-```powershell
-pnpm dsh web --patch D:\GitLocal\DSH\dsh-workspace-browser\cordis.patch.dev.yml --dump-config
-```
-
-在输出中应能看到原版 `ui-workspace` 的 `disabled: true`，且新增加了本插件 `ui-workspace-browser`。
-
-### 方式二：持久安装进 profile
+## 安装
 
 ```powershell
 dsh plugin --profile desktop add github:lihongxu0221/dsh-workspace-browser
 ```
 
-DSH 校验通过后会把 `cordis.patch.yml` 作为 profile 层追加进去；本地目录同样可以（`dsh plugin --profile desktop add D:\GitLocal\DSH\dsh-workspace-browser`）。
+GUI 里的插件管理器等价。`cordis.patch.yml` 由 `dsh.bundle.patch` 声明，必须留在 `files` 里：打包后（git 或 npm 安装）缺了它，DSH 会以 `failed to read overlay` 拒绝安装。
 
-## 已知缺口
+本插件与树内插件抢占同一批 slot、同一 `workspace` 语言命名空间与同一个 `ctx.uiWorkspace` 服务，因此补丁停用 `ui-workspace`、改载本插件，两者不要同时加载。
 
-- 无包内测试（in-tree 覆盖仍在 `packages/client/ui-workspace/tests`）。
-- 类型检查读 harness `lib/types`，并用 `src/client/harness-lib-shims.d.ts` 补上 `IWorkspaces.unarchiveSession`（winexeNew 源码有，最近一次 emit 没有）。
-- 后续 in-tree `ui-workspace` 变更不会自动同步。
-- `files` 是白名单，profile 安装拿到的只有打包内容：运行时要从包目录读取的任何文件（现在是补丁文件，以后可能是数据文件）都必须列进去。
+## 构建
+
+```powershell
+pnpm install
+pnpm run typecheck              # 对着 devDependencies 里钉住的世代做类型检查
+pnpm run build                  # tsc：src -> lib/types（client 预设消费它）
+node scripts/build-client.mjs   # harness 的 client 预设：lib/types -> lib/client.js + lib/index.js
+```
+
+`scripts/build-client.mjs` 使用 dsh 源码 checkout 里的 client 打包预设（`packages/client/tsdown.client.ts`，默认 `..\..\deepseek-harness`，可用 `$DSH_HARNESS` 或参数覆盖）。该预设通过 `packages/<group>/<dir>/package.json` 定位包，所以脚本会在 checkout 内临时放一个"门面包"，把本仓库的 `node_modules` 链进去，按 Client 构建面跑 tsdown，把产物拷回后删除临时目录——checkout 本身不留改动。
+
+## 兼容性验证
+
+真正能挡住"世代错配"的门禁是**钉住的类型面**：`devDependencies` 把每个 `@deepseek-ai/*` 固定到目标世代（`0.2.0-rc.2`），于是任何该世代没有的原子、prop 或服务都会让 `pnpm run typecheck` 直接失败。切换世代时，先重新钉版本，再按类型检查的报错改。
+
+需要更贴近运行期的核对时，把 bundle 的依赖面与宿主构建对比：
+
+1. 从 `resources/app.asar` 里取出宿主自带的那份 `dsh/node_modules/@deepseek-ai/dsh-client-ui-workspace/lib/client.js` 及其 `lib/index.js`。
+2. 对比两者的 `//#region lib/types/...` 模块清单，以及每个外部模块被用到的成员集合（`_deepseek_ai_dsh_client_ui_primitives.X`、`_deepseek_ai_dsh_client_store.X`、`_deepseek_ai_cordis.X`、`react.X`、`react_jsx_runtime.X`）。两者必须相同或为子集；多出来的成员意味着宿主满足不了这份 bundle。
+3. 逐个核对用到的 primitives 符号是否出现在宿主的导出清单里（即那条以 `IconSearchOutlineMedium` 出现的 `export { … }`）。
+
+## 已知缺口与有意差异
+
+- **没有额外文件夹、没有项目编辑器。** 那是更新世代的 harness 能力（workspace controller 的 `addFolder` / `removeFolder` / `setPrimaryFolder`），0.2.0-rc.2 宿主没有实现，因此这一代的 UI 里没有项目编辑器，也没有可编辑的源文件夹列表。
+- `src/` 是从已发布修订整份取用而非手写：换世代时整份重新取用，不要在差异上打补丁。
+- 无包内测试；树内测试留在所取用修订的 `packages/client/ui-workspace/tests`。
