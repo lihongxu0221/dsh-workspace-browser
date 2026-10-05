@@ -6,6 +6,8 @@
 /** Simplified Chinese dictionary (the key-set source of truth). */
 export declare const zh: {
     'defaultWorkspace.failed': string;
+    'draft.workspaceRequired': string;
+    'draft.initializationFailed': string;
     'group.ungrouped': string;
     'session.new': string;
     'session.untitled': string;
@@ -16,6 +18,9 @@ export declare const zh: {
     'shortcut.forkFailed': string;
     'section.workspaces': string;
     'section.sessions': string;
+    'section.workspaces.toggle': string;
+    'section.recents': string;
+    'section.recents.toggle': string;
     'viewOptions.label': string;
     'groupBy.label': string;
     'groupBy.workspace': string;
@@ -34,6 +39,8 @@ export declare const zh: {
     'empty.noneArchived': string;
     'empty.viewOthers': string;
     'empty.noMatches': string;
+    'empty.workspaces': string;
+    'empty.recents': string;
     'workspace.add': string;
     'search.sessions.aria': string;
     'search.placeholder': string;
@@ -47,6 +54,21 @@ export declare const zh: {
     'conflict.named': string;
     'folderError.title': string;
     'folderError.retry': string;
+    'menu.editProject': string;
+    'menu.removeFolder': string;
+    'field.projectName': string;
+    'edit.project.title': string;
+    'edit.project.sources': string;
+    'edit.project.primary': string;
+    'edit.project.setPrimary': string;
+    'edit.project.addFolder': string;
+    'edit.project.removeFolder.aria': string;
+    'edit.project.remove': string;
+    'edit.project.saving': string;
+    'hover.pin': string;
+    'hover.unpin': string;
+    'hover.sessions.one': string;
+    'hover.sessions.other': string;
     rename: string;
     'rename.workspace.title': string;
     'rename.session.title': string;
@@ -123,6 +145,8 @@ export type WorkspaceKey = keyof typeof zh;
 /** English dictionary, checked complete against the zh key set. */
 export declare const en: {
     'defaultWorkspace.failed': string;
+    'draft.workspaceRequired': string;
+    'draft.initializationFailed': string;
     'group.ungrouped': string;
     'session.new': string;
     'session.untitled': string;
@@ -133,6 +157,9 @@ export declare const en: {
     'shortcut.forkFailed': string;
     'section.workspaces': string;
     'section.sessions': string;
+    'section.workspaces.toggle': string;
+    'section.recents': string;
+    'section.recents.toggle': string;
     'viewOptions.label': string;
     'groupBy.label': string;
     'groupBy.workspace': string;
@@ -151,6 +178,8 @@ export declare const en: {
     'empty.noneArchived': string;
     'empty.viewOthers': string;
     'empty.noMatches': string;
+    'empty.workspaces': string;
+    'empty.recents': string;
     'workspace.add': string;
     'search.sessions.aria': string;
     'search.placeholder': string;
@@ -164,6 +193,21 @@ export declare const en: {
     'conflict.named': string;
     'folderError.title': string;
     'folderError.retry': string;
+    'menu.editProject': string;
+    'menu.removeFolder': string;
+    'field.projectName': string;
+    'edit.project.title': string;
+    'edit.project.sources': string;
+    'edit.project.primary': string;
+    'edit.project.setPrimary': string;
+    'edit.project.addFolder': string;
+    'edit.project.removeFolder.aria': string;
+    'edit.project.remove': string;
+    'edit.project.saving': string;
+    'hover.pin': string;
+    'hover.unpin': string;
+    'hover.sessions.one': string;
+    'hover.sessions.other': string;
     rename: string;
     'rename.workspace.title': string;
     'rename.session.title': string;

@@ -25,6 +25,12 @@ type WorkspaceViewState = {
     sessionOrderByAccount: Record<string, string[]>;
     /** Archived-row visibility; omitted in pre-filter v5 snapshots and read as 'default'. */
     archivedFilter?: ArchivedFilter;
+    /** Workspace ids kept at the front of the grouped list, in pin order. */
+    pinnedWorkspaceIds: string[];
+    /** Whether the Workspaces section is expanded. */
+    workspacesOpen: boolean;
+    /** Whether the Recent sessions section is expanded. */
+    recentsOpen: boolean;
 };
 type SessionOrderSource = {
     members: Readonly<Record<string, readonly SessionId[]>>;
@@ -44,6 +50,10 @@ type WorkspaceViewActions = {
     setSessionOrder: (draft: WorkspaceViewState, accountKey: string, order: readonly string[], initialOrders: Readonly<Record<string, readonly string[]>>) => void;
     pinSessionOrder: (draft: WorkspaceViewState, sessionId: string, accountKeys: readonly string[], source: SessionOrderSource) => void;
     setArchivedFilter: (draft: WorkspaceViewState, filter: ArchivedFilter) => void;
+    pinWorkspace: (draft: WorkspaceViewState, workspaceId: string) => void;
+    unpinWorkspace: (draft: WorkspaceViewState, workspaceId: string) => void;
+    setWorkspacesOpen: (draft: WorkspaceViewState, open: boolean) => void;
+    setRecentsOpen: (draft: WorkspaceViewState, open: boolean) => void;
 };
 /**
  * Create the workspace browser viewing store handle.

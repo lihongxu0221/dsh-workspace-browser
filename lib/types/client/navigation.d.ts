@@ -4,8 +4,11 @@ import type { ClientRemote, DirectoryListing, RemoteFailure } from '@deepseek-ai
 import type { ISessions, SessionTarget } from '@deepseek-ai/dsh-api-session-controller/client';
 import type { IWorkspaces, WorkspaceId } from '@deepseek-ai/dsh-api-workspace-controller/client';
 import type { SessionId } from '@deepseek-ai/dsh-session/types';
+import type { DraftInitializationOptions } from '@deepseek-ai/dsh-client-ui-conversation/client';
 import type { RowToast } from './contract/slots.ts';
 import type { WorkspaceViewStoreActions } from './stores.ts';
+/** Optional content preparation for the resolved target Session. */
+export type StartSessionOptions = DraftInitializationOptions;
 /** Workspace archive and directory operations consumed by Client UI domains. */
 export interface UiWorkspace {
     /**
@@ -40,8 +43,9 @@ export interface UiWorkspace {
      * Start a New Session flow and navigate to its Session; a creation the Host
      * refuses is shown through the Workspace notice and leaves the selection as it was.
      * @param workspaceId - explicit target; absent inherits the current or most recent Workspace.
+     * @param options - initial content; existing text or attachments are preserved unless clearPreviousDraft is true.
      */
-    startSession(workspaceId?: WorkspaceId): void;
+    startSession(workspaceId?: WorkspaceId, options?: StartSessionOptions): void;
     /**
      * Archive a Session and clear it when it is the current selection.
      * @param sessionId - Session to archive.
@@ -127,7 +131,9 @@ declare class UiWorkspaceService extends Service implements UiWorkspace {
     openSession(target: SessionTarget): void;
     openWorkspace(workspaceId: WorkspaceId, beforeOpen?: (sessionId: SessionId) => void): Promise<void>;
     forkSession(sessionId: SessionId, onCreated?: (childId: SessionId) => void): Promise<SessionId>;
-    startSession(workspaceId?: WorkspaceId): void;
+    startSession(workspaceId?: WorkspaceId, options?: StartSessionOptions): void;
+    private prepareDraft;
+    private draftPreparationFailed;
     archiveSession(sessionId: SessionId, options?: {
         readonly stopActivity?: boolean;
     }): Promise<void>;

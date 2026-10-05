@@ -20,7 +20,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import type { RemoteHostFacts } from '@deepseek-ai/dsh-api-remotes/client'
 import type { ISessions } from '@deepseek-ai/dsh-api-session-controller/client'
 import type {
-  IWorkspaces, SessionActivity, WorkspaceArchiveError, WorkspaceSnapshot,
+  IWorkspaces, SessionActivity, WorkspaceArchiveError, WorkspaceId, WorkspaceSnapshot,
 } from '@deepseek-ai/dsh-api-workspace-controller/client'
 import { createSnapshotStore } from '@deepseek-ai/dsh-client-store'
 import type { HostObservable, SnapshotSelectorHook } from '@deepseek-ai/dsh-client-ui-slots'
@@ -54,7 +54,7 @@ import { RowActionToast } from './session-actions/RowActionToast.tsx'
 import { WorkspacePicker } from './WorkspacePicker.tsx'
 import { en, zh, type WorkspaceKey } from './locales.ts'
 
-export type { UiWorkspace } from './navigation.ts'
+export type { StartSessionOptions, UiWorkspace } from './navigation.ts'
 export type {
   DirectoryFlowOwnerProps, DirectoryFlowSlotName, DirectoryPickingHooks, DirectoryPickingInjected,
   MenuOpenState, RowToast, SessionRenameTarget, SessionRowOwnerProps, UseMenuOpenState, WorkspaceBrowserInjected,
@@ -228,6 +228,18 @@ export function apply(ctx: Context): void {
     undoArchive: unarchiveSession,
     showArchived: () => { viewInstance.actions.setArchivedFilter('show') },
   })
+  // Extra source folders are a newer workspace-controller capability: the
+  // deployed 0.2.0-rc.2 host exposes none of the three methods. Probe once and
+  // offer the project editor only where the host can actually honour it.
+  const folderApi = typeof workspaces.addFolder === 'function'
+    && typeof workspaces.removeFolder === 'function'
+    && typeof workspaces.setPrimaryFolder === 'function'
+    ? {
+        addFolder: (workspaceId: WorkspaceId, path: string) => workspaces.addFolder!(workspaceId, path),
+        removeFolder: (workspaceId: WorkspaceId, path: string) => workspaces.removeFolder!(workspaceId, path),
+        setPrimaryFolder: (workspaceId: WorkspaceId, path: string) => workspaces.setPrimaryFolder!(workspaceId, path),
+      }
+    : undefined
   const browserInjected = (): WorkspaceBrowserInjected => ({
     // Explicit group actions keep their target; unscoped New Session inherits
     // the current Session Workspace before the recent-Workspace fallback.
@@ -244,6 +256,11 @@ export function apply(ctx: Context): void {
     },
     unarchiveSession: async (sessionId) => { await uiWorkspace.unarchiveSession(sessionId) },
     createWorkspace: input => workspaces.create(input),
+    ...(folderApi === undefined ? {} : {
+      addFolder: folderApi.addFolder,
+      removeFolder: folderApi.removeFolder,
+      setPrimaryFolder: folderApi.setPrimaryFolder,
+    }),
     requestSearch: shortcutControls.search,
     requestAddWorkspace: shortcutControls.add,
     closeAddWorkspace: shortcutControls.closeAdd,

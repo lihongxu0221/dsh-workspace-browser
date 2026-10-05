@@ -49,6 +49,9 @@ export declare function ProjectRowItem({ group, containsCurrentDescendant, onTog
     actions?: {
         rename: () => void;
         delete: () => void;
+        edit?: () => void;
+        removeFolder?: (path: string) => void;
+        pin?: () => void;
     } | undefined;
     /** Present only for real Workspace rows in the grouped view. */
     drag?: WorkspaceRowDragProps | undefined;
@@ -95,11 +98,13 @@ export declare function SearchResultItem({ result, currentId, onOpen, onUnarchiv
  * @param props.t - the browser root's locale seat.
  * @returns the session row.
  */
-export declare function SessionNodeItem({ node, currentId, now, onOpen, onRenameRequest, renderSlot, onReveal, drag, t, }: {
+export declare function SessionNodeItem({ node, currentId, now, onOpen, onRenameRequest, renderSlot, onReveal, drag, rowKey, t, }: {
     node: SessionNode;
     currentId: string | undefined;
     now: number;
     onOpen: (id: SessionNode['id']) => void;
+    /** Stable animation key when the same Session also renders in another section. */
+    rowKey?: string;
     /** Open the rename dialog from a title double-click (id + current title). */
     onRenameRequest: (id: SessionNode['id'], currentTitle: string) => void;
     /** Scroll this row into view after search navigation, then acknowledge it. */

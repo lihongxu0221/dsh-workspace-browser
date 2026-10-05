@@ -40,9 +40,18 @@ export function createWorkspaceShortcutControls(): WorkspaceShortcutControls {
   return {
     state,
     search: () => { state.set({ ...state.getSnapshot(), searchRequest: state.getSnapshot().searchRequest + 1 }) },
-    add: () => { state.set(state.getSnapshot().directoryBusy ? state.getSnapshot() : { ...state.getSnapshot(), addRequested: true }) },
-    closeAdd: () => { state.set({ ...state.getSnapshot(), addRequested: false }) },
-    directoryBusy: (busy: boolean) => { state.set({ ...state.getSnapshot(), directoryBusy: busy }) },
+    add: () => {
+      const current = state.getSnapshot()
+      if (!current.directoryBusy && !current.addRequested) state.set({ ...current, addRequested: true })
+    },
+    closeAdd: () => {
+      const current = state.getSnapshot()
+      if (current.addRequested) state.set({ ...current, addRequested: false })
+    },
+    directoryBusy: (busy: boolean) => {
+      const current = state.getSnapshot()
+      if (current.directoryBusy !== busy) state.set({ ...current, directoryBusy: busy })
+    },
     rename: (sessionId: SessionId, currentTitle: string) => {
       state.set({ ...state.getSnapshot(), renameTarget: { sessionId, currentTitle } })
     },

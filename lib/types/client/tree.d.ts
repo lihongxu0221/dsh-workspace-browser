@@ -48,6 +48,8 @@ export interface GroupNode {
     /** Backing Workspace id; absent only for the ungrouped bucket. */
     workspaceId: WorkspaceId | undefined;
     cwd: string | undefined;
+    /** Extra directories besides the primary path; empty for the ungrouped bucket. */
+    folders: readonly string[];
     /** Workspace creation time (epoch ms); absent only for the ungrouped bucket. */
     createdAt: number | undefined;
     label: string;
@@ -56,6 +58,8 @@ export interface GroupNode {
     expanded: boolean;
     /** The group contains the selected session (active folder tint; supplied here so the renderer never scans). */
     containsCurrent: boolean;
+    /** True when this Workspace sits in the browser-local pinned prefix. */
+    pinned: boolean;
     /** Visible session rows (empty while the group is folded). */
     sessions: readonly SessionNode[];
 }
@@ -85,7 +89,13 @@ export interface TreeView {
     expandedGroups: readonly string[];
     /** Browser-local order for Sessions without a backing Workspace account. */
     ungroupedOrder?: readonly string[];
+    /** Workspace ids kept at the front of the grouped list, in pin order. */
+    pinnedWorkspaceIds?: readonly string[];
 }
+/** Workspace row plus extra folders the feed may project beside the typed view. */
+type ListedWorkspace = WorkspaceView & {
+    readonly folders?: readonly string[];
+};
 /**
  * Directory display label: basename of the path (both separators accepted).
  * Ungrouped-bucket fallback for surfaces without a workspace title.
@@ -148,7 +158,7 @@ export interface SessionRowState {
  * @param view - local expansion arrays.
  * @returns group sections in render order.
  */
-export declare function deriveGroups(list: SessionListState, workspaces: readonly WorkspaceView[], rowState: SessionRowState, statuses: SessionStatuses, view: TreeView): GroupNode[];
+export declare function deriveGroups(list: SessionListState, workspaces: readonly ListedWorkspace[], rowState: SessionRowState, statuses: SessionStatuses, view: TreeView): GroupNode[];
 /**
  * Select complete flat-list membership, independently of archive visibility.
  * @param list - sessions list snapshot.
