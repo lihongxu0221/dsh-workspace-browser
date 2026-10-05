@@ -50,6 +50,21 @@ const cleanup = () => {
   rmSync(stage, { recursive: true, force: true })
 }
 
+/** Strip the checkout path from the bundle's region banner and the map's sources. */
+const normalizeClientArtifacts = (files) => {
+  for (const file of files) {
+    const path = join(repo, 'lib', file)
+    const before = readFileSync(path, 'utf8')
+    const after = before
+      .replace(/^(\s*\/\/#region )(?:\.\.\/)+[^\n]*?node_modules\//gm, '$1node_modules/')
+      .replace(/"(?:\.\.\/)+[^"\n]*?node_modules\//g, '"node_modules/')
+    if (after !== before) {
+      writeFileSync(path, after)
+      console.log(`build-client: normalized checkout paths in lib/${file}`)
+    }
+  }
+}
+
 try {
   mkdirSync(join(stage, 'lib'), { recursive: true })
   writeFileSync(join(stage, 'package.json'), readFileSync(join(repo, 'package.json')))
@@ -72,6 +87,13 @@ try {
       copyFileSync(join(stage, 'lib', file), join(repo, 'lib', file))
       console.log(`build-client: wrote lib/${file}`)
     }
+    // The preset banners an inlined node_modules package with the checkout path
+    // (`//#region ../../../../<drive>/<dir>/node_modules/...`, and the same path in
+    // the map's `sources`). Rewrite it to a stable form: otherwise every rebuild
+    // from another directory dirties the tree, and the published bundle would
+    // carry the developer's local path. Harness sources are already rebased to
+    // `../../../packages/...`, so this is the only path-dependent output.
+    normalizeClientArtifacts(['client.js', 'client.js.map'])
   }
 } finally {
   cleanup()
