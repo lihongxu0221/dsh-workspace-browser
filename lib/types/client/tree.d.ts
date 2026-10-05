@@ -16,6 +16,20 @@ export declare const UNGROUPED_KEY = "";
  * @returns owning Workspace id, or {@link UNGROUPED_KEY} when no Workspace accounts for it.
  */
 export declare function owningGroupKey(workspaces: readonly WorkspaceView[], sessionId: SessionId): string;
+/** Whether one Session cwd lies inside one of the given source folders. */
+export declare function cwdInsideFolders(cwd: string | undefined, folders: readonly string[]): boolean;
+/**
+ * Fold this plugin's own source folders into the Workspace list the browser
+ * derives from: their paths join `folders`, and Sessions the host left
+ * ungrouped whose cwd lies inside one of them join that Workspace's
+ * membership. The host owns membership for its own paths, so only unclaimed
+ * Sessions are borrowed.
+ * @param workspaces - Workspace views as the host reported them.
+ * @param list - live Session list (each summary carries its cwd).
+ * @param extraFolders - plugin-owned extra folders per Workspace id.
+ * @returns the same views, with plugin folders and borrowed members folded in.
+ */
+export declare function mergePluginFolders<W extends ListedWorkspace>(workspaces: readonly W[], list: SessionListState, extraFolders: Readonly<Record<string, readonly string[]>> | undefined): W[];
 /** Pending interaction kinds with dedicated Workspace-row presentation. */
 export type SessionPendingInteractionStatus = 'approval' | 'plan-review' | 'question';
 type SessionStatuses = SessionStatusSnapshot;
@@ -93,7 +107,7 @@ export interface TreeView {
     pinnedWorkspaceIds?: readonly string[];
 }
 /** Workspace row plus extra folders the feed may project beside the typed view. */
-type ListedWorkspace = WorkspaceView & {
+export type ListedWorkspace = WorkspaceView & {
     readonly folders?: readonly string[];
 };
 /**

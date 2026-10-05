@@ -8,12 +8,15 @@
 
 `cordis.patch.yml` 停用树内的 `ui-workspace` 行——两者抢占同一批 slot、同一 `workspace` 语言命名空间与同一个 `ctx.uiWorkspace` 服务——改载本插件。因此若本插件的 slot 没能注册，工作区区域会**整块空白**；这也是安装前必须先核对客户端依赖面（见「验证」）的原因。
 
-## 宿主能力探测
+## 宿主没有文件夹 API 时的源文件夹
 
-额外源文件夹是唯一需要宿主支持的功能：`addFolder`、`removeFolder`、`setPrimaryFolder` 以及工作区视图上的 `folders` 投影只存在于更新的 workspace controller。[src/client/host-capabilities.d.ts](src/client/host-capabilities.d.ts) 把它们声明为可选，`apply` 在运行期探测：
+`addFolder` / `removeFolder` / `setPrimaryFolder` 以及工作区视图上的 `folders` 投影只存在于更新的 workspace controller；出厂宿主一个都没有。于是这些功能由插件自己承担：
 
-- 宿主有 → 项目编辑器可用，源文件夹功能正常；
-- 宿主没有（已部署的 0.2.0-rc.2 构建）→ 行菜单不再出现「编辑项目」，插件绝不调用缺失的方法；最近会话、可折叠分区、置顶、重命名/派生/归档、搜索、快捷键照常工作。
+- 文件夹列表存在插件自己的持久化视图 store 里（`persist: 'dsh.workspace.view.v5'`）；
+- 浏览器把这些文件夹并入它派生的 Workspace 列表（[src/client/tree.ts](src/client/tree.ts) 的 `mergePluginFolders`），并按会话 `cwd` 是否落在列表内把会话归到该工作区——宿主会把这些会话留作未分组，所以只"借用"未被任何工作区认领的会话；
+- *设为主要* 记住一个文件夹，并用该 cwd 创建新会话（[src/client/navigation.ts](src/client/navigation.ts) 的 `sessions.create({ workspaceId, cwd })`），让"新会话落在那里"这个用户可见语义成立，而宿主的工作区路径不动。
+
+当宿主**确实**提供文件夹 API 时（[src/client/host-capabilities.d.ts](src/client/host-capabilities.d.ts) 把这三个方法声明为可选），同一套编辑器动作会改走宿主。
 
 标签 `appgen-0.3.0` 保留了更早那版"仅对齐宿主功能"的构建（功能集与宿主完全一致），供缺少新客户端模块表的宿主使用。
 
@@ -56,10 +59,11 @@ node scripts/build-client.mjs   # harness 的 client 预设：lib/types -> lib/c
 
 1. **类型面**：`devDependencies` 把每个 `@deepseek-ai/*` 固定到更新的已发布世代（`0.2.1-alpha.1`），任何该世代没有的原子、prop 或服务都会让 `pnpm run typecheck` 失败。三个宿主文件夹 API 有意不在已发布类型里，改为本地声明的可选能力——插件能同时为两种宿主编译，靠的就是这一点。
 2. **产物依赖面**：与宿主构建对比——从 `resources/app.asar` 取出宿主自带的 `dsh/node_modules/@deepseek-ai/dsh-client-ui-workspace/lib/client.js`，比较两者的 `//#region lib/types/...` 模块清单、以及每个模块表条目被用到的成员集合（`_deepseek_ai_dsh_client_ui_primitives.X`、`_deepseek_ai_dsh_client_store.X`、`_deepseek_ai_dsh_cordis.X`、`react.X`、`react_jsx_runtime.X`），并把用到的 primitives 符号逐个对照宿主那条 `export { … }` 清单。「多出来的模块」（项目编辑器）与「多出来的成员」只有在宿主确实导出它们时才算安全。
-3. **运行期**：用宿主自带的运行时 + 一次性 profile 装上本插件启动，再用无头浏览器加载其界面，断言新增功能确实渲染（树内插件没有的 `最近会话 / Recents` 分区）、在缺少文件夹 API 的宿主上项目编辑器不出现、且控制台无错误。
+3. **运行期**：用宿主自带的运行时 + 一次性 profile 装上本插件启动，再用无头浏览器加载其界面，断言新增功能确实渲染：树内插件没有的 `最近会话 / Recents` 分区、工作区行菜单里出现 *编辑项目*、项目编辑器对话框里有 *源文件夹* 与 *添加文件夹*、并且控制台无错误。
 
 ## 已知缺口
 
-- **额外文件夹需要宿主支持。** 在已部署的 0.2.0-rc.2 宿主上，项目编辑器是"不显示"而不是"报错"：那里的数据层不存在，而外部插件无法给宿主添加 workspace API。要让它在该宿主上可用，得由插件自建文件夹存储与按文件夹的会话分组——这一步有意尚未做。
+- **插件级"主要文件夹"不是改宿主路径。** 它决定*新*会话的 cwd；其它任何解析工作区目录的地方看到的仍是宿主路径，因为出厂宿主没有重指路径的 API。
+- **文件夹归属按会话 `cwd` 匹配**，且只"借用"宿主留作未分组的会话；宿主已归到某个工作区下的会话不会被搬走。
 - `src/` 取自 `winexeNew` 而非手写：换宿主世代时整份重新取用，并保留能力探测。
 - 无包内测试；树内测试留在所取用修订的 `packages/client/ui-workspace/tests`。

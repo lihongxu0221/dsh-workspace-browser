@@ -20,7 +20,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import type { RemoteHostFacts } from '@deepseek-ai/dsh-api-remotes/client'
 import type { ISessions } from '@deepseek-ai/dsh-api-session-controller/client'
 import type {
-  IWorkspaces, SessionActivity, WorkspaceArchiveError, WorkspaceId, WorkspaceSnapshot,
+  IWorkspaces, SessionActivity, WorkspaceArchiveError, WorkspaceId, WorkspaceSnapshot, WorkspaceView,
 } from '@deepseek-ai/dsh-api-workspace-controller/client'
 import { createSnapshotStore } from '@deepseek-ai/dsh-client-store'
 import type { HostObservable, SnapshotSelectorHook } from '@deepseek-ai/dsh-client-ui-slots'
@@ -117,6 +117,7 @@ export function apply(ctx: Context): void {
   const notify = (toast: RowToast): void => { rowToast.set({ ...toast, seq: ++toastSeq }) }
   const uiWorkspace = new UiWorkspaceService(
     ctx, ctx.remote.directoryPicker, workspaces, sessions, viewInstance.actions, notify,
+    workspaceId => viewInstance.store.getSnapshot().primaryFolderByWorkspace?.[workspaceId],
   )
   ctx.slots.provideRoot({ hooks: { workspaces: workspaces.list } })
   ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-workspace: dictionaries')
@@ -228,9 +229,30 @@ export function apply(ctx: Context): void {
     undoArchive: unarchiveSession,
     showArchived: () => { viewInstance.actions.setArchivedFilter('show') },
   })
-  // Extra source folders are a newer workspace-controller capability: the
-  // deployed 0.2.0-rc.2 host exposes none of the three methods. Probe once and
-  // offer the project editor only where the host can actually honour it.
+  // Extra source folders: the newer host owns them; the shipped 0.2.0-rc.2 host
+  // has none of the three methods, so the plugin keeps the folder list in its
+  // own persisted viewing store and answers with a view carrying that list.
+  // Either way the project editor works; only who owns the projection differs.
+  const folderView = (workspaceId: WorkspaceId): WorkspaceView & { readonly folders: readonly string[] } => {
+    const view = workspaces.list.getSnapshot().items.find(item => item.workspaceId === workspaceId)
+    if (view === undefined) throw new Error('unknown workspace')
+    const folders = viewInstance.store.getSnapshot().extraFoldersByWorkspace?.[workspaceId] ?? []
+    return { ...view, folders: [...folders] }
+  }
+  const pluginFolders = {
+    addFolder: async (workspaceId: WorkspaceId, path: string): Promise<WorkspaceView> => {
+      viewInstance.actions.addExtraFolder(workspaceId, path)
+      return folderView(workspaceId)
+    },
+    removeFolder: async (workspaceId: WorkspaceId, path: string): Promise<WorkspaceView> => {
+      viewInstance.actions.removeExtraFolder(workspaceId, path)
+      return folderView(workspaceId)
+    },
+    setPrimaryFolder: async (workspaceId: WorkspaceId, path: string): Promise<WorkspaceView> => {
+      viewInstance.actions.setExtraPrimary(workspaceId, path)
+      return folderView(workspaceId)
+    },
+  }
   const folderApi = typeof workspaces.addFolder === 'function'
     && typeof workspaces.removeFolder === 'function'
     && typeof workspaces.setPrimaryFolder === 'function'
@@ -239,7 +261,7 @@ export function apply(ctx: Context): void {
         removeFolder: (workspaceId: WorkspaceId, path: string) => workspaces.removeFolder!(workspaceId, path),
         setPrimaryFolder: (workspaceId: WorkspaceId, path: string) => workspaces.setPrimaryFolder!(workspaceId, path),
       }
-    : undefined
+    : pluginFolders
   const browserInjected = (): WorkspaceBrowserInjected => ({
     // Explicit group actions keep their target; unscoped New Session inherits
     // the current Session Workspace before the recent-Workspace fallback.
@@ -256,11 +278,9 @@ export function apply(ctx: Context): void {
     },
     unarchiveSession: async (sessionId) => { await uiWorkspace.unarchiveSession(sessionId) },
     createWorkspace: input => workspaces.create(input),
-    ...(folderApi === undefined ? {} : {
-      addFolder: folderApi.addFolder,
-      removeFolder: folderApi.removeFolder,
-      setPrimaryFolder: folderApi.setPrimaryFolder,
-    }),
+    addFolder: folderApi.addFolder,
+    removeFolder: folderApi.removeFolder,
+    setPrimaryFolder: folderApi.setPrimaryFolder,
     requestSearch: shortcutControls.search,
     requestAddWorkspace: shortcutControls.add,
     closeAddWorkspace: shortcutControls.closeAdd,

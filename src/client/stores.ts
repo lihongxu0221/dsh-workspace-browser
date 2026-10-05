@@ -34,6 +34,18 @@ type WorkspaceViewState = {
   workspacesOpen: boolean
   /** Whether the Recent sessions section is expanded. */
   recentsOpen: boolean
+  /**
+   * Extra source folders per Workspace, owned by this plugin: the shipped host
+   * has no folder APIs, so the browser keeps them itself and attributes
+   * Sessions to a Workspace by matching their cwd against this list.
+   */
+  extraFoldersByWorkspace: Record<string, string[]>
+  /**
+   * Plugin-level primary folder per Workspace. It cannot repoint the host
+   * workspace, but it is the cwd new Sessions are created with, so "set as
+   * primary" keeps its user-visible meaning on a host without the API.
+   */
+  primaryFolderByWorkspace: Record<string, string>
 }
 
 type SessionOrderSource = {
@@ -76,6 +88,12 @@ type WorkspaceViewActions = {
   unpinWorkspace: (draft: WorkspaceViewState, workspaceId: string) => void
   setWorkspacesOpen: (draft: WorkspaceViewState, open: boolean) => void
   setRecentsOpen: (draft: WorkspaceViewState, open: boolean) => void
+  /** Register one extra source folder for a Workspace (plugin-owned). */
+  addExtraFolder: (draft: WorkspaceViewState, workspaceId: string, path: string) => void
+  /** Drop one extra source folder; also clears it as the primary when it was. */
+  removeExtraFolder: (draft: WorkspaceViewState, workspaceId: string, path: string) => void
+  /** Remember the folder new Sessions for this Workspace are created in. */
+  setExtraPrimary: (draft: WorkspaceViewState, workspaceId: string, path: string) => void
 }
 
 /** Copy read-only projections into the persisted mutable store representation. */
@@ -100,6 +118,8 @@ export function createWorkspaceViewStore(): EngineStoreHandle<WorkspaceViewState
       pinnedWorkspaceIds: [],
       workspacesOpen: true,
       recentsOpen: true,
+      extraFoldersByWorkspace: {},
+      primaryFolderByWorkspace: {},
     }),
     persist: 'dsh.workspace.view.v5',
     actions: {
@@ -123,6 +143,18 @@ export function createWorkspaceViewStore(): EngineStoreHandle<WorkspaceViewState
         d.pinnedWorkspaceIds = pinned.filter(id => retained.has(id))
         if (typeof d.workspacesOpen !== 'boolean') d.workspacesOpen = true
         if (typeof d.recentsOpen !== 'boolean') d.recentsOpen = true
+        // Pre-folder snapshots carry neither map; read them as empty rather than
+        // migrating or dropping the rest of the viewing state. Keep the caller's
+        // object identity when nothing is pruned: a retain pass must not look
+        // like a state change to store subscribers.
+        const extra = d.extraFoldersByWorkspace ?? {}
+        const extraRetained = Object.entries(extra).filter(([key]) => retained.has(key))
+        if (extraRetained.length !== Object.keys(extra).length) d.extraFoldersByWorkspace = Object.fromEntries(extraRetained)
+        else d.extraFoldersByWorkspace = extra
+        const primary = d.primaryFolderByWorkspace ?? {}
+        const primaryRetained = Object.entries(primary).filter(([key]) => retained.has(key))
+        if (primaryRetained.length !== Object.keys(primary).length) d.primaryFolderByWorkspace = Object.fromEntries(primaryRetained)
+        else d.primaryFolderByWorkspace = primary
       },
       syncSessionOrders: (d, orders) => {
         if (d.orderBy !== 'manual') return
@@ -153,6 +185,27 @@ export function createWorkspaceViewStore(): EngineStoreHandle<WorkspaceViewState
       },
       setWorkspacesOpen: (d, open: boolean) => { d.workspacesOpen = open },
       setRecentsOpen: (d, open: boolean) => { d.recentsOpen = open },
+      addExtraFolder: (d, workspaceId: string, path: string) => {
+        const folders = d.extraFoldersByWorkspace?.[workspaceId] ?? []
+        if (folders.includes(path)) return
+        d.extraFoldersByWorkspace = { ...d.extraFoldersByWorkspace, [workspaceId]: [...folders, path] }
+      },
+      removeExtraFolder: (d, workspaceId: string, path: string) => {
+        const folders = d.extraFoldersByWorkspace?.[workspaceId] ?? []
+        const remaining = folders.filter(folder => folder !== path)
+        const byWorkspace = { ...d.extraFoldersByWorkspace }
+        if (remaining.length === 0) delete byWorkspace[workspaceId]
+        else byWorkspace[workspaceId] = remaining
+        d.extraFoldersByWorkspace = byWorkspace
+        if (d.primaryFolderByWorkspace?.[workspaceId] === path) {
+          const primary = { ...d.primaryFolderByWorkspace }
+          delete primary[workspaceId]
+          d.primaryFolderByWorkspace = primary
+        }
+      },
+      setExtraPrimary: (d, workspaceId: string, path: string) => {
+        d.primaryFolderByWorkspace = { ...d.primaryFolderByWorkspace, [workspaceId]: path }
+      },
     },
   })
 }

@@ -33,7 +33,7 @@ import type { PropsRenderSlots } from '@deepseek-ai/dsh-client-ui-slots'
 import type { WorkspaceBrowserProps } from '../contract/slots.ts'
 import type { ArchivedFilter, GroupNode, SessionNode, SessionOrderBy, SessionRowState } from '../tree.ts'
 import {
-  deriveFlat, deriveGroups, deriveSearchResults, orderByRecency, owningGroupKey, owningParentFolder,
+  deriveFlat, deriveGroups, deriveSearchResults, mergePluginFolders, orderByRecency, owningGroupKey, owningParentFolder,
   pinCurrentBlank, reconcileManualOrder, sessionMemberIds, UNGROUPED_KEY, visibleSessionIds,
 } from '../tree.ts'
 import { ProjectRowItem, SearchResultItem, SessionNodeItem } from './Rows.tsx'
@@ -1014,6 +1014,14 @@ export function WorkspaceBrowser({
     })),
     [storedWorkspaces, defaultWorkspaceName],
   )
+  // Plugin-owned source folders (the shipped host has no folder APIs) are folded
+  // into a separate list for the tree: keeping `workspaces` itself free of
+  // store-derived state matters, because the retain effect below depends on it.
+  const extraFoldersByWorkspace = useStore(s => s.extraFoldersByWorkspace)
+  const treeWorkspaces = useMemo(
+    () => mergePluginFolders(workspaces, list, extraFoldersByWorkspace),
+    [workspaces, list, extraFoldersByWorkspace],
+  )
   const workspacePhase = useWorkspaces(state => state.phase)
   const workspaceStreamState = useWorkspaces(state => state.state)
   const archivedSessionIds = useWorkspaces(state => state.archivedSessionIds)
@@ -1060,7 +1068,7 @@ export function WorkspaceBrowser({
     [orderState, archivedFilter],
   )
   const flatMemberIds = useMemo(() => sessionMemberIds(list), [list])
-  const orderedWorkspaces = useMemo(() => workspaces.map((workspace) => {
+  const orderedWorkspaces = useMemo(() => treeWorkspaces.map((workspace) => {
     const memberIds = workspace.sessionIds
     const baseOrder = orderBy === 'updated'
       ? orderByRecency(memberIds, list.byId)
@@ -1072,7 +1080,7 @@ export function WorkspaceBrowser({
         currentBlank !== undefined && memberIds.includes(currentBlank) ? currentBlank : undefined,
       ),
     }
-  }), [currentBlank, list.byId, orderBy, orderState, sessionOrderByAccount, workspaces])
+  }), [currentBlank, list.byId, orderBy, orderState, sessionOrderByAccount, treeWorkspaces])
   const orderedUngroupedSessionIds = useMemo(() => {
     const baseOrder = orderBy === 'updated'
       ? orderByRecency(ungroupedMemberIds, list.byId)
@@ -1576,7 +1584,7 @@ export function WorkspaceBrowser({
               useSessionStatus={useSessionStatus}
               open={openSearchResult}
               onUnarchive={onSessionUnarchive}
-              workspaces={workspaces}
+              workspaces={treeWorkspaces}
               archivedSessionIds={archivedSessionIds}
               archivedFilter={archivedFilter}
               query={normalizedQuery}
@@ -1633,7 +1641,7 @@ export function WorkspaceBrowser({
                 setRecentsOpen={actions.setRecentsOpen}
                 {...(addFolder === undefined ? {} : {
                   onEditRequest: (workspaceId) => {
-                    const workspace = storedWorkspaces.find(item => item.workspaceId === workspaceId)
+                    const workspace = treeWorkspaces.find(item => item.workspaceId === workspaceId)
                     if (workspace === undefined) return
                     const folders = workspaceExtraFolders(workspace)
                     setEditTarget({

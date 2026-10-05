@@ -8,12 +8,15 @@ The deployed client (**0.2.0-rc.2**, the 2026-09-29 Desktop build) ships a works
 
 `cordis.patch.yml` disables the in-tree `ui-workspace` row — both claim the same slots, locale namespace (`workspace`) and `ctx.uiWorkspace` service — and loads this plugin instead. A bundle whose slots never register therefore leaves the workspace region **empty**, which is why the client-half surface is checked against the host before any install (see Verification).
 
-## Host capability detection
+## Source folders on a host without the folder API
 
-Extra source folders are the one feature that needs host support: `addFolder`, `removeFolder`, `setPrimaryFolder` and the `folders` projection on a workspace view exist only on the newer workspace controller. [src/client/host-capabilities.d.ts](src/client/host-capabilities.d.ts) declares them optional and `apply` probes for them at runtime:
+`addFolder` / `removeFolder` / `setPrimaryFolder` and the `folders` projection on a workspace view exist only on the newer workspace controller; the shipped host has none of them. The plugin owns the feature there:
 
-- host has them → the project editor opens and source folders work;
-- host lacks them (the deployed 0.2.0-rc.2 build) → the row menu omits *Edit project* and the plugin never calls the missing methods; Recents, collapsible sections, pins, rename/fork/archive, search and shortcuts all still run.
+- the folder list lives in the plugin's own persisted viewing store (`persist: 'dsh.workspace.view.v5'`);
+- the browser merges those folders into the Workspace list it derives from (`mergePluginFolders` in [src/client/tree.ts](src/client/tree.ts)) and attributes Sessions to a Workspace by matching their `cwd` against the list — the host leaves such Sessions ungrouped, so only unclaimed ones are borrowed;
+- *set as primary* remembers a folder and creates new Sessions with that cwd (`sessions.create({ workspaceId, cwd })` in [src/client/navigation.ts](src/client/navigation.ts)), keeping the user-visible meaning — new Sessions land there — while the host workspace path stays untouched.
+
+Where the host *does* expose the folder API ([src/client/host-capabilities.d.ts](src/client/host-capabilities.d.ts) declares the three methods optional), the same editor actions route to it instead.
 
 The tag `appgen-0.3.0` keeps an earlier parity-only build (exactly the host's own feature set) for a host that lacks the newer client module table.
 
@@ -56,10 +59,11 @@ node scripts/build-client.mjs   # harness client preset: lib/types -> lib/client
 
 1. **Types.** `devDependencies` pins every `@deepseek-ai/*` package to the newer published generation (`0.2.1-alpha.1`), so `pnpm run typecheck` fails on any atom, prop or service that generation lacks. The three host folder APIs are intentionally absent from the published surface and are declared optional locally — that is what keeps the plugin compiling for both hosts.
 2. **Bundle surface.** Diff the bundle against the host build: extract the host's own `dsh/node_modules/@deepseek-ai/dsh-client-ui-workspace/lib/client.js` from `resources/app.asar`, then compare the `//#region lib/types/...` module lists and the member sets required from each module-table entry (`_deepseek_ai_dsh_client_ui_primitives.X`, `…dsh_client_store.X`, `_deepseek_ai_dsh_cordis.X`, `react.X`, `react_jsx_runtime.X`), and check every required primitives symbol against the host's single `export { … }` list. Extra modules (the project editor) and extra members are fine only when the host exports them.
-3. **Runtime.** Boot the host's own runtime against a throwaway profile with this bundle installed, then load the served UI in a headless browser and assert that the added features render (the `最近会话` / `Recents` section, which the in-tree plugin does not have), that the project editor stays away on a host without the folder APIs, and that the console reports no errors.
+3. **Runtime.** Boot the host's own runtime against a throwaway profile with this bundle installed, then load the served UI in a headless browser and assert that the added features render: the `最近会话` / `Recents` section (the in-tree plugin has no such key), a workspace row menu that offers *编辑项目*, a project editor dialog carrying *源文件夹* and *添加文件夹*, and a console with no errors.
 
 ## Known gaps
 
-- **Extra folders need a capable host.** On the deployed 0.2.0-rc.2 host the project editor is hidden rather than broken: its data layer does not exist there, and an external plugin cannot add host workspace APIs. Making it work on that host means giving the plugin its own folder store and session grouping by folder — deliberately not attempted yet.
+- **The plugin-level primary folder is not a host path change.** It decides the cwd of *new* Sessions; anything else that resolves the Workspace's directory still sees the host path, because the shipped host has no API to repoint it.
+- **Folder membership is matched by Session `cwd`**, and only Sessions the host left ungrouped are borrowed. A Session that the host already groups under its own Workspace stays there.
 - `src/` is vendored from `winexeNew` rather than hand-written: re-vendor it when moving to another host generation and keep the capability probes.
 - No package tests; the in-tree suite stays in `packages/client/ui-workspace/tests` at the vendored revision.

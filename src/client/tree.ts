@@ -31,6 +31,51 @@ export function owningGroupKey(
     ?.workspaceId as string | undefined) ?? UNGROUPED_KEY
 }
 
+/** Whether one Session cwd lies inside one of the given source folders. */
+export function cwdInsideFolders(cwd: string | undefined, folders: readonly string[]): boolean {
+  if (cwd === undefined || cwd === '') return false
+  // Windows paths compare case-insensitively; POSIX ones keep their case.
+  const normalize = (path: string): string => {
+    const trimmed = path.replace(/[\\/]+$/, '').replace(/\\/g, '/')
+    return /^[a-z]:\//i.test(trimmed) ? trimmed.toLowerCase() : trimmed
+  }
+  const target = normalize(cwd)
+  return folders.some((folder) => {
+    const base = normalize(folder)
+    return base !== '' && (target === base || target.startsWith(`${base}/`))
+  })
+}
+
+/**
+ * Fold this plugin's own source folders into the Workspace list the browser
+ * derives from: their paths join `folders`, and Sessions the host left
+ * ungrouped whose cwd lies inside one of them join that Workspace's
+ * membership. The host owns membership for its own paths, so only unclaimed
+ * Sessions are borrowed.
+ * @param workspaces - Workspace views as the host reported them.
+ * @param list - live Session list (each summary carries its cwd).
+ * @param extraFolders - plugin-owned extra folders per Workspace id.
+ * @returns the same views, with plugin folders and borrowed members folded in.
+ */
+export function mergePluginFolders<W extends ListedWorkspace>(
+  workspaces: readonly W[],
+  list: SessionListState,
+  extraFolders: Readonly<Record<string, readonly string[]>> | undefined,
+): W[] {
+  if (extraFolders === undefined) return [...workspaces]
+  if (!workspaces.some(workspace => (extraFolders[workspace.workspaceId]?.length ?? 0) > 0)) return [...workspaces]
+  const claimed = new Set(workspaces.flatMap(workspace => workspace.sessionIds))
+  return workspaces.map((workspace) => {
+    const extras = extraFolders[workspace.workspaceId] ?? []
+    if (extras.length === 0) return workspace
+    const folders = [...(workspace.folders ?? []), ...extras]
+    const borrowed = list.ids.filter(id => !claimed.has(id) && cwdInsideFolders(list.byId[id]?.cwd, extras))
+    return borrowed.length === 0
+      ? { ...workspace, folders }
+      : { ...workspace, folders, sessionIds: [...workspace.sessionIds, ...borrowed] }
+  })
+}
+
 /** Pending interaction kinds with dedicated Workspace-row presentation. */
 export type SessionPendingInteractionStatus = 'approval' | 'plan-review' | 'question'
 type SessionStatuses = SessionStatusSnapshot
@@ -120,7 +165,7 @@ export interface TreeView {
 }
 
 /** Workspace row plus extra folders the feed may project beside the typed view. */
-type ListedWorkspace = WorkspaceView & { readonly folders?: readonly string[] }
+export type ListedWorkspace = WorkspaceView & { readonly folders?: readonly string[] }
 
 /** Extra folders only. The published view omits the field; the feed still projects it. */
 function listedFolders(workspace: ListedWorkspace): readonly string[] {
