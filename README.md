@@ -16,9 +16,11 @@ The deployed client (**0.2.0-rc.2**, the 2026-09-29 Desktop build) ships a works
 - the browser merges those folders into the Workspace list it derives from (`mergePluginFolders` in [src/client/tree.ts](src/client/tree.ts)) and attributes Sessions to a Workspace by matching their `cwd` against the list — the host leaves such Sessions ungrouped, so only unclaimed ones are borrowed;
 - adding and removing folders works from the project editor exactly as it does on a newer host.
 
-*Set as primary* stays a host capability and is hidden where the host lacks it: a Session's directory is the host's decision, and the shipped host refuses a Session created with a `cwd` outside every registered Workspace (measured: the request fails and no Session appears). The plugin therefore leaves New Session on the Workspace path rather than breaking it.
+*Set as primary* is plugin-owned where the host lacks the API: the promoted directory is stored in the same viewing store, and the previous host path becomes an extra folder. Later New Session creates with that `cwd` alone (the shipped host accepts a create that sends `cwd` and no `workspaceId`), and the browser borrows the Session back by `cwd`. The host registry path itself does not change.
 
 Where the host *does* expose the folder API ([src/client/host-capabilities.d.ts](src/client/host-capabilities.d.ts) declares the three methods optional), all three editor actions route to it instead.
+
+The desktop window exposes the OS folder dialog (`__DSH_DIRECTORY_PICKER__`). When a LAN bind (`0.0.0.0`) has mounted the in-app "Select Workspace Directory" browser, the plugin still opens the OS dialog in that window. A remote browser has no bridge and keeps the composed in-app flow.
 
 The tag `appgen-0.3.0` keeps an earlier parity-only build (exactly the host's own feature set) for a host that lacks the newer client module table.
 
@@ -65,7 +67,7 @@ node scripts/build-client.mjs   # harness client preset: lib/types -> lib/client
 
 ## Known gaps
 
-- **"Set as primary" is host-only.** The shipped host decides a Session's directory and refuses a cwd outside every registered Workspace, so the plugin hides that control there instead of offering a button that cannot work. On a host with the folder API it is offered and honoured.
+- **"Set as primary" does not rewrite the host registry path.** The shipped host has no such API. The plugin remembers the promoted directory, creates new Sessions there, and borrows them back by cwd; the host still treats the original path as the Workspace path. On a host with the folder API the action goes to the host and the path really changes.
 - **Folder membership is matched by Session `cwd`**, and only Sessions the host left ungrouped are borrowed. A Session that the host already groups under its own Workspace stays there.
 - `src/` is vendored from `winexeNew` rather than hand-written: re-vendor it when moving to another host generation and keep the capability probes.
 - No package tests; the in-tree suite stays in `packages/client/ui-workspace/tests` at the vendored revision.

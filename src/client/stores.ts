@@ -8,7 +8,7 @@
 import { defineStore, type EngineStoreHandle } from '@deepseek-ai/dsh-client-store'
 import type { SessionListState } from '@deepseek-ai/dsh-api-session-controller/client'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
-import { reconcileManualOrder, type ArchivedFilter, type SessionRowState } from './tree.ts'
+import { reconcileManualOrder, samePath, type ArchivedFilter, type SessionRowState } from './tree.ts'
 
 /** Browser-local order account for the hierarchy-free flat Session list. */
 export const FLAT_SESSION_ORDER_KEY = '__flat_session_order__'
@@ -40,6 +40,11 @@ type WorkspaceViewState = {
    * Sessions to a Workspace by matching their cwd against this list.
    */
   extraFoldersByWorkspace: Record<string, string[]>
+  /**
+   * Primary directory chosen in the project editor when it is not the host
+   * Workspace path. Absent means the host path stays primary.
+   */
+  primaryByWorkspace?: Record<string, string>
 }
 
 type SessionOrderSource = {
@@ -86,6 +91,11 @@ type WorkspaceViewActions = {
   addExtraFolder: (draft: WorkspaceViewState, workspaceId: string, path: string) => void
   /** Drop one extra source folder. */
   removeExtraFolder: (draft: WorkspaceViewState, workspaceId: string, path: string) => void
+  /**
+   * Promote `path` to the plugin-owned primary. `hostPath` is the directory the
+   * host still has registered; it becomes an extra folder while it is not primary.
+   */
+  promotePrimary: (draft: WorkspaceViewState, workspaceId: string, path: string, hostPath: string) => void
 }
 
 /** Copy read-only projections into the persisted mutable store representation. */
@@ -111,6 +121,7 @@ export function createWorkspaceViewStore(): EngineStoreHandle<WorkspaceViewState
       workspacesOpen: true,
       recentsOpen: true,
       extraFoldersByWorkspace: {},
+      primaryByWorkspace: {},
     }),
     persist: 'dsh.workspace.view.v5',
     actions: {
@@ -142,6 +153,10 @@ export function createWorkspaceViewStore(): EngineStoreHandle<WorkspaceViewState
         const extraRetained = Object.entries(extra).filter(([key]) => retained.has(key))
         if (extraRetained.length !== Object.keys(extra).length) d.extraFoldersByWorkspace = Object.fromEntries(extraRetained)
         else d.extraFoldersByWorkspace = extra
+        const primary = d.primaryByWorkspace ?? {}
+        const primaryRetained = Object.entries(primary).filter(([key]) => retained.has(key))
+        if (primaryRetained.length !== Object.keys(primary).length) d.primaryByWorkspace = Object.fromEntries(primaryRetained)
+        else d.primaryByWorkspace = primary
       },
       syncSessionOrders: (d, orders) => {
         if (d.orderBy !== 'manual') return
@@ -174,15 +189,38 @@ export function createWorkspaceViewStore(): EngineStoreHandle<WorkspaceViewState
       setRecentsOpen: (d, open: boolean) => { d.recentsOpen = open },
       addExtraFolder: (d, workspaceId: string, path: string) => {
         const folders = d.extraFoldersByWorkspace?.[workspaceId] ?? []
-        if (folders.includes(path)) return
+        if (folders.some(folder => samePath(folder, path))) return
+        if (samePath(d.primaryByWorkspace?.[workspaceId], path)) return
         d.extraFoldersByWorkspace = { ...d.extraFoldersByWorkspace, [workspaceId]: [...folders, path] }
       },
       removeExtraFolder: (d, workspaceId: string, path: string) => {
         const folders = d.extraFoldersByWorkspace?.[workspaceId] ?? []
-        const remaining = folders.filter(folder => folder !== path)
+        const remaining = folders.filter(folder => !samePath(folder, path))
         const byWorkspace = { ...d.extraFoldersByWorkspace }
         if (remaining.length === 0) delete byWorkspace[workspaceId]
         else byWorkspace[workspaceId] = remaining
+        d.extraFoldersByWorkspace = byWorkspace
+      },
+      promotePrimary: (d, workspaceId: string, path: string, hostPath: string) => {
+        const extras = d.extraFoldersByWorkspace?.[workspaceId] ?? []
+        const current = d.primaryByWorkspace?.[workspaceId]
+        const effective = current !== undefined && !samePath(current, hostPath) ? current : hostPath
+        if (samePath(path, effective)) return
+        let nextExtras = extras.filter(folder => !samePath(folder, path))
+        const primary = { ...(d.primaryByWorkspace ?? {}) }
+        if (samePath(path, hostPath)) {
+          if (!samePath(effective, hostPath) && !nextExtras.some(folder => samePath(folder, effective))) {
+            nextExtras = [...nextExtras, effective]
+          }
+          delete primary[workspaceId]
+        } else {
+          if (!nextExtras.some(folder => samePath(folder, effective))) nextExtras = [...nextExtras, effective]
+          primary[workspaceId] = path
+        }
+        d.primaryByWorkspace = primary
+        const byWorkspace = { ...d.extraFoldersByWorkspace }
+        if (nextExtras.length === 0) delete byWorkspace[workspaceId]
+        else byWorkspace[workspaceId] = nextExtras
         d.extraFoldersByWorkspace = byWorkspace
       },
     },

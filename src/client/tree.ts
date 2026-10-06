@@ -31,17 +31,24 @@ export function owningGroupKey(
     ?.workspaceId as string | undefined) ?? UNGROUPED_KEY
 }
 
+/** Compare directory paths the way the browser matches a Session cwd to a folder. */
+export function samePath(a: string | undefined, b: string | undefined): boolean {
+  if (a === undefined || b === undefined || a === '' || b === '') return false
+  return normalizeDirectory(a) === normalizeDirectory(b)
+}
+
+/** Windows paths compare case-insensitively; POSIX ones keep their case. */
+function normalizeDirectory(path: string): string {
+  const trimmed = path.replace(/[\\/]+$/, '').replace(/\\/g, '/')
+  return /^[a-z]:\//i.test(trimmed) ? trimmed.toLowerCase() : trimmed
+}
+
 /** Whether one Session cwd lies inside one of the given source folders. */
 export function cwdInsideFolders(cwd: string | undefined, folders: readonly string[]): boolean {
   if (cwd === undefined || cwd === '') return false
-  // Windows paths compare case-insensitively; POSIX ones keep their case.
-  const normalize = (path: string): string => {
-    const trimmed = path.replace(/[\\/]+$/, '').replace(/\\/g, '/')
-    return /^[a-z]:\//i.test(trimmed) ? trimmed.toLowerCase() : trimmed
-  }
-  const target = normalize(cwd)
+  const target = normalizeDirectory(cwd)
   return folders.some((folder) => {
-    const base = normalize(folder)
+    const base = normalizeDirectory(folder)
     return base !== '' && (target === base || target.startsWith(`${base}/`))
   })
 }
@@ -55,24 +62,36 @@ export function cwdInsideFolders(cwd: string | undefined, folders: readonly stri
  * @param workspaces - Workspace views as the host reported them.
  * @param list - live Session list (each summary carries its cwd).
  * @param extraFolders - plugin-owned extra folders per Workspace id.
+ * @param primaryByWorkspace - plugin-owned primary directory when it differs from the host path.
  * @returns the same views, with plugin folders and borrowed members folded in.
  */
 export function mergePluginFolders<W extends ListedWorkspace>(
   workspaces: readonly W[],
   list: SessionListState,
   extraFolders: Readonly<Record<string, readonly string[]>> | undefined,
+  primaryByWorkspace?: Readonly<Record<string, string>> | undefined,
 ): W[] {
-  if (extraFolders === undefined) return [...workspaces]
-  if (!workspaces.some(workspace => (extraFolders[workspace.workspaceId]?.length ?? 0) > 0)) return [...workspaces]
+  const projects = (workspace: W): boolean => {
+    const extras = extraFolders?.[workspace.workspaceId]
+    const primary = primaryByWorkspace?.[workspace.workspaceId]
+    return (extras?.length ?? 0) > 0 || (primary !== undefined && !samePath(primary, workspace.path))
+  }
+  if (!workspaces.some(projects)) return [...workspaces]
   const claimed = new Set(workspaces.flatMap(workspace => workspace.sessionIds))
   return workspaces.map((workspace) => {
-    const extras = extraFolders[workspace.workspaceId] ?? []
-    if (extras.length === 0) return workspace
-    const folders = [...(workspace.folders ?? []), ...extras]
-    const borrowed = list.ids.filter(id => !claimed.has(id) && cwdInsideFolders(list.byId[id]?.cwd, extras))
+    const stored = extraFolders?.[workspace.workspaceId] ?? []
+    const override = primaryByWorkspace?.[workspace.workspaceId]
+    const effective = override !== undefined && !samePath(override, workspace.path) ? override : workspace.path
+    if (stored.length === 0 && samePath(effective, workspace.path)) return workspace
+    const folders = [...(workspace.folders ?? []), ...stored.filter(folder => !samePath(folder, effective))]
+    // The host already accounts Sessions at its own path. A promoted folder is
+    // not that path, so Sessions created there stay unclaimed until borrowed.
+    const borrowFrom = samePath(effective, workspace.path) ? stored : [effective, ...stored]
+    const borrowed = list.ids.filter(id => !claimed.has(id) && cwdInsideFolders(list.byId[id]?.cwd, borrowFrom))
+    const projected = samePath(effective, workspace.path) ? workspace : { ...workspace, path: effective }
     return borrowed.length === 0
-      ? { ...workspace, folders }
-      : { ...workspace, folders, sessionIds: [...workspace.sessionIds, ...borrowed] }
+      ? { ...projected, folders }
+      : { ...projected, folders, sessionIds: [...projected.sessionIds, ...borrowed] }
   })
 }
 

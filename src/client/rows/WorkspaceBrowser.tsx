@@ -40,7 +40,7 @@ import { ProjectRowItem, SearchResultItem, SessionNodeItem } from './Rows.tsx'
 import { AnimatedRows } from './AnimatedRows.tsx'
 import { FLAT_SESSION_ORDER_KEY, type SessionGroupBy } from '../stores.ts'
 import { WorkspaceEditDialog } from '../WorkspaceEditDialog.tsx'
-import { WorkspacePickFlow } from '../WorkspacePicker.tsx'
+import { nativeDirectoryPick, WorkspacePickFlow } from '../WorkspacePicker.tsx'
 import css from './WorkspaceBrowser.module.css'
 
 /** Extra folders the feed projects beside the published Workspace view. */
@@ -1018,9 +1018,10 @@ export function WorkspaceBrowser({
   // into a separate list for the tree: keeping `workspaces` itself free of
   // store-derived state matters, because the retain effect below depends on it.
   const extraFoldersByWorkspace = useStore(s => s.extraFoldersByWorkspace)
+  const primaryByWorkspace = useStore(s => s.primaryByWorkspace)
   const treeWorkspaces = useMemo(
-    () => mergePluginFolders(workspaces, list, extraFoldersByWorkspace),
-    [workspaces, list, extraFoldersByWorkspace],
+    () => mergePluginFolders(workspaces, list, extraFoldersByWorkspace, primaryByWorkspace),
+    [workspaces, list, extraFoldersByWorkspace, primaryByWorkspace],
   )
   const workspacePhase = useWorkspaces(state => state.phase)
   const workspaceStreamState = useWorkspaces(state => state.state)
@@ -1028,7 +1029,7 @@ export function WorkspaceBrowser({
   const pinnedSessionIds = useWorkspaces(state => state.pinnedSessionIds)
   // Live occupancy of this surface's directory-flow hole (the same source the
   // flow reads): a composition without a picking affordance can add nothing.
-  const directoryFlowAvailable = useDirectoryFlow(occupied => occupied)
+  const directoryFlowAvailable = useDirectoryFlow(occupied => occupied) || nativeDirectoryPick() !== undefined
   const groupBy = useStore(s => s.groupBy)
   const orderBy = useStore(s => s.orderBy)
   // Persisted view blobs written before the archived filter existed rehydrate
@@ -1768,6 +1769,10 @@ export function WorkspaceBrowser({
           },
         })}
         addOnly
+        onPickCancelled={() => {
+          addFolderTargetRef.current = null
+          setAddFolderTarget(null)
+        }}
         onBusyChange={setDirectoryBusy}
         side="right"
         onPick={(workspaceId) => {

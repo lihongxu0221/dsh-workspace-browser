@@ -16,6 +16,8 @@ export declare const UNGROUPED_KEY = "";
  * @returns owning Workspace id, or {@link UNGROUPED_KEY} when no Workspace accounts for it.
  */
 export declare function owningGroupKey(workspaces: readonly WorkspaceView[], sessionId: SessionId): string;
+/** Compare directory paths the way the browser matches a Session cwd to a folder. */
+export declare function samePath(a: string | undefined, b: string | undefined): boolean;
 /** Whether one Session cwd lies inside one of the given source folders. */
 export declare function cwdInsideFolders(cwd: string | undefined, folders: readonly string[]): boolean;
 /**
@@ -27,9 +29,10 @@ export declare function cwdInsideFolders(cwd: string | undefined, folders: reado
  * @param workspaces - Workspace views as the host reported them.
  * @param list - live Session list (each summary carries its cwd).
  * @param extraFolders - plugin-owned extra folders per Workspace id.
+ * @param primaryByWorkspace - plugin-owned primary directory when it differs from the host path.
  * @returns the same views, with plugin folders and borrowed members folded in.
  */
-export declare function mergePluginFolders<W extends ListedWorkspace>(workspaces: readonly W[], list: SessionListState, extraFolders: Readonly<Record<string, readonly string[]>> | undefined): W[];
+export declare function mergePluginFolders<W extends ListedWorkspace>(workspaces: readonly W[], list: SessionListState, extraFolders: Readonly<Record<string, readonly string[]>> | undefined, primaryByWorkspace?: Readonly<Record<string, string>> | undefined): W[];
 /** Pending interaction kinds with dedicated Workspace-row presentation. */
 export type SessionPendingInteractionStatus = 'approval' | 'plan-review' | 'question';
 type SessionStatuses = SessionStatusSnapshot;

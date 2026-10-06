@@ -112,6 +112,7 @@ declare class UiWorkspaceService extends Service implements UiWorkspace {
     private readonly sessions;
     private readonly view;
     private readonly notify;
+    private readonly primaryOf;
     private readonly connecting;
     private readonly lifetime;
     private readonly selection;
@@ -123,10 +124,12 @@ declare class UiWorkspaceService extends Service implements UiWorkspace {
      * @param sessions - pure Session Controller.
      * @param view - the browser's viewing-store write set (one instance shared with its registration).
      * @param notify - show one notice through the Workspace notice channel.
+     * @param primaryOf - plugin-promoted primary directory for a Workspace, when one is set.
      */
-    constructor(ctx: Context, directoryPicker: ClientRemote['directoryPicker'], workspaces: IWorkspaces, sessions: ISessions, view: Pick<WorkspaceViewStoreActions, 'pinSessionOrder'>, notify: (toast: RowToast) => void);
+    constructor(ctx: Context, directoryPicker: ClientRemote['directoryPicker'], workspaces: IWorkspaces, sessions: ISessions, view: Pick<WorkspaceViewStoreActions, 'pinSessionOrder'>, notify: (toast: RowToast) => void, primaryOf: (workspaceId: WorkspaceId) => string | undefined);
     connectWorkspace(workspaceId: WorkspaceId): Promise<SessionId>;
     private reuseOrCreateBlank;
+    private reuseBlankAt;
     private reuseBlank;
     openSession(target: SessionTarget): void;
     openWorkspace(workspaceId: WorkspaceId, beforeOpen?: (sessionId: SessionId) => void): Promise<void>;

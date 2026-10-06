@@ -20,6 +20,7 @@ import type {} from '@deepseek-ai/dsh-client-ui-layout/client'
 import type { DraftInitializationOptions } from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type { RowToast } from './contract/slots.ts'
 import { pinOrderAccounts, pinOrderSource } from './pin-order.ts'
+import { samePath } from './tree.ts'
 import type { WorkspaceViewStoreActions } from './stores.ts'
 
 interface MainSelection {
@@ -145,6 +146,7 @@ class UiWorkspaceService extends Service implements UiWorkspace {
    * @param sessions - pure Session Controller.
    * @param view - the browser's viewing-store write set (one instance shared with its registration).
    * @param notify - show one notice through the Workspace notice channel.
+   * @param primaryOf - plugin-promoted primary directory for a Workspace, when one is set.
    */
   constructor(
     ctx: Context,
@@ -153,6 +155,7 @@ class UiWorkspaceService extends Service implements UiWorkspace {
     private readonly sessions: ISessions,
     private readonly view: Pick<WorkspaceViewStoreActions, 'pinSessionOrder'>,
     private readonly notify: (toast: RowToast) => void,
+    private readonly primaryOf: (workspaceId: WorkspaceId) => string | undefined,
   ) {
     super(ctx, 'uiWorkspace')
     ctx.effect(() => {
@@ -185,15 +188,36 @@ class UiWorkspaceService extends Service implements UiWorkspace {
   private reuseOrCreateBlank(workspace: WorkspaceView): Promise<SessionId> {
     const archived = this.workspaces.list.getSnapshot().archivedSessionIds
     const sessions = this.sessions.list.getSnapshot()
+    const cwd = this.primaryOf(workspace.workspaceId) ?? workspace.path
+    const hostPrimary = samePath(cwd, workspace.path)
     for (const id of sessions.ids) {
       const summary = sessions.byId[id]
-      if (summary === undefined || !summary.blank || summary.cwd !== workspace.path
-        || !workspace.sessionIds.includes(id) || archived.includes(id)) continue
-      return this.reuseBlank(workspace.workspaceId, id)
+      if (summary === undefined || !summary.blank || !samePath(summary.cwd, cwd) || archived.includes(id)) continue
+      if (hostPrimary) {
+        if (!workspace.sessionIds.includes(id)) continue
+        return this.reuseBlank(workspace.workspaceId, id)
+      }
+      const claimedElsewhere = this.workspaces.list.getSnapshot().items.some(
+        item => item.workspaceId !== workspace.workspaceId && item.sessionIds.includes(id),
+      )
+      if (claimedElsewhere) continue
+      return this.reuseBlankAt(cwd, id)
     }
-    // Only the Workspace id is requested: a Session's directory is the host's
-    // decision, and a cwd outside every registered Workspace is refused there.
-    return this.sessions.create({ workspaceId: workspace.workspaceId })
+    // The host path is requested by Workspace id, which also attaches the
+    // Session. A plugin-promoted folder is not that path: create accepts a cwd
+    // on its own, and the browser borrows the Session back by that cwd.
+    return hostPrimary
+      ? this.sessions.create({ workspaceId: workspace.workspaceId })
+      : this.sessions.create({ cwd })
+  }
+
+  private async reuseBlankAt(cwd: string, sessionId: SessionId): Promise<SessionId> {
+    try {
+      return await this.sessions.create({ cwd, sessionId })
+    } catch (error: unknown) {
+      if (sessionCreateErrorOf(error)?.rpcError.code !== 'session/writer-held') throw error
+      return this.sessions.create({ cwd })
+    }
   }
 
   private async reuseBlank(workspaceId: WorkspaceId, sessionId: SessionId): Promise<SessionId> {

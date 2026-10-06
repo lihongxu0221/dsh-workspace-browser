@@ -37,6 +37,11 @@ type WorkspaceViewState = {
      * Sessions to a Workspace by matching their cwd against this list.
      */
     extraFoldersByWorkspace: Record<string, string[]>;
+    /**
+     * Primary directory chosen in the project editor when it is not the host
+     * Workspace path. Absent means the host path stays primary.
+     */
+    primaryByWorkspace?: Record<string, string>;
 };
 type SessionOrderSource = {
     members: Readonly<Record<string, readonly SessionId[]>>;
@@ -64,6 +69,11 @@ type WorkspaceViewActions = {
     addExtraFolder: (draft: WorkspaceViewState, workspaceId: string, path: string) => void;
     /** Drop one extra source folder. */
     removeExtraFolder: (draft: WorkspaceViewState, workspaceId: string, path: string) => void;
+    /**
+     * Promote `path` to the plugin-owned primary. `hostPath` is the directory the
+     * host still has registered; it becomes an extra folder while it is not primary.
+     */
+    promotePrimary: (draft: WorkspaceViewState, workspaceId: string, path: string, hostPath: string) => void;
 };
 /**
  * Create the workspace browser viewing store handle.

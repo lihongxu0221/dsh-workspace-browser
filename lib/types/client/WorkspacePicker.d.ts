@@ -12,6 +12,8 @@ import type { ReactNode, RefObject } from 'react';
 import type { WorkspaceId, WorkspaceSnapshot, WorkspaceView } from '@deepseek-ai/dsh-api-workspace-controller/client';
 import type { SnapshotSelectorHook } from '@deepseek-ai/dsh-client-ui-slots';
 import type { DirectoryFlowOwnerProps, WorkspacePickerProps } from './contract/slots.ts';
+/** Desktop preload bridge. Present only in the local Electron window, where it opens the OS folder dialog. */
+export declare function nativeDirectoryPick(): (() => Promise<string | null>) | undefined;
 /** Core flow props: the owner supplies popover control and pick semantics. */
 export interface WorkspacePickFlowProps {
     /** The standard locale seat, forwarded by whichever slot entry hosts the flow. */
@@ -40,6 +42,8 @@ export interface WorkspacePickFlowProps {
     addOnly?: boolean;
     /** Menu opening direction relative to the anchor. */
     side?: 'bottom' | 'top' | 'right';
+    /** The directory chooser was cancelled or failed before a path was adopted. */
+    onPickCancelled?: () => void;
     /** Currently active workspace (trailing check in the picker list). */
     selectedId?: WorkspaceId | undefined;
 }
@@ -48,7 +52,7 @@ export interface WorkspacePickFlowProps {
  * @param props - owner-controlled flow props.
  * @returns menu + dialog elements.
  */
-export declare function WorkspacePickFlow({ t, open, anchorRef, useWorkspaces, createWorkspace, useDirectoryFlow, renderDirectoryFlow, onPick, onClose, addOnly, onBusyChange, side, selectedId, }: WorkspacePickFlowProps): import("react").JSX.Element;
+export declare function WorkspacePickFlow({ t, open, anchorRef, useWorkspaces, createWorkspace, useDirectoryFlow, renderDirectoryFlow, onPick, onClose, addOnly, onBusyChange, side, selectedId, onPickCancelled, }: WorkspacePickFlowProps): import("react").JSX.Element;
 /**
  * The conversation empty-state registration: adapts the owner share to the
  * core flow (all state and semantics live in the flow / the owner).

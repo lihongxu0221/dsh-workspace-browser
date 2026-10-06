@@ -23,6 +23,16 @@ import css from './WorkspacePicker.module.css'
 
 const ADD_WORKSPACE = '::add-workspace'
 
+/** Desktop preload bridge. Present only in the local Electron window, where it opens the OS folder dialog. */
+export function nativeDirectoryPick(): (() => Promise<string | null>) | undefined {
+  const bridge = (globalThis as typeof globalThis & {
+    __DSH_DIRECTORY_PICKER__?: { pick?: () => Promise<string | null> }
+  }).__DSH_DIRECTORY_PICKER__
+  if (typeof bridge?.pick !== 'function') return undefined
+  const pick = bridge.pick.bind(bridge)
+  return () => pick()
+}
+
 /** Core flow props: the owner supplies popover control and pick semantics. */
 export interface WorkspacePickFlowProps {
   /** The standard locale seat, forwarded by whichever slot entry hosts the flow. */
@@ -49,6 +59,8 @@ export interface WorkspacePickFlowProps {
   addOnly?: boolean
   /** Menu opening direction relative to the anchor. */
   side?: 'bottom' | 'top' | 'right'
+  /** The directory chooser was cancelled or failed before a path was adopted. */
+  onPickCancelled?: () => void
   /** Currently active workspace (trailing check in the picker list). */
   selectedId?: WorkspaceId | undefined
 }
@@ -72,6 +84,7 @@ export function WorkspacePickFlow({
   onBusyChange,
   side = 'bottom',
   selectedId,
+  onPickCancelled,
 }: WorkspacePickFlowProps) {
   const workspaceSnapshot = useWorkspaces(state => state)
   const workspaces = workspaceSnapshot.items
@@ -94,7 +107,12 @@ export function WorkspacePickFlow({
   // entry simply is not there (the seam's documented no-flow default). The
   // framework-bound hook keeps occupancy live: flow plugins activate (and
   // HMR-reload) independently of this menu's renders.
-  const flowAvailable = useDirectoryFlow(occupied => occupied)
+  const slotFlow = useDirectoryFlow(occupied => occupied)
+  // A LAN-bound host mounts the in-app browser for every client. The desktop
+  // window still has the OS dialog on `window.__DSH_DIRECTORY_PICKER__`; use
+  // that and leave the in-app dialog closed. A remote browser has no bridge
+  // and keeps the composed flow.
+  const flowAvailable = slotFlow || nativeDirectoryPick() !== undefined
   // An occupant that unloads mid-interaction leaves nobody to cancel: an
   // open flow over an empty hole withdraws so the menu actions come back.
   // flowOpen is a dependency because the flow can also OPEN over an already
@@ -140,11 +158,34 @@ export function WorkspacePickFlow({
 
   const onCloseRef = useRef(onClose)
   onCloseRef.current = onClose
+  const onPickCancelledRef = useRef(onPickCancelled)
+  onPickCancelledRef.current = onPickCancelled
+  const adoptRef = useRef(adoptDirectory)
+  adoptRef.current = adoptDirectory
 
   const openDirectoryFlow = useCallback((): void => {
     onCloseRef.current()
     setErrorOpen(false)
     setModalError(null)
+    const pick = nativeDirectoryPick()
+    if (pick !== undefined) {
+      setPickingFolder(true)
+      void pick().then(
+        (path) => {
+          if (path === null) {
+            onPickCancelledRef.current?.()
+            return
+          }
+          return adoptRef.current(path)
+        },
+        (reason: unknown) => {
+          onPickCancelledRef.current?.()
+          setModalError(reason instanceof Error ? reason.message : String(reason))
+          setErrorOpen(true)
+        },
+      ).finally(() => { setPickingFolder(false) })
+      return
+    }
     setFlowOpen(true)
   }, [])
 

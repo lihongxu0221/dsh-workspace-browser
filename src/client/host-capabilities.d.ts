@@ -8,8 +8,9 @@
  * plugin is developed against has all three.
  *
  * Declaring them optional keeps the plugin compiling against either host. The
- * apply probes for them at runtime and omits the project editor when they are
- * missing, so the rest of the browser keeps working on the older host.
+ * apply probes for them at runtime. When they are missing, the plugin keeps
+ * the folder list and the promoted primary itself, and new Sessions for a
+ * promoted folder are created with that cwd.
  */
 import type { WorkspaceId, WorkspaceView } from '@deepseek-ai/dsh-api-workspace-controller/client'
 
