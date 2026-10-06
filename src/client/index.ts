@@ -43,6 +43,7 @@ import {
 } from './contract/slots.ts'
 import { createWorkspaceShortcutControls, installWorkspaceShortcuts } from './shortcuts.ts'
 import { UiWorkspaceService } from './navigation.ts'
+import { syncFolderLayer } from './folder-sync.ts'
 import { createWorkspaceViewStore } from './stores.ts'
 import { samePath } from './tree.ts'
 import { WorkspaceBrowser } from './rows/WorkspaceBrowser.tsx'
@@ -112,6 +113,7 @@ export function apply(ctx: Context): void {
   // view order through the same instance the renderer hands the browser.
   const viewHandle = createWorkspaceViewStore()
   const viewInstance = viewHandle.create()
+  syncFolderLayer(viewInstance)
   const viewStore: typeof viewHandle = { ...viewHandle, create: () => viewInstance }
   const rowToast = createSnapshotStore<RowToastState | null>(null)
   let toastSeq = 0

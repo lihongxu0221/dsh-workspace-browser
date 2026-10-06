@@ -12,7 +12,7 @@ The deployed client (**0.2.0-rc.2**, the 2026-09-29 Desktop build) ships a works
 
 `addFolder` / `removeFolder` / `setPrimaryFolder` and the `folders` projection on a workspace view exist only on the newer workspace controller; the shipped host has none of them. The plugin owns the first two there:
 
-- the folder list lives in the plugin's own persisted viewing store (`persist: 'dsh.workspace.view.v5'`);
+- the folder list lives in the plugin's own persisted viewing store (`persist: 'dsh.workspace.view.v5'`) and is also written to `.dsh/storages/workspace-browser-folders.json`. A copied `.dsh` home carries that file; browser localStorage is outside `.dsh` and does not;
 - the browser merges those folders into the Workspace list it derives from (`mergePluginFolders` in [src/client/tree.ts](src/client/tree.ts)) and attributes Sessions to a Workspace by matching their `cwd` against the list — the host leaves such Sessions ungrouped, so only unclaimed ones are borrowed;
 - adding and removing folders works from the project editor exactly as it does on a newer host.
 

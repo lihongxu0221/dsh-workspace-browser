@@ -96,6 +96,11 @@ type WorkspaceViewActions = {
    * host still has registered; it becomes an extra folder while it is not primary.
    */
   promotePrimary: (draft: WorkspaceViewState, workspaceId: string, path: string, hostPath: string) => void
+  /** Replace the plugin folder layer with the merged home-file result. */
+  installFolderLayer: (
+    draft: WorkspaceViewState,
+    layer: { extraFoldersByWorkspace: Record<string, string[]>; primaryByWorkspace: Record<string, string> },
+  ) => void
 }
 
 /** Copy read-only projections into the persisted mutable store representation. */
@@ -222,6 +227,10 @@ export function createWorkspaceViewStore(): EngineStoreHandle<WorkspaceViewState
         if (nextExtras.length === 0) delete byWorkspace[workspaceId]
         else byWorkspace[workspaceId] = nextExtras
         d.extraFoldersByWorkspace = byWorkspace
+      },
+      installFolderLayer: (d, layer) => {
+        d.extraFoldersByWorkspace = layer.extraFoldersByWorkspace
+        d.primaryByWorkspace = layer.primaryByWorkspace
       },
     },
   })

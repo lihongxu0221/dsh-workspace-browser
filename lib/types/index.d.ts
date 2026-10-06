@@ -1,9 +1,28 @@
 /**
- * Workspace picker plugin, node half. Pure UI plugin: the empty apply exists
- * so the plugin appears in the host cordis.yml / Loader (load and lifecycle
- * follow the host; the browser half ships via exports["./client"], discovered
- * through the package.json dsh.client declaration).
+ * Workspace picker plugin, node half. The browser keeps its viewing store in
+ * localStorage, which a copied `.dsh` home does not include. This half stores
+ * the extra-folder layer in that home so the copy carries it, behind the
+ * connection's existing authenticated `/api` fence.
  */
-/** Host plugin body — no host-side behavior for the workspace picker plugin. */
-export declare function apply(): void;
+/** Required host service: the authenticated Fetch registry. */
+export declare const inject: string[];
+interface ConnectionFetch {
+    register(route: {
+        path: string;
+        methods: readonly ('GET' | 'POST')[];
+        requestBody: 'buffered';
+        fetch: (request: Request) => Promise<Response>;
+    }): () => Promise<void>;
+}
+interface HostContext {
+    connection: {
+        fetch: ConnectionFetch;
+    };
+}
+/**
+ * Register the folder-layer route for this plugin's lifetime.
+ * @param ctx - host context carrying the connection Fetch registry.
+ */
+export declare function apply(ctx: HostContext): void;
+export {};
 //# sourceMappingURL=index.d.ts.map

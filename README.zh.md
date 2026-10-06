@@ -12,7 +12,7 @@
 
 `addFolder` / `removeFolder` / `setPrimaryFolder` 以及工作区视图上的 `folders` 投影只存在于更新的 workspace controller；出厂宿主一个都没有。前两者由插件自己承担：
 
-- 文件夹列表存在插件自己的持久化视图 store 里（`persist: 'dsh.workspace.view.v5'`）；
+- 文件夹列表存在插件自己的持久化视图 store 里（`persist: 'dsh.workspace.view.v5'`），并同时写入 `.dsh/storages/workspace-browser-folders.json`。整份 `.dsh` 拷到另一台设备时带的是这份文件；浏览器 localStorage 不在 `.dsh` 里，不会跟着走；
 - 浏览器把这些文件夹并入它派生的 Workspace 列表（[src/client/tree.ts](src/client/tree.ts) 的 `mergePluginFolders`），并按会话 `cwd` 是否落在列表内把会话归到该工作区——宿主会把这些会话留作未分组，所以只"借用"未被任何工作区认领的会话；
 - 在项目编辑器里添加/移除文件夹，行为与更新宿主上一致。
 
