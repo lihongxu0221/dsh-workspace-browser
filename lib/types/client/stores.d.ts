@@ -27,7 +27,10 @@ type WorkspaceViewState = {
     archivedFilter?: ArchivedFilter;
     /** Workspace ids kept at the front of the grouped list, in pin order. */
     pinnedWorkspaceIds: string[];
-    /** Whether the Workspaces section is expanded. */
+    /**
+     * Unused since the Workspaces section node was removed. Kept so v5 snapshots
+     * still rehydrate; the grouped tree always shows Workspace rows.
+     */
     workspacesOpen: boolean;
     /** Whether the Recent sessions section is expanded. */
     recentsOpen: boolean;
