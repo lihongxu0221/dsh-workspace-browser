@@ -15,14 +15,15 @@ import type { RefObject } from 'react'
 import clsx from 'clsx'
 import type { PropsRenderSlots } from '@deepseek-ai/dsh-client-ui-slots'
 import {
-  HoverCard, IconArchiveOutlineRegular, IconEditOutlineRegular,
+  HoverCard, IconArchiveOutlineRegular, IconClockOutlineRegular, IconEditOutlineRegular,
   IconEllipsisOutlineRegular, IconFolderCloseRegular, IconFolderOpenRegular,
-  IconNewChatOutlineRegular, IconPinFillRegular, IconTrashOutlineRegular,
+  IconNewChatOutlineRegular, IconPinFillRegular, IconSettingsOutlineRegular, IconTrashOutlineRegular,
   IconTriangleRightFillRegular, IconUnarchiveOutlineRegular, Menu, relativeTime, StateDot, Tooltip,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { ShortcutCatalogEntry } from '@deepseek-ai/dsh-client-shortcuts/client'
 import type { StateDotState } from '@deepseek-ai/dsh-client-ui-primitives'
 import { abbreviateHomePath } from '@deepseek-ai/dsh-util-workspace-path'
+import { workspaceSourcePaths } from '../tree.ts'
 import type { MenuOpenState, WorkspaceBrowserProps } from '../contract/slots.ts'
 import type { GroupNode, SearchResultNode, SessionNode } from '../tree.ts'
 import css from './Rows.module.css'
@@ -145,48 +146,73 @@ function hoverTimeLabel(updatedAt: number, now: number, t: RowTranslate): string
   return unit === 'now' ? t('time.now') : t('time.ago', { t: t(`time.${unit}`, { n }) })
 }
 
-/**
- * Absolute creation time through the dictionary's date template (the message
- * clock pattern): `toLocaleString` would follow the browser language, not the
- * app locale, and produce mixed-language text after a switch.
- */
-function createdLabel(createdAt: number, t: RowTranslate): string {
-  const d = new Date(createdAt)
-  const pad2 = (v: number): string => String(v).padStart(2, '0')
-  const date = t('date.ymd', { y: d.getFullYear(), m: d.getMonth() + 1, d: d.getDate() })
-  return t('hover.created', { time: `${date} ${pad2(d.getHours())}:${pad2(d.getMinutes())}` })
-}
-
-/** Hover-card body: workspace title, display directory path, absolute creation time. */
-function WorkspaceHoverContent({ label, cwd, createdAt, pinned = false, onPin, onEdit, t }: {
+/** Hover-card body: title, latest session, task count, and every source folder. */
+function WorkspaceHoverContent({
+  label, cwd, folders, sessionCount, latestSessionTitle, home, pinned = false, onPin, onEdit, onOpenMenu, t,
+}: {
   label: string
   cwd: string | undefined
-  createdAt: number
+  folders: readonly string[]
+  home?: string | undefined
+  sessionCount: number
+  /** Empty string is an untitled session; omit the line when there is no session. */
+  latestSessionTitle?: string | undefined
   pinned?: boolean
   onPin?: (() => void) | undefined
   onEdit?: (() => void) | undefined
+  onOpenMenu?: (() => void) | undefined
   t: RowTranslate
 }) {
+  const paths = workspaceSourcePaths(cwd, folders)
+  const plural = sessionCount === 1 ? 'one' : 'other'
   return (
     <div className={css.hoverContent}>
-      <div className={css.hoverTitle}>{label}</div>
-      {onPin !== undefined && (
-        <button
-          type="button"
-          className={clsx(css.hoverPin, pinned && css.hoverPinActive)}
-          aria-label={pinned ? t('hover.unpin') : t('hover.pin')}
-          aria-pressed={pinned}
-          onClick={onPin}
-        >
-          <IconPinFillRegular size={14} />
-        </button>
+      <div className={css.hoverHead}>
+        <div className={css.hoverTitle}>{label}</div>
+        {onOpenMenu !== undefined && (
+          <button
+            type="button"
+            className={css.hoverPin}
+            aria-label={t('actions.workspace.aria', { name: label })}
+            onClick={onOpenMenu}
+          >
+            <IconEllipsisOutlineRegular size={14} />
+          </button>
+        )}
+        {onPin !== undefined && (
+          <button
+            type="button"
+            className={clsx(css.hoverPin, pinned && css.hoverPinActive)}
+            aria-label={pinned ? t('hover.unpin') : t('hover.pin')}
+            aria-pressed={pinned}
+            onClick={onPin}
+          >
+            <IconPinFillRegular size={14} />
+          </button>
+        )}
+      </div>
+      {latestSessionTitle !== undefined && (
+        <div className={css.hoverSession}>{latestSessionTitle || t('session.untitled')}</div>
       )}
-      {cwd !== undefined && <div className={css.hoverPath}>{cwd}</div>}
-      <div className={css.hoverTime}>{createdLabel(createdAt, t)}</div>
+      <div className={css.hoverMeta}>
+        <IconClockOutlineRegular size={14} />
+        <span>{t(`hover.sessions.${plural}`, { n: sessionCount })}</span>
+      </div>
+      {paths.length > 0 && <div className={css.hoverRule} />}
+      {paths.map(path => (
+        <div className={css.hoverPath} key={path}>
+          <IconFolderCloseRegular size={14} />
+          <span>{abbreviateHomePath(path, home)}</span>
+        </div>
+      ))}
       {onEdit !== undefined && (
-        <button type="button" className={css.hoverEdit} onClick={onEdit}>
-          {t('menu.editProject')}
-        </button>
+        <>
+          <div className={css.hoverRule} />
+          <button type="button" className={css.hoverEdit} onClick={onEdit}>
+            <IconSettingsOutlineRegular size={14} />
+            {t('menu.editProject')}
+          </button>
+        </>
       )}
     </div>
   )
@@ -364,11 +390,15 @@ export function ProjectRowItem({ group, containsCurrentDescendant = false, onTog
       anchor={ownRow}
       content={<WorkspaceHoverContent
         label={row.label}
-        cwd={row.cwd === undefined ? undefined : abbreviateHomePath(row.cwd, home)}
-        createdAt={row.createdAt}
+        cwd={row.cwd}
+        folders={row.folders}
+        home={home}
+        sessionCount={row.sessionCount}
+        latestSessionTitle={row.latestSessionTitle}
         pinned={row.pinned}
         onPin={actions?.pin}
         onEdit={actions?.edit}
+        onOpenMenu={actions === undefined ? undefined : () => { setMenuOpen(true) }}
         t={t}
       />}
       openDelayMs={800}

@@ -16,6 +16,8 @@ export declare const UNGROUPED_KEY = "";
  * @returns owning Workspace id, or {@link UNGROUPED_KEY} when no Workspace accounts for it.
  */
 export declare function owningGroupKey(workspaces: readonly WorkspaceView[], sessionId: SessionId): string;
+/** Primary directory plus extra source folders, without repeating the same path. */
+export declare function workspaceSourcePaths(cwd: string | undefined, folders: readonly string[]): string[];
 /** Compare directory paths the way the browser matches a Session cwd to a folder. */
 export declare function samePath(a: string | undefined, b: string | undefined): boolean;
 /** Whether one Session cwd lies inside one of the given source folders. */
@@ -72,6 +74,8 @@ export interface GroupNode {
     label: string;
     /** Total visible sessions in the group. */
     sessionCount: number;
+    /** Title of the first visible non-blank session; empty means untitled. Absent when the group has none. */
+    latestSessionTitle?: string;
     expanded: boolean;
     /** The group contains the selected session (active folder tint; supplied here so the renderer never scans). */
     containsCurrent: boolean;

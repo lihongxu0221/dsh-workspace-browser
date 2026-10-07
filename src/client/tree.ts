@@ -31,6 +31,16 @@ export function owningGroupKey(
     ?.workspaceId as string | undefined) ?? UNGROUPED_KEY
 }
 
+/** Primary directory plus extra source folders, without repeating the same path. */
+export function workspaceSourcePaths(cwd: string | undefined, folders: readonly string[]): string[] {
+  const paths: string[] = []
+  for (const path of [cwd, ...folders]) {
+    if (path === undefined || path === '' || paths.some(existing => samePath(existing, path))) continue
+    paths.push(path)
+  }
+  return paths
+}
+
 /** Compare directory paths the way the browser matches a Session cwd to a folder. */
 export function samePath(a: string | undefined, b: string | undefined): boolean {
   if (a === undefined || b === undefined || a === '' || b === '') return false
@@ -142,6 +152,8 @@ export interface GroupNode {
   label: string
   /** Total visible sessions in the group. */
   sessionCount: number
+  /** Title of the first visible non-blank session; empty means untitled. Absent when the group has none. */
+  latestSessionTitle?: string
   expanded: boolean
   /** The group contains the selected session (active folder tint; supplied here so the renderer never scans). */
   containsCurrent: boolean
@@ -545,6 +557,7 @@ export function deriveGroups(
   const groups: GroupNode[] = []
   for (const g of ordered) {
     const expanded = expandedGroups.has(g.key)
+    const lead = sectionMembers(g.sessions, pinned, archived).find(session => !session.blank)
     groups.push({
       key: g.key,
       workspaceId: g.workspaceId,
@@ -553,6 +566,7 @@ export function deriveGroups(
       createdAt: g.createdAt,
       label: g.label,
       sessionCount: g.sessions.length,
+      ...(lead === undefined ? {} : { latestSessionTitle: sessionTitle(lead) }),
       expanded,
       containsCurrent: g.key === currentGroup,
       pinned: g.workspaceId !== undefined && pinnedSet.has(g.workspaceId),

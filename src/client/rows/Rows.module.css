@@ -416,11 +416,19 @@
   color: #CFD3D6;
 }
 
-.hoverPath span {
+.hoverSession {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-size: 13px;
+  line-height: 18px;
+  color: #FFFFFF;
+}
+
+.hoverPath span {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .hoverRule {
