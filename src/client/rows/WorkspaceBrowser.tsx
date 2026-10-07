@@ -267,9 +267,6 @@ type SessionTreeProps = Pick<
   /** Pin or unpin a Workspace in the grouped list. */
   pinWorkspace: (workspaceId: string) => void
   unpinWorkspace: (workspaceId: string) => void
-  /** Whether the Recents section is expanded. */
-  recentsOpen: boolean
-  setRecentsOpen: (open: boolean) => void
   /** Open the browser-owned project editor. Omitted when the host has no folder APIs. */
   onEditRequest?: (workspaceId: WorkspaceId) => void
   /** Drop one extra folder from this Workspace. Omitted with the project editor. */
@@ -296,6 +293,76 @@ function EmptySessions({ rowState, onLeaveArchivedOnly, t }: Pick<SessionTreePro
   )
 }
 
+type RecentSessionsSectionProps = Pick<WorkspaceBrowserProps, 'open' | 't'> & PropsRenderSlots<
+  | 'sidebar.workspaces.session.menu.item'
+  | 'sidebar.workspaces.session.row.action'
+  | 'sidebar.session.row.leading'
+  | 'sidebar.session.row.hover'
+> & {
+  recents: readonly SessionNode[]
+  recentsOpen: boolean
+  onToggleRecents: () => void
+  recentsLimit: number
+  onExpandRecents: () => void
+  currentId: string | undefined
+  now: number
+  onSessionRenameRequest: (id: SessionNode['id'], currentTitle: string) => void
+}
+
+/** Recents sits beside the Workspaces section, not among the Workspace rows. */
+function RecentSessionsSection({
+  recents, recentsOpen, onToggleRecents, recentsLimit, onExpandRecents,
+  currentId, now, open, onSessionRenameRequest, renderSlot, t,
+}: RecentSessionsSectionProps) {
+  const visible = recentsOpen ? collapsedSessionRows(recents, recentsLimit) : { rows: [], hiddenCount: recents.length }
+  const fullyShown = visible.hiddenCount === 0
+  return (
+    <div className={css.recentsSection}>
+      <button
+        type="button"
+        className={css.treeSectionHeader}
+        aria-expanded={recentsOpen}
+        aria-label={t('section.recents.toggle')}
+        onClick={onToggleRecents}
+      >
+        <IconTriangleRightFillRegular className={clsx(css.treeSectionArrow, recentsOpen && css.treeSectionArrowOpen)} />
+        {t('section.recents')}
+      </button>
+      {recentsOpen && (
+        <div className={css.recentsList} role="tree" aria-label={t('section.recents')}>
+          {recents.length === 0 && (
+            <div className={css.empty}>{t('empty.recents')}</div>
+          )}
+          {visible.rows.map(node => (
+            <SessionNodeItem
+              key={node.id}
+              node={node}
+              currentId={currentId}
+              now={now}
+              onOpen={open}
+              onRenameRequest={onSessionRenameRequest}
+              renderSlot={renderSlot}
+              rowKey={`recent:${node.id}`}
+              t={t}
+            />
+          ))}
+          {visible.hiddenCount > 0 && (
+            <button
+              type="button"
+              className={css.sessionOverflowButton}
+              data-row-key="recent-overflow"
+              aria-expanded={fullyShown}
+              onClick={onExpandRecents}
+            >
+              {t('sessions.expand', { n: visible.hiddenCount })}
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 /** The scrolling session tree; unmounting drops the sessions subscription and local row limits. */
 function SessionTree({
   list, useSessionStatus, startSession, open, workspaces, ungroupedSessionIds,
@@ -303,7 +370,6 @@ function SessionTree({
   workspaceReady, animationResetKey, usePanelInfo,
   onRenameRequest, onDeleteRequest, onSessionRenameRequest,
   pinnedWorkspaceIds, pinWorkspace, unpinWorkspace,
-  recentsOpen, setRecentsOpen,
   onEditRequest, onRemoveFolderRequest,
   renderSlot,
   insertWorkspaceBefore,
@@ -363,16 +429,6 @@ function SessionTree({
     }),
     [list, workspaces, rowState, statuses, expandedGroups, pinnedWorkspaceIds, ungroupedSessionIds],
   )
-  const recents = useMemo(
-    () => deriveFlat(
-      list,
-      orderByRecency(visibleSessionIds(list, rowState.archivedSessionIds, rowState.archivedFilter), list.byId),
-      rowState,
-      statuses,
-    ),
-    [list, rowState, statuses],
-  )
-  const [recentsLimit, setRecentsLimit] = useState(COLLAPSED_SESSION_LIMIT)
   useEffect(() => {
     for (let key = revealGroup; key !== undefined; key = parents.get(key)) {
       if (groupExpansion[key] === false || (key === revealGroup && groupExpansion[key] !== true)) {
@@ -662,81 +718,26 @@ function SessionTree({
     )
   }
 
-  const visibleRecents = recentsOpen ? collapsedSessionRows(recents, recentsLimit) : { rows: [], hiddenCount: recents.length }
-  const recentsFullyShown = visibleRecents.hiddenCount === 0
   const groupRows = rootGroups.map(group => renderGroup(group, 0))
   if (groups.length === 0) rowKeys.unshift('empty')
   return (
     <div className={clsx(css.treeBody, css.wide)}>
-      <div className={css.recentsPane} role="tree" aria-label={t('section.recents')}>
-        <div role="treeitem" aria-expanded={recentsOpen}>
-          <button
-            type="button"
-            className={css.recentsNode}
-            aria-label={t('section.recents.toggle')}
-            onClick={() => {
-              if (recentsOpen) setRecentsLimit(COLLAPSED_SESSION_LIMIT)
-              setRecentsOpen(!recentsOpen)
-            }}
-          >
-            <IconTriangleRightFillRegular className={clsx(css.treeSectionArrow, recentsOpen && css.treeSectionArrowOpen)} />
-            <span className={css.recentsLabel}>{t('section.recents')}</span>
-          </button>
-          {recentsOpen && (
-            <div role="group" className={css.recentsGroup}>
-              {recents.length === 0 && (
-                <div className={css.empty}>{t('empty.recents')}</div>
-              )}
-              {visibleRecents.rows.map(node => (
-                <SessionNodeItem
-                  key={node.id}
-                  node={node}
-                  currentId={current}
-                  now={now}
-                  onOpen={open}
-                  onRenameRequest={onSessionRenameRequest}
-                  renderSlot={renderSlot}
-                  rowKey={`recent:${node.id}`}
-                  t={t}
-                />
-              ))}
-              {visibleRecents.hiddenCount > 0 && (
-                <button
-                  type="button"
-                  className={css.sessionOverflowButton}
-                  data-row-key="recent-overflow"
-                  aria-expanded={recentsFullyShown}
-                  onClick={() => {
-                    setRecentsLimit(limit => visibleRecents.hiddenCount <= COLLAPSED_SESSION_LIMIT
-                      ? Infinity
-                      : limit + COLLAPSED_SESSION_LIMIT)
-                  }}
-                >
-                  {t('sessions.expand', { n: visibleRecents.hiddenCount })}
-                </button>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-      <div className={css.workspacePane}>
-        {workspaceDropAtListStart && <span className={css.listTopDropIndicator} aria-hidden="true" />}
-        <AnimatedRows
-          className={clsx(css.list, workspaceDropAtListStart && css.listTopDropActive)}
-          label={t('section.sessions')}
-          rowKeys={rowKeys}
-          ready={list.phase === 'ready' && workspaceReady && !nativeDragActive}
-          resetKey={JSON.stringify([animationResetKey, sessionLimits])}
-        >
-          {groups.length === 0 && (
-            rowState.archivedFilter === 'only'
-              ? <EmptySessions rowState={rowState} onLeaveArchivedOnly={onLeaveArchivedOnly} t={t} />
-              : <div className={css.empty} data-row-key="empty">{t('empty.workspaces')}</div>
-          )}
-          {groupRows}
-        </AnimatedRows>
-        <span className={css.fade} />
-      </div>
+      {workspaceDropAtListStart && <span className={css.listTopDropIndicator} aria-hidden="true" />}
+      <AnimatedRows
+        className={clsx(css.list, workspaceDropAtListStart && css.listTopDropActive)}
+        label={t('section.sessions')}
+        rowKeys={rowKeys}
+        ready={list.phase === 'ready' && workspaceReady && !nativeDragActive}
+        resetKey={JSON.stringify([animationResetKey, sessionLimits])}
+      >
+        {groups.length === 0 && (
+          rowState.archivedFilter === 'only'
+            ? <EmptySessions rowState={rowState} onLeaveArchivedOnly={onLeaveArchivedOnly} t={t} />
+            : <div className={css.empty} data-row-key="empty">{t('empty.workspaces')}</div>
+        )}
+        {groupRows}
+      </AnimatedRows>
+      <span className={css.fade} />
     </div>
   )
 }
@@ -1038,8 +1039,11 @@ export function WorkspaceBrowser({
   }
   const leaveArchivedOnly = (): void => { actions.setArchivedFilter('default') }
   const workspaceReady = workspacePhase === 'ready' && workspaceStreamState !== 'loading'
+  const panelActive = usePanelInfo(info => info.activePanelId !== null)
+  const statuses = useSessionStatus(s => s)
   const mainSessionId = Object.values(list.byId)
     .find(session => (session.retainedBy.mainView ?? 0) > 0)?.id
+  const currentSessionId = panelActive ? undefined : mainSessionId
   const currentBlank = mainSessionId !== undefined && list.byId[mainSessionId]?.blank === true
     ? mainSessionId
     : undefined
@@ -1055,6 +1059,16 @@ export function WorkspaceBrowser({
     () => ({ ...orderState, archivedFilter }),
     [orderState, archivedFilter],
   )
+  const recents = useMemo(
+    () => deriveFlat(
+      list,
+      orderByRecency(visibleSessionIds(list, rowState.archivedSessionIds, rowState.archivedFilter), list.byId),
+      rowState,
+      statuses,
+    ),
+    [list, rowState, statuses],
+  )
+  const [recentsLimit, setRecentsLimit] = useState(COLLAPSED_SESSION_LIMIT)
   const flatMemberIds = useMemo(() => sessionMemberIds(list), [list])
   const orderedWorkspaces = useMemo(() => treeWorkspaces.map((workspace) => {
     const memberIds = workspace.sessionIds
@@ -1446,6 +1460,29 @@ export function WorkspaceBrowser({
 
   return (
     <div className={clsx(css.root, !wide && css.rail)}>
+      {wide && normalizedQuery === '' && groupBy !== 'flat' && (
+        <RecentSessionsSection
+          recents={recents}
+          recentsOpen={recentsOpen}
+          onToggleRecents={() => {
+            if (recentsOpen) setRecentsLimit(COLLAPSED_SESSION_LIMIT)
+            actions.setRecentsOpen(!recentsOpen)
+          }}
+          recentsLimit={recentsLimit}
+          onExpandRecents={() => {
+            const visible = collapsedSessionRows(recents, recentsLimit)
+            setRecentsLimit(limit => visible.hiddenCount <= COLLAPSED_SESSION_LIMIT
+              ? Infinity
+              : limit + COLLAPSED_SESSION_LIMIT)
+          }}
+          currentId={currentSessionId}
+          now={Date.now()}
+          open={guardedOpen}
+          onSessionRenameRequest={requestSessionRename}
+          renderSlot={renderSlot}
+          t={t}
+        />
+      )}
       <div className={css.sectionHeader}>
         {wide && (
           <span className={clsx(css.sectionLabel, css.wide, searchExpanded && css.sectionLabelHidden)}>
@@ -1625,8 +1662,6 @@ export function WorkspaceBrowser({
                 pinnedWorkspaceIds={pinnedWorkspaceIds}
                 pinWorkspace={actions.pinWorkspace}
                 unpinWorkspace={actions.unpinWorkspace}
-                recentsOpen={recentsOpen}
-                setRecentsOpen={actions.setRecentsOpen}
                 {...(addFolder === undefined ? {} : {
                   onEditRequest: (workspaceId) => {
                     const workspace = treeWorkspaces.find(item => item.workspaceId === workspaceId)
