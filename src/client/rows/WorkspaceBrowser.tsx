@@ -325,8 +325,8 @@ function RecentSessionsSection({
         aria-label={t('section.recents.toggle')}
         onClick={onToggleRecents}
       >
-        <IconTriangleRightFillRegular className={clsx(css.treeSectionArrow, recentsOpen && css.treeSectionArrowOpen)} />
-        {t('section.recents')}
+        <IconTriangleRightFillRegular size={12} className={clsx(css.treeSectionArrow, recentsOpen && css.treeSectionArrowOpen)} />
+        <span className={css.sectionLabel}>{t('section.recents')}</span>
       </button>
       {recentsOpen && (
         <div className={css.recentsList} role="tree" aria-label={t('section.recents')}>
