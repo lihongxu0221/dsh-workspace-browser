@@ -39,7 +39,7 @@ interface WorkspaceRowDragProps {
  * @param props.t - the browser root's locale seat.
  * @returns the row element.
  */
-export declare function ProjectRowItem({ group, containsCurrentDescendant, onToggle, onCreate, actions, drag, home, newShortcut, t }: {
+export declare function ProjectRowItem({ group, containsCurrentDescendant, onToggle, onCreate, actions, drag, home, newShortcut, onOpenFolder, t }: {
     group: GroupNode;
     newShortcut?: ShortcutCatalogEntry | undefined;
     containsCurrentDescendant?: boolean;
@@ -57,6 +57,8 @@ export declare function ProjectRowItem({ group, containsCurrentDescendant, onTog
     drag?: WorkspaceRowDragProps | undefined;
     /** Host account home; POSIX home-rooted hover paths display as `~`. */
     home?: string | undefined;
+    /** Open one source directory in the Host file manager. */
+    onOpenFolder: (path: string) => void;
     t: RowTranslate;
 }): import("react").JSX.Element;
 /**

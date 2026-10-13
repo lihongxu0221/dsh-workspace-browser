@@ -278,6 +278,11 @@ export type WorkspaceBrowserInjected = {
   removeFolder?: (workspaceId: WorkspaceId, path: string) => Promise<WorkspaceView>
   /** Make an owned extra folder the primary directory (new-session cwd). */
   setPrimaryFolder?: (workspaceId: WorkspaceId, path: string) => Promise<WorkspaceView>
+  /**
+   * Open one Host directory in the native file manager. The Host picks Explorer,
+   * Finder, or the Linux file manager; the browser does not.
+   */
+  openFolder: (path: string) => void
 }
 
 /** The browser's declared viewing store handle, shared with the row actions that write view state. */

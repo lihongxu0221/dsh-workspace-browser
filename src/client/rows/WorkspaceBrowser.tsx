@@ -271,6 +271,8 @@ type SessionTreeProps = Pick<
   onEditRequest?: (workspaceId: WorkspaceId) => void
   /** Drop one extra folder from this Workspace. Omitted with the project editor. */
   onRemoveFolderRequest?: (workspaceId: WorkspaceId, path: string) => void
+  /** Open a source directory in the Host file manager. */
+  onOpenFolder: (path: string) => void
   /** One Session chosen from search that must be exposed and scrolled into view. */
   revealSessionId?: SessionId | undefined
   /** Acknowledge that the chosen Session row has been revealed. */
@@ -370,7 +372,7 @@ function SessionTree({
   workspaceReady, animationResetKey, usePanelInfo,
   onRenameRequest, onDeleteRequest, onSessionRenameRequest,
   pinnedWorkspaceIds, pinWorkspace, unpinWorkspace,
-  onEditRequest, onRemoveFolderRequest,
+  onEditRequest, onRemoveFolderRequest, onOpenFolder,
   renderSlot,
   insertWorkspaceBefore,
   nestWorkspaces, groupExpansion, setGroupExpanded,
@@ -587,6 +589,7 @@ function SessionTree({
           group={group}
           containsCurrentDescendant={currentAncestors.has(group.key)}
           home={home}
+          onOpenFolder={onOpenFolder}
           t={t}
           onToggle={() => {
             if (group.workspaceId !== undefined && group.sessionCount === 0 && children.length === 0) {
@@ -982,6 +985,7 @@ export function WorkspaceBrowser({
   closeAddWorkspace,
   setDirectoryBusy,
   dismissForkError,
+  openFolder,
   renderSlot,
   t,
 }: WorkspaceBrowserProps) {
@@ -1662,6 +1666,7 @@ export function WorkspaceBrowser({
                 pinnedWorkspaceIds={pinnedWorkspaceIds}
                 pinWorkspace={actions.pinWorkspace}
                 unpinWorkspace={actions.unpinWorkspace}
+                onOpenFolder={openFolder}
                 {...(addFolder === undefined ? {} : {
                   onEditRequest: (workspaceId) => {
                     const workspace = treeWorkspaces.find(item => item.workspaceId === workspaceId)

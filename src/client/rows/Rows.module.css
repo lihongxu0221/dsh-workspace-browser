@@ -426,6 +426,22 @@
   color: #FFFFFF;
 }
 
+button.hoverPath {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  color: inherit;
+}
+
+button.hoverPath:hover {
+  color: #FFFFFF;
+}
+
 .hoverPath span {
   min-width: 0;
   overflow-wrap: anywhere;

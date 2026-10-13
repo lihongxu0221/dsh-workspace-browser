@@ -131,6 +131,7 @@ export declare const zh: {
     'status.completed': string;
     'hover.created': string;
     'hover.copied': string;
+    'hover.openFolder': string;
     'date.ymd': string;
     'time.now': string;
     'time.minutes': string;
@@ -270,6 +271,7 @@ export declare const en: {
     'status.completed': string;
     'hover.created': string;
     'hover.copied': string;
+    'hover.openFolder': string;
     'date.ymd': string;
     'time.now': string;
     'time.minutes': string;

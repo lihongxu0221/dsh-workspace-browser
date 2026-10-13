@@ -148,12 +148,14 @@ function hoverTimeLabel(updatedAt: number, now: number, t: RowTranslate): string
 
 /** Hover-card body: title, latest session, task count, and every source folder. */
 function WorkspaceHoverContent({
-  label, cwd, folders, sessionCount, latestSessionTitle, home, pinned = false, onPin, onEdit, onOpenMenu, t,
+  label, cwd, folders, sessionCount, latestSessionTitle, home, pinned = false, onPin, onEdit, onOpenMenu, onOpenFolder, t,
 }: {
   label: string
   cwd: string | undefined
   folders: readonly string[]
   home?: string | undefined
+  /** Open one source directory in the Host file manager. */
+  onOpenFolder: (path: string) => void
   sessionCount: number
   /** Empty string is an untitled session; omit the line when there is no session. */
   latestSessionTitle?: string | undefined
@@ -200,10 +202,20 @@ function WorkspaceHoverContent({
       </div>
       {paths.length > 0 && <div className={css.hoverRule} />}
       {paths.map(path => (
-        <div className={css.hoverPath} key={path}>
+        <button
+          key={path}
+          type="button"
+          className={css.hoverPath}
+          aria-label={t('hover.openFolder', { path: abbreviateHomePath(path, home) })}
+          onClick={(event) => {
+            event.stopPropagation()
+            event.preventDefault()
+            onOpenFolder(path)
+          }}
+        >
           <IconFolderCloseRegular size={14} />
           <span>{abbreviateHomePath(path, home)}</span>
-        </div>
+        </button>
       ))}
       {onEdit !== undefined && (
         <>
@@ -261,7 +273,7 @@ function rowHalf(e: { clientY: number; currentTarget: HTMLElement }): 'before' |
  * @param props.t - the browser root's locale seat.
  * @returns the row element.
  */
-export function ProjectRowItem({ group, containsCurrentDescendant = false, onToggle, onCreate, actions, drag, home, newShortcut, t }: {
+export function ProjectRowItem({ group, containsCurrentDescendant = false, onToggle, onCreate, actions, drag, home, newShortcut, onOpenFolder, t }: {
   group: GroupNode
   newShortcut?: ShortcutCatalogEntry | undefined
   containsCurrentDescendant?: boolean
@@ -279,6 +291,8 @@ export function ProjectRowItem({ group, containsCurrentDescendant = false, onTog
   drag?: WorkspaceRowDragProps | undefined
   /** Host account home; POSIX home-rooted hover paths display as `~`. */
   home?: string | undefined
+  /** Open one source directory in the Host file manager. */
+  onOpenFolder: (path: string) => void
   t: RowTranslate
 }) {
   const row = group
@@ -393,6 +407,7 @@ export function ProjectRowItem({ group, containsCurrentDescendant = false, onTog
         cwd={row.cwd}
         folders={row.folders}
         home={home}
+        onOpenFolder={onOpenFolder}
         sessionCount={row.sessionCount}
         latestSessionTitle={row.latestSessionTitle}
         pinned={row.pinned}
