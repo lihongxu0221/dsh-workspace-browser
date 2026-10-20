@@ -2,10 +2,17 @@
 # Declared by `dsh.bundle.patch`, so DSH applies it as a profile layer whenever
 # this package is installed as a bundle.
 #
-# Replace the existing `ui-workspace` row in place. Do not disable that row and
-# insert a second id: a profile that then disables only the inserted id leaves
-# no package providing `ctx.uiWorkspace`, and the web client boot times out
-# waiting for it. Load this plugin or @deepseek-ai/dsh-client-ui-workspace,
-# never both — they claim the same slots, locale namespace, and service.
+# Disable the stock row and insert this package under its own id. A `name`
+# override on `ui-workspace` does not swap the package: the include loader
+# treats `name` as an identity check and skips the whole patch on mismatch,
+# so the stock browser keeps running and this plugin's Recents, project
+# editor, and source folders never mount.
+#
+# The inserted row must stay enabled while this bundle is selected. Disabling
+# only `ui-workspace-browser` leaves nobody providing `ctx.uiWorkspace`.
 - id: ui-workspace
-  name: '@deepseek-ai/dsh-client-ui-workspace-browser'
+  disabled: true
+
+- insert:
+    - id: ui-workspace-browser
+      name: '@deepseek-ai/dsh-client-ui-workspace-browser'
