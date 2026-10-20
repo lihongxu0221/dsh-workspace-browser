@@ -6,7 +6,7 @@ Standalone Cordis client plugin that gives the shipped dsh web client the worksp
 
 The 2026-09-29 Desktop build (**0.2.0-rc.2**) shipped a workspace browser with no Recents, no collapsible sections and no project editor. By **0.2.1-rc.2** the in-tree `ui-workspace` is that browser (toast factory, inline session-id copy, shared hover dwell, session watermarks, remote-access hooks) but still has no Recents section, no project editor and no folder API. This plugin still replaces that row: the rc.2 contracts come from the in-tree snapshot, and the plugin layer on top is Recents, the project editor, and the plugin-owned source-folder list.
 
-`cordis.patch.yml` disables the in-tree `ui-workspace` row — both claim the same slots, locale namespace (`workspace`) and `ctx.uiWorkspace` service — and loads this plugin instead. A bundle whose slots never register therefore leaves the workspace region **empty**, which is why the client-half surface is checked against the host before any install (see Verification).
+`cordis.patch.yml` replaces the in-tree `ui-workspace` row in place — both claim the same slots, locale namespace (`workspace`) and `ctx.uiWorkspace` service. Disabling that row and inserting a second id is not safe: a profile that then disables only the inserted id leaves nobody providing `uiWorkspace`, and web boot times out. A bundle whose slots never register therefore leaves the workspace region **empty**, which is why the client-half surface is checked against the host before any install (see Verification).
 
 ## Source folders on a host without the folder API
 
@@ -36,7 +36,7 @@ src/client/session-actions/…        pin / rename / fork / archive / copy-id ro
 src/client/toast/…                  rc.2 keyed toast registrations
 src/client/WorkspaceEditDialog.tsx  project editor: title, source folders, primary folder
 src/client/{tree,stores,pin-order,shortcuts,navigation,locales}.ts
-cordis.patch.yml                    bundle patch: disable ui-workspace, insert this plugin
+cordis.patch.yml                    bundle patch: replace the ui-workspace row in place
 cordis.patch.dev.yml                the same swap with an absolute path, for `--patch` runs
 scripts/build-client.mjs            emits lib/client.js through the harness client preset
 ```

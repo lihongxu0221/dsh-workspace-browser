@@ -1,12 +1,8 @@
-# Development overlay for a harness checkout: the same swap as
+# Development overlay for a harness checkout: the same in-place swap as
 # `cordis.patch.yml`, but naming this checkout by absolute path so it loads
 # without installing the package as a bundle first.
 #
 # Usage (from the harness checkout):
 #   pnpm dsh web --patch "E:/AI/Agents/Deepseek Harness/DSH/dsh-workspace-browser/cordis.patch.dev.yml"
 - id: ui-workspace
-  disabled: true
-
-- insert:
-    - id: ui-workspace-browser
-      name: 'E:/AI/Agents/Deepseek Harness/DSH/dsh-workspace-browser'
+  name: 'E:/AI/Agents/Deepseek Harness/DSH/dsh-workspace-browser'

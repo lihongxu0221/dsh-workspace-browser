@@ -6,7 +6,7 @@
 
 2026-09-29 桌面端构建（**0.2.0-rc.2**）的工作区浏览器没有最近会话、没有可折叠分区、也没有项目编辑器。到 **0.2.1-rc.2**，树内 `ui-workspace` 已经是那套浏览器（toast 工厂、行内复制 Session ID、共享悬停停留、会话水位线、远程访问 hook），但仍然没有最近会话分区、没有项目编辑器、也没有文件夹 API。本插件仍替换该行：rc.2 的契约取自树内快照，插件层补上的是最近会话、项目编辑器和插件自有的源文件夹列表。
 
-`cordis.patch.yml` 停用树内的 `ui-workspace` 行——两者抢占同一批 slot、同一 `workspace` 语言命名空间与同一个 `ctx.uiWorkspace` 服务——改载本插件。因此若本插件的 slot 没能注册，工作区区域会**整块空白**；这也是安装前必须先核对客户端依赖面（见「验证」）的原因。
+`cordis.patch.yml` 原地替换树内的 `ui-workspace` 行——两者抢占同一批 slot、同一 `workspace` 语言命名空间与同一个 `ctx.uiWorkspace` 服务。不能先停用该行再插入第二个 id：profile 若只禁用插入的那一行，就没有人提供 `uiWorkspace`，Web 启动会一直等到超时。因此若本插件的 slot 没能注册，工作区区域会**整块空白**；这也是安装前必须先核对客户端依赖面（见「验证」）的原因。
 
 ## 宿主没有文件夹 API 时的源文件夹
 
@@ -36,7 +36,7 @@ src/client/session-actions/…        置顶 / 重命名 / 派生 / 归档 / 复
 src/client/toast/…                  rc.2 的 keyed toast 注册
 src/client/WorkspaceEditDialog.tsx  项目编辑器：标题、源文件夹、主要文件夹
 src/client/{tree,stores,pin-order,shortcuts,navigation,locales}.ts
-cordis.patch.yml                    组合包补丁：停用 ui-workspace，插入本插件
+cordis.patch.yml                    组合包补丁：原地替换 ui-workspace 行
 cordis.patch.dev.yml                同样替换，但用绝对路径，供 --patch 使用
 scripts/build-client.mjs            经 harness 的 client 预设产出 lib/client.js
 ```
