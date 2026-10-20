@@ -252,14 +252,12 @@
   flex: none;
 }
 
-/* Trailing action buttons surface on hover only (figma 27:4668 / 27:4656):
-   bare 16px glyphs, tertiary grey; the figma gap 12 reads too airy beside
-   the 16px glyphs, so the buttons sit at 10. */
+/* Trailing action buttons surface on hover with bare 16px glyphs. */
 .rowActions {
   flex: none;
   display: none;
   align-items: center;
-  gap: 10px;
+  gap: 15px;
 }
 
 .projectRow:hover .rowActions,
@@ -349,68 +347,20 @@
 }
 
 /* Hover-card body (figma 169:16903): dark surface, fixed colors both themes. */
-.hoverCard {
-  width: min(320px, calc(100vw - 24px));
-}
-
 .hoverContent {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.hoverHead,
-.hoverMeta,
-.hoverPath,
-.hoverEdit {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-  color: #FFFFFF;
-}
-
 .hoverTitle {
-  flex: 1;
-  min-width: 0;
   font-size: 14px;
   line-height: 20px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.hoverPin,
-.hoverEdit {
-  flex: none;
-  border: none;
-  padding: 0;
-  background: transparent;
-  cursor: pointer;
   color: #FFFFFF;
+  overflow-wrap: break-word;
 }
 
-.hoverPin {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  border-radius: 6px;
-}
-
-.hoverPin:hover,
-.hoverEdit:hover {
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.hoverPinActive {
-  color: #FFFFFF;
-}
-
-.hoverMeta,
-.hoverPath,
-.hoverEdit {
+.hoverPath {
   font-size: 12px;
   line-height: 16px;
   color: #CFD3D6;

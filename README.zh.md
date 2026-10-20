@@ -4,7 +4,7 @@
 
 ## 为什么存在
 
-已部署客户端（**0.2.0-rc.2**，2026-09-29 桌面端构建）的工作区浏览器没有最近会话、没有可折叠分区、也没有项目编辑器。本插件用 harness `winexeNew` 分支上功能完整的实现替换该区域。
+2026-09-29 桌面端构建（**0.2.0-rc.2**）的工作区浏览器没有最近会话、没有可折叠分区、也没有项目编辑器。到 **0.2.1-rc.2**，树内 `ui-workspace` 已经是那套浏览器（toast 工厂、行内复制 Session ID、共享悬停停留、会话水位线、远程访问 hook），但仍然没有最近会话分区、没有项目编辑器、也没有文件夹 API。本插件仍替换该行：rc.2 的契约取自树内快照，插件层补上的是最近会话、项目编辑器和插件自有的源文件夹列表。
 
 `cordis.patch.yml` 停用树内的 `ui-workspace` 行——两者抢占同一批 slot、同一 `workspace` 语言命名空间与同一个 `ctx.uiWorkspace` 服务——改载本插件。因此若本插件的 slot 没能注册，工作区区域会**整块空白**；这也是安装前必须先核对客户端依赖面（见「验证」）的原因。
 
@@ -32,7 +32,8 @@ src/client/index.ts                 apply：插槽注册、ctx.uiWorkspace 服�
 src/client/host-capabilities.d.ts   宿主可选的文件夹 API，以及为何可选
 src/client/contract/slots.ts        插槽 owner/occupant 契约
 src/client/rows/…                   WorkspaceBrowser、SessionTree、Rows、AnimatedRows
-src/client/session-actions/…        置顶 / 重命名 / 派生 / 归档 行操作与提示
+src/client/session-actions/…        置顶 / 重命名 / 派生 / 归档 / 复制 ID 行操作
+src/client/toast/…                  rc.2 的 keyed toast 注册
 src/client/WorkspaceEditDialog.tsx  项目编辑器：标题、源文件夹、主要文件夹
 src/client/{tree,stores,pin-order,shortcuts,navigation,locales}.ts
 cordis.patch.yml                    组合包补丁：停用 ui-workspace，插入本插件
@@ -61,7 +62,7 @@ node scripts/build-client.mjs   # harness 的 client 预设：lib/types -> lib/c
 
 ## 验证
 
-1. **类型面**：`devDependencies` 把每个 `@deepseek-ai/*` 固定到更新的已发布世代（`0.2.1-alpha.1`），任何该世代没有的原子、prop 或服务都会让 `pnpm run typecheck` 失败。三个宿主文件夹 API 有意不在已发布类型里，改为本地声明的可选能力——插件能同时为两种宿主编译，靠的就是这一点。
+1. **类型面**：`devDependencies` 把每个 `@deepseek-ai/*` 固定到本插件对准的已发布世代（`0.2.1-rc.2`；cordis `^4.0.5`），任何该世代没有的原子、prop 或服务都会让 `pnpm run typecheck` 失败。三个宿主文件夹 API 仍不在已发布类型里，改为本地声明的可选能力——缺失时项目编辑器退回插件自己的 store。client inject 列表还声明了 `@deepseek-ai/dsh-api-remote-access`，rc.2 的 `remoteAccess` 服务来自它。
 2. **产物依赖面**：与宿主构建对比——从 `resources/app.asar` 取出宿主自带的 `dsh/node_modules/@deepseek-ai/dsh-client-ui-workspace/lib/client.js`，比较两者的 `//#region lib/types/...` 模块清单、以及每个模块表条目被用到的成员集合（`_deepseek_ai_dsh_client_ui_primitives.X`、`_deepseek_ai_dsh_client_store.X`、`_deepseek_ai_dsh_cordis.X`、`react.X`、`react_jsx_runtime.X`），并把用到的 primitives 符号逐个对照宿主那条 `export { … }` 清单。「多出来的模块」（项目编辑器）与「多出来的成员」只有在宿主确实导出它们时才算安全。
 3. **运行期**：用宿主自带的运行时 + 一次性 profile 装上本插件启动，再用无头浏览器加载其界面，断言新增功能确实渲染：树内插件没有的 `最近会话 / Recents` 分区、工作区行菜单里出现 *编辑项目*、项目编辑器对话框里有 *源文件夹* 与 *添加文件夹*、并且控制台无错误。
 
@@ -69,5 +70,5 @@ node scripts/build-client.mjs   # harness 的 client 预设：lib/types -> lib/c
 
 - **「设为主要」不改宿主注册表里的路径。** 出厂宿主没有这个 API。插件记住提升后的目录，新建会话落在那里，并按 cwd 借回工作区；宿主仍把原路径当作工作区路径。宿主带文件夹 API 时改走宿主，路径会真正换掉。
 - **文件夹归属按会话 `cwd` 匹配**，且只"借用"宿主留作未分组的会话；宿主已归到某个工作区下的会话不会被搬走。
-- `src/` 取自 `winexeNew` 而非手写：换宿主世代时整份重新取用，并保留能力探测。
-- 无包内测试；树内测试留在所取用修订的 `packages/client/ui-workspace/tests`。
+- `src/` 是 0.2.1-rc.2 树内 `ui-workspace` 快照加上插件层（最近会话、项目编辑器、文件夹持久化）。换宿主世代时重新取用共享文件，并保留能力探测。
+- 包内测试覆盖悬停卡片的文件夹事实（`tests/hover-card.test.mjs`）。树内测试留在所取用修订的 `packages/client/ui-workspace/tests`。

@@ -207,6 +207,7 @@ interface Group {
   key: string
   workspaceId: WorkspaceId | undefined
   cwd: string | undefined
+  /** Extra directories besides the primary path; empty for the ungrouped bucket. */
   folders: readonly string[]
   createdAt: number | undefined
   label: string
@@ -540,6 +541,8 @@ export function deriveGroups(
   const currentGroup = current === undefined
     ? undefined
     : owningGroupKey(workspaces, current)
+  // Browser-local pinned Workspaces lead, in pin order; the rest follow the
+  // Host group order.
   const pinnedIds = view.pinnedWorkspaceIds ?? []
   const pinnedSet = new Set(pinnedIds)
   const grouped = groupByWorkspace(list, workspaces, archived, rowState.archivedFilter, view.ungroupedOrder)

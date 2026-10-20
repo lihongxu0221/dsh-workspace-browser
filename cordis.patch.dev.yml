@@ -3,10 +3,10 @@
 # without installing the package as a bundle first.
 #
 # Usage (from the harness checkout):
-#   pnpm dsh web --patch D:\GitLocal\DSH\dsh-workspace-browser\cordis.patch.dev.yml
+#   pnpm dsh web --patch "E:/AI/Agents/Deepseek Harness/DSH/dsh-workspace-browser/cordis.patch.dev.yml"
 - id: ui-workspace
   disabled: true
 
 - insert:
     - id: ui-workspace-browser
-      name: 'D:/GitLocal/DSH/dsh-workspace-browser'
+      name: 'E:/AI/Agents/Deepseek Harness/DSH/dsh-workspace-browser'

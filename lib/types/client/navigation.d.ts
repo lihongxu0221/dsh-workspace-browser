@@ -7,8 +7,11 @@ import type { SessionId } from '@deepseek-ai/dsh-session/types';
 import type { DraftInitializationOptions } from '@deepseek-ai/dsh-client-ui-conversation/client';
 import type { RowToast } from './contract/slots.ts';
 import type { WorkspaceViewStoreActions } from './stores.ts';
-/** Optional content preparation for the resolved target Session. */
-export type StartSessionOptions = DraftInitializationOptions;
+/** Content preparation and Agent preset for the Session a Workspace flow opens. */
+export interface StartSessionOptions extends DraftInitializationOptions {
+    /** Agent preset the Session runs; the Host default when omitted. */
+    readonly agentPreset?: string;
+}
 /** Workspace archive and directory operations consumed by Client UI domains. */
 export interface UiWorkspace {
     /**
@@ -21,29 +24,35 @@ export interface UiWorkspace {
      * @param workspaceId - target Workspace.
      * @param beforeOpen - optional synchronous preparation for the selected Session,
      * skipped after supersession; a throw aborts the open and releases the retained reference.
+     * @param options - choices for the Session the connection creates or reuses.
      * @returns completion; a superseded request may create a Session but does not open it.
      * @throws on failure; a refused creation is also shown through the Workspace
      * notice unless a later navigation or disposal superseded the request.
      */
-    openWorkspace(workspaceId: WorkspaceId, beforeOpen?: (sessionId: SessionId) => void): Promise<void>;
+    openWorkspace(workspaceId: WorkspaceId, beforeOpen?: (sessionId: SessionId) => void, options?: Pick<StartSessionOptions, 'agentPreset'>): Promise<void>;
     /**
      * Fork a Session without changing the current selection.
      * @param sessionId - source Session.
      * @param onCreated - observer before the optional child-title update.
+     * @param options - optional permission to start source migration; omission preserves the Host default.
      * @returns the child SessionId after creation and inherited-title increment.
      */
-    forkSession(sessionId: SessionId, onCreated?: (childId: SessionId) => void): Promise<SessionId>;
+    forkSession(sessionId: SessionId, onCreated?: (childId: SessionId) => void, options?: Pick<Parameters<ISessions['fork']>[0], 'allowMigration'>): Promise<SessionId>;
     /**
-     * Resolve the reusable or newly created blank Session for a Workspace.
+     * Resolve the Session for a new conversation in a Workspace: the Host reuses
+     * the first listed blank member while it is reusable and otherwise creates one,
+     * under the requested preset or the Host default.
      * @param workspaceId - target Workspace.
+     * @param options - choices for the created or reused Session.
      * @returns a Session already addressable through the Session Controller.
      */
-    connectWorkspace(workspaceId: WorkspaceId): Promise<SessionId>;
+    connectWorkspace(workspaceId: WorkspaceId, options?: Pick<StartSessionOptions, 'agentPreset'>): Promise<SessionId>;
     /**
-     * Start a New Session flow and navigate to its Session; a creation the Host
+     * Create a fresh Session, or reuse a blank when preparing an explicit draft. A creation the Host
      * refuses is shown through the Workspace notice and leaves the selection as it was.
      * @param workspaceId - explicit target; absent inherits the current or most recent Workspace.
-     * @param options - initial content; existing text or attachments are preserved unless clearPreviousDraft is true.
+     * @param options - initial content and the reused blank's preset; existing text or attachments
+     * are preserved unless clearPreviousDraft is true.
      */
     startSession(workspaceId?: WorkspaceId, options?: StartSessionOptions): void;
     /**
@@ -113,6 +122,7 @@ declare class UiWorkspaceService extends Service implements UiWorkspace {
     private readonly view;
     private readonly notify;
     private readonly primaryOf;
+    /** The latest in-flight connection per Workspace; a request joins it only when both name the same preset. */
     private readonly connecting;
     private readonly lifetime;
     private readonly selection;
@@ -127,13 +137,36 @@ declare class UiWorkspaceService extends Service implements UiWorkspace {
      * @param primaryOf - plugin-promoted primary directory for a Workspace, when one is set.
      */
     constructor(ctx: Context, directoryPicker: ClientRemote['directoryPicker'], workspaces: IWorkspaces, sessions: ISessions, view: Pick<WorkspaceViewStoreActions, 'pinSessionOrder'>, notify: (toast: RowToast) => void, primaryOf: (workspaceId: WorkspaceId) => string | undefined);
-    connectWorkspace(workspaceId: WorkspaceId): Promise<SessionId>;
-    private reuseOrCreateBlank;
+    connectWorkspace(workspaceId: WorkspaceId, options?: Pick<StartSessionOptions, 'agentPreset'>): Promise<SessionId>;
+    /**
+     * @param reuse - preset for the reused or created blank; absent creates a fresh Session.
+     */
+    private connectBlank;
+    private createInWorkspace;
+    /**
+     * Reuse a blank at a plugin-promoted cwd, or create a fresh Session there.
+     * A named blank the Host declined may still read as blank from stale cached
+     * list metadata, so its projections are reloaded like `createNamed` does.
+     */
     private reuseBlankAt;
-    private reuseBlank;
+    /**
+     * Create through the Host. A named blank the Host declined may still read as
+     * blank from stale cached list metadata, which hides it from the Session tree;
+     * its projections are reloaded so the row reflects its log.
+     */
+    private createNamed;
+    /**
+     * Reopen a saved blank Session under the preset its log recorded, or under
+     * the Host default once that preset no longer activates. Listed values are
+     * cached hints that can lag the log after an unclean Host exit, so the
+     * Session's projections are reloaded before the preset is read; a Session
+     * that still awaits a format migration reloads only those cached hints.
+     */
+    private restoreBlank;
     openSession(target: SessionTarget): void;
-    openWorkspace(workspaceId: WorkspaceId, beforeOpen?: (sessionId: SessionId) => void): Promise<void>;
-    forkSession(sessionId: SessionId, onCreated?: (childId: SessionId) => void): Promise<SessionId>;
+    openWorkspace(workspaceId: WorkspaceId, beforeOpen?: (sessionId: SessionId) => void, options?: Pick<StartSessionOptions, 'agentPreset'>): Promise<void>;
+    private openWorkspaceSession;
+    forkSession(sessionId: SessionId, onCreated?: (childId: SessionId) => void, options?: Pick<Parameters<ISessions['fork']>[0], 'allowMigration'>): Promise<SessionId>;
     startSession(workspaceId?: WorkspaceId, options?: StartSessionOptions): void;
     private prepareDraft;
     private draftPreparationFailed;

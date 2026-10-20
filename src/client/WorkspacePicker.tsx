@@ -164,7 +164,7 @@ export function WorkspacePickFlow({
   adoptRef.current = adoptDirectory
 
   const openDirectoryFlow = useCallback((): void => {
-    onCloseRef.current()
+    onClose()
     setErrorOpen(false)
     setModalError(null)
     const pick = nativeDirectoryPick()
@@ -187,7 +187,7 @@ export function WorkspacePickFlow({
       return
     }
     setFlowOpen(true)
-  }, [])
+  }, [onClose])
 
   // A menu exists to disambiguate between targets. With no workspaces listed
   // and the add action the only entry left, the anchor gesture IS that action:
@@ -199,16 +199,10 @@ export function WorkspacePickFlow({
   // made unnecessary; the add-only surface lists nothing and never waits.
   const listSettled = addOnly || workspaceSnapshot.phase === 'ready'
   const addIsTheOnlyEntry = !pinAdd && listSettled && addEntries.length === 1
-  const flowTriggeredRef = useRef(false)
+  // `flowBusy` gates this exactly as it disables the equivalent menu entry: a
+  // pick still being adopted owns the surface until it settles.
   useEffect(() => {
-    if (!open) {
-      flowTriggeredRef.current = false
-      return
-    }
-    if (addIsTheOnlyEntry && !flowBusy && !flowTriggeredRef.current) {
-      flowTriggeredRef.current = true
-      openDirectoryFlow()
-    }
+    if (open && addIsTheOnlyEntry && !flowBusy) openDirectoryFlow()
   }, [open, addIsTheOnlyEntry, flowBusy, openDirectoryFlow])
 
   /** Owner side of the flow conversation: adopt keeps the flow open (busy) until the Host answers. */

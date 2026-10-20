@@ -4,7 +4,7 @@ Standalone Cordis client plugin that gives the shipped dsh web client the worksp
 
 ## Why it exists
 
-The deployed client (**0.2.0-rc.2**, the 2026-09-29 Desktop build) ships a workspace browser with no Recents, no collapsible sections and no project editor. This plugin replaces that region with the feature-complete implementation from the harness's `winexeNew` branch.
+The 2026-09-29 Desktop build (**0.2.0-rc.2**) shipped a workspace browser with no Recents, no collapsible sections and no project editor. By **0.2.1-rc.2** the in-tree `ui-workspace` is that browser (toast factory, inline session-id copy, shared hover dwell, session watermarks, remote-access hooks) but still has no Recents section, no project editor and no folder API. This plugin still replaces that row: the rc.2 contracts come from the in-tree snapshot, and the plugin layer on top is Recents, the project editor, and the plugin-owned source-folder list.
 
 `cordis.patch.yml` disables the in-tree `ui-workspace` row — both claim the same slots, locale namespace (`workspace`) and `ctx.uiWorkspace` service — and loads this plugin instead. A bundle whose slots never register therefore leaves the workspace region **empty**, which is why the client-half surface is checked against the host before any install (see Verification).
 
@@ -32,7 +32,8 @@ src/client/index.ts                 apply: registrations, the ctx.uiWorkspace se
 src/client/host-capabilities.d.ts   the optional host folder APIs and why they are optional
 src/client/contract/slots.ts        slot owner/occupant contracts
 src/client/rows/…                   WorkspaceBrowser, SessionTree, Rows, AnimatedRows
-src/client/session-actions/…        pin / rename / fork / archive rows, toast
+src/client/session-actions/…        pin / rename / fork / archive / copy-id rows
+src/client/toast/…                  rc.2 keyed toast registrations
 src/client/WorkspaceEditDialog.tsx  project editor: title, source folders, primary folder
 src/client/{tree,stores,pin-order,shortcuts,navigation,locales}.ts
 cordis.patch.yml                    bundle patch: disable ui-workspace, insert this plugin
@@ -61,7 +62,7 @@ node scripts/build-client.mjs   # harness client preset: lib/types -> lib/client
 
 ## Verification
 
-1. **Types.** `devDependencies` pins every `@deepseek-ai/*` package to the newer published generation (`0.2.1-alpha.1`), so `pnpm run typecheck` fails on any atom, prop or service that generation lacks. The three host folder APIs are intentionally absent from the published surface and are declared optional locally — that is what keeps the plugin compiling for both hosts.
+1. **Types.** `devDependencies` pins every `@deepseek-ai/*` package to the published generation this plugin targets (`0.2.1-rc.2`; cordis `^4.0.5`), so `pnpm run typecheck` fails on any atom, prop or service that generation lacks. The three host folder APIs are still absent from the published surface and are declared optional locally — the project editor falls back to the plugin's own store when they are missing. The client inject list also names `@deepseek-ai/dsh-api-remote-access`, which the rc.2 `remoteAccess` service comes from.
 2. **Bundle surface.** Diff the bundle against the host build: extract the host's own `dsh/node_modules/@deepseek-ai/dsh-client-ui-workspace/lib/client.js` from `resources/app.asar`, then compare the `//#region lib/types/...` module lists and the member sets required from each module-table entry (`_deepseek_ai_dsh_client_ui_primitives.X`, `…dsh_client_store.X`, `_deepseek_ai_dsh_cordis.X`, `react.X`, `react_jsx_runtime.X`), and check every required primitives symbol against the host's single `export { … }` list. Extra modules (the project editor) and extra members are fine only when the host exports them.
 3. **Runtime.** Boot the host's own runtime against a throwaway profile with this bundle installed, then load the served UI in a headless browser and assert that the added features render: the `最近会话` / `Recents` section (the in-tree plugin has no such key), a workspace row menu that offers *编辑项目*, a project editor dialog carrying *源文件夹* and *添加文件夹*, and a console with no errors.
 
@@ -69,5 +70,5 @@ node scripts/build-client.mjs   # harness client preset: lib/types -> lib/client
 
 - **"Set as primary" does not rewrite the host registry path.** The shipped host has no such API. The plugin remembers the promoted directory, creates new Sessions there, and borrows them back by cwd; the host still treats the original path as the Workspace path. On a host with the folder API the action goes to the host and the path really changes.
 - **Folder membership is matched by Session `cwd`**, and only Sessions the host left ungrouped are borrowed. A Session that the host already groups under its own Workspace stays there.
-- `src/` is vendored from `winexeNew` rather than hand-written: re-vendor it when moving to another host generation and keep the capability probes.
-- No package tests; the in-tree suite stays in `packages/client/ui-workspace/tests` at the vendored revision.
+- `src/` is the 0.2.1-rc.2 in-tree `ui-workspace` snapshot plus the plugin layer (Recents, project editor, folder persistence). Re-vendor the shared files when moving to another host generation and keep the capability probes.
+- Package tests cover the hover-card folder facts (`tests/hover-card.test.mjs`). The in-tree suite stays in `packages/client/ui-workspace/tests` at the vendored revision.
