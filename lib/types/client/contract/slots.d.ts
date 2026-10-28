@@ -240,9 +240,9 @@ export type WorkspaceBrowserInjected = {
     /** Dismiss the shortcut's fork-failure notification. */
     dismissForkError: () => void;
     /**
-     * Create a fresh Session, or preserve a reusable blank with explicit draft options.
-     * Without an explicit Workspace, inherit the current Session Workspace,
-     * then the recent Workspace, or clear into the New Session view.
+     * Open the Workspace's reusable blank Session. A requested preset skips blanks
+     * that list a different preset. Without an explicit Workspace, inherit the
+     * current Session Workspace, then the recent Workspace, or clear into the New Session view.
      */
     startSession: (workspaceId?: WorkspaceId, options?: StartSessionOptions) => void;
     /** Open a real Session. */

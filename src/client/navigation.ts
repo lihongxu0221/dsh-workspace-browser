@@ -34,6 +34,12 @@ interface MainSelection {
 export interface StartSessionOptions extends DraftInitializationOptions {
   /** Agent preset the Session runs; the Host default when omitted. */
   readonly agentPreset?: string
+  /**
+   * How an existing unsent draft is handled. Omitted maps `clearPreviousDraft: true`
+   * to `replace` and anything else to `keep`. The running conversation input reads this;
+   * the pinned rc.2 type does not declare it.
+   */
+  readonly whenDraftExists?: 'replace' | 'append' | 'keep'
 }
 
 /** Workspace archive and directory operations consumed by Client UI domains. */
@@ -80,11 +86,12 @@ export interface UiWorkspace {
    */
   connectWorkspace(workspaceId: WorkspaceId, options?: Pick<StartSessionOptions, 'agentPreset'>): Promise<SessionId>
   /**
-   * Create a fresh Session, or reuse a blank when preparing an explicit draft. A creation the Host
-   * refuses is shown through the Workspace notice and leaves the selection as it was.
+   * Open the Workspace's reusable blank Session, the same one Workspace reopening uses.
+   * A creation the Host refuses is shown through the Workspace notice and leaves the selection as it was.
    * @param workspaceId - explicit target; absent inherits the current or most recent Workspace.
-   * @param options - initial content and the reused blank's preset; existing text or attachments
-   * are preserved unless clearPreviousDraft is true.
+   * @param options - initial content, whenDraftExists, and the reused blank's preset.
+   * Existing text or attachments stay unless whenDraftExists is replace, or clearPreviousDraft
+   * is true and whenDraftExists is omitted.
    */
   startSession(workspaceId?: WorkspaceId, options?: StartSessionOptions): void
   /**
@@ -198,7 +205,7 @@ class UiWorkspaceService extends Service implements UiWorkspace {
   }
 
   /**
-   * @param reuse - preset for the reused or created blank; absent creates a fresh Session.
+   * @param reuse - preset for the reused or created blank. Absent reuses the first blank, same as an empty preset.
    */
   private async connectBlank(
     workspaceId: WorkspaceId,
@@ -209,14 +216,14 @@ class UiWorkspaceService extends Service implements UiWorkspace {
     if (workspace === undefined) {
       throw new Error(`uiWorkspace.connectWorkspace: unknown workspace ${workspaceId}`)
     }
-    if (reuse === undefined) return this.sessions.create({ workspaceId })
+    const preset = reuse ?? {}
     const inflight = this.connecting.get(workspaceId)
-    if (inflight !== undefined && inflight.agentPreset === reuse.agentPreset) return inflight.attempt
+    if (inflight !== undefined && inflight.agentPreset === preset.agentPreset) return inflight.attempt
 
-    const attempt = this.createInWorkspace(workspace, reuse).finally(() => {
+    const attempt = this.createInWorkspace(workspace, preset).finally(() => {
       if (this.connecting.get(workspaceId)?.attempt === attempt) this.connecting.delete(workspaceId)
     })
-    this.connecting.set(workspaceId, { agentPreset: reuse.agentPreset, attempt })
+    this.connecting.set(workspaceId, { agentPreset: preset.agentPreset, attempt })
     return attempt
   }
 
@@ -232,6 +239,7 @@ class UiWorkspaceService extends Service implements UiWorkspace {
       for (const id of sessions.ids) {
         const summary = sessions.byId[id]
         if (summary === undefined || !summary.blank || !samePath(summary.cwd, cwd) || archived.includes(id)) continue
+        if (!blankAcceptsPreset(summary.projectionValues?.agentPreset, options.agentPreset)) continue
         const claimedElsewhere = this.workspaces.list.getSnapshot().items.some(
           item => item.workspaceId !== workspace.workspaceId && item.sessionIds.includes(id),
         )
@@ -244,6 +252,7 @@ class UiWorkspaceService extends Service implements UiWorkspace {
       const summary = sessions.byId[id]
       return summary !== undefined && summary.blank && summary.cwd === workspace.path
         && workspace.sessionIds.includes(id) && !archived.includes(id)
+        && blankAcceptsPreset(summary.projectionValues?.agentPreset, options.agentPreset)
     })
     return this.createNamed({
       workspaceId: workspace.workspaceId,
@@ -366,8 +375,10 @@ class UiWorkspaceService extends Service implements UiWorkspace {
   startSession(workspaceId?: WorkspaceId, options?: StartSessionOptions): void {
     const { agentPreset, ...draft } = options ?? {}
     const draftOptions = options === undefined ? undefined : draft
+    const whenDraftExists = draftOptions?.whenDraftExists
+      ?? (draftOptions?.clearPreviousDraft === true ? 'replace' : 'keep')
     const initializeDraft = draftOptions !== undefined
-      && (draftOptions.prompt !== undefined || draftOptions.clearPreviousDraft === true)
+      && (draftOptions.prompt !== undefined || whenDraftExists === 'replace')
     const workspace = this.workspaces.list.getSnapshot()
     const sessions = this.sessions.list.getSnapshot()
     const current = this.mainReference?.sessionId
@@ -386,14 +397,14 @@ class UiWorkspaceService extends Service implements UiWorkspace {
       this.clearMain()
       return
     }
-    const opening = draftOptions === undefined
-      ? this.openWorkspaceSession(target, undefined, undefined)
-      : this.openWorkspace(target, initializeDraft ? (id) => {
+    const prepare = initializeDraft && draftOptions !== undefined
+      ? (id: SessionId) => {
         const binding = this.sessions.binding(id)
         if (binding === undefined) this.draftPreparationFailed()
         this.prepareDraft(binding, draftOptions)
-      } : undefined, agentPreset === undefined ? {} : { agentPreset })
-    void opening.catch(
+      }
+      : undefined
+    void this.openWorkspace(target, prepare, agentPreset === undefined ? {} : { agentPreset }).catch(
       (reason: unknown) => { console.warn('new session failed:', reason) },
     )
   }
@@ -574,6 +585,11 @@ class UiWorkspaceService extends Service implements UiWorkspace {
     if (panel === 'reveal') this.ctx.layout.selectPanel(null)
   }
 
+}
+
+/** A requested preset skips a blank that already lists a different preset. */
+function blankAcceptsPreset(listed: unknown, requested: string | undefined): boolean {
+  return requested === undefined || typeof listed !== 'string' || listed === requested
 }
 
 /**

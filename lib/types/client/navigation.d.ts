@@ -11,6 +11,12 @@ import type { WorkspaceViewStoreActions } from './stores.ts';
 export interface StartSessionOptions extends DraftInitializationOptions {
     /** Agent preset the Session runs; the Host default when omitted. */
     readonly agentPreset?: string;
+    /**
+     * How an existing unsent draft is handled. Omitted maps `clearPreviousDraft: true`
+     * to `replace` and anything else to `keep`. The running conversation input reads this;
+     * the pinned rc.2 type does not declare it.
+     */
+    readonly whenDraftExists?: 'replace' | 'append' | 'keep';
 }
 /** Workspace archive and directory operations consumed by Client UI domains. */
 export interface UiWorkspace {
@@ -48,11 +54,12 @@ export interface UiWorkspace {
      */
     connectWorkspace(workspaceId: WorkspaceId, options?: Pick<StartSessionOptions, 'agentPreset'>): Promise<SessionId>;
     /**
-     * Create a fresh Session, or reuse a blank when preparing an explicit draft. A creation the Host
-     * refuses is shown through the Workspace notice and leaves the selection as it was.
+     * Open the Workspace's reusable blank Session, the same one Workspace reopening uses.
+     * A creation the Host refuses is shown through the Workspace notice and leaves the selection as it was.
      * @param workspaceId - explicit target; absent inherits the current or most recent Workspace.
-     * @param options - initial content and the reused blank's preset; existing text or attachments
-     * are preserved unless clearPreviousDraft is true.
+     * @param options - initial content, whenDraftExists, and the reused blank's preset.
+     * Existing text or attachments stay unless whenDraftExists is replace, or clearPreviousDraft
+     * is true and whenDraftExists is omitted.
      */
     startSession(workspaceId?: WorkspaceId, options?: StartSessionOptions): void;
     /**
@@ -139,7 +146,7 @@ declare class UiWorkspaceService extends Service implements UiWorkspace {
     constructor(ctx: Context, directoryPicker: ClientRemote['directoryPicker'], workspaces: IWorkspaces, sessions: ISessions, view: Pick<WorkspaceViewStoreActions, 'pinSessionOrder'>, notify: (toast: RowToast) => void, primaryOf: (workspaceId: WorkspaceId) => string | undefined);
     connectWorkspace(workspaceId: WorkspaceId, options?: Pick<StartSessionOptions, 'agentPreset'>): Promise<SessionId>;
     /**
-     * @param reuse - preset for the reused or created blank; absent creates a fresh Session.
+     * @param reuse - preset for the reused or created blank. Absent reuses the first blank, same as an empty preset.
      */
     private connectBlank;
     private createInWorkspace;
