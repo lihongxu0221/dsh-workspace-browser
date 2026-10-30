@@ -1,6 +1,10 @@
 /** Minimal node typings for the host half. The package types field is empty on purpose. */
 declare const process: { readonly env: Record<string, string | undefined>; readonly pid: number }
 
+declare module 'node:fs' {
+  export function readFileSync(path: string, encoding: 'utf8'): string
+}
+
 declare module 'node:fs/promises' {
   export function readFile(path: string, encoding: 'utf8'): Promise<string>
   export function writeFile(path: string, data: string, encoding: 'utf8'): Promise<void>

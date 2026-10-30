@@ -50,12 +50,20 @@ export function parseFolderLayer(raw: string): FolderLayer {
   }
 }
 
-function sameDirectory(a: string, b: string): boolean {
-  const normalize = (path: string): string => {
-    const trimmed = path.replace(/[\\/]+$/, '').replace(/\\/g, '/')
-    return /^[a-z]:\//i.test(trimmed) ? trimmed.toLowerCase() : trimmed
-  }
-  return normalize(a) === normalize(b)
+/**
+ * Normalize a directory for comparison: forward slashes, no trailing slash, and
+ * a lowercased drive letter (Windows paths are case-insensitive).
+ * @param path - Raw directory path.
+ * @returns the comparable form.
+ */
+export function normalizeDirectory(path: string): string {
+  const trimmed = path.replace(/[\\/]+$/, '').replace(/\\/g, '/')
+  return /^[a-z]:\//i.test(trimmed) ? trimmed.toLowerCase() : trimmed
+}
+
+/** Are two directory paths the same directory? */
+export function sameDirectory(a: string, b: string): boolean {
+  return normalizeDirectory(a) === normalizeDirectory(b)
 }
 
 function unionFolders(left: readonly string[], right: readonly string[]): string[] {

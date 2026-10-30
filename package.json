@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-client-ui-workspace-browser",
   "description": "Workspace browser plugin — the workspace chrome the shipped 0.2.1-rc.2 host lacks: Recents, collapsible sections, the project editor with extra source folders, pin/rename/fork/archive row actions, and the conversation-hero picker — as a standalone Cordis client plugin",
-  "version": "0.5.2",
+  "version": "0.6.0",
   "license": "MIT",
   "type": "module",
   "main": "lib/index.js",
@@ -48,8 +48,8 @@
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "tsc -p tsconfig.json && node --test tests/hover-card.test.mjs",
-    "build": "tsc -p tsconfig.json"
+    "test": "tsc -p tsconfig.json && node --test tests/hover-card.test.mjs tests/session-folders.test.mjs tests/node-half.test.mjs",
+    "build": "tsc -p tsconfig.json && node scripts/bundle-node.mjs"
   },
   "dependencies": {
     "clsx": "^2.0.0"

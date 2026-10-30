@@ -16,6 +16,14 @@
 - 浏览器把这些文件夹并入它派生的 Workspace 列表（[src/client/tree.ts](src/client/tree.ts) 的 `mergePluginFolders`），并按会话 `cwd` 是否落在列表内把会话归到该工作区——宿主会把这些会话留作未分组，所以只"借用"未被任何工作区认领的会话；
 - 在项目编辑器里添加/移除文件夹，行为与更新宿主上一致。
 
+node 半边还会把这些文件夹告诉模型：它注册一个 prompt 上下文（`workspace-browser:folders`，order 为 `SANDBOX_POLICY + 1`），先用 `ctx.workspaceRegistry` 定位会话所属工作区——先看会话是否在成员列表里，再比 `cwd` 与主要文件夹/宿主路径是否相等，最后取包含 `cwd` 的最深文件夹（这是"在提升后的主要文件夹里新建会话"能被认出来的原因）——然后渲染：
+
+```
+The session workspace "E:\proj" also includes these source folders: "D:\shared", "D:\other". Reads may use all of them; writes stay inside the primary folder unless the file policy above allows more.
+```
+
+机制就这一句话：宿主的 `workspace-write` 仍只解析单一根目录（`session.header.cwd`），所以插件能扩宽的是模型**知道**的范围，而不是它能**写**的范围。`danger-full-access` 下这句写权限的提醒已无意义。工作区没有额外文件夹、会话不在注册表里、或宿主没有 `systemPrompt` 服务时，什么都不会注入。
+
 *设为主要* 在宿主没有该 API 时由插件自己做：被提升的目录记在同一个视图 store 里，旧的宿主目录退成额外源文件夹。之后的「新建会话」用这个目录作为 `cwd` 单独创建（出厂宿主接受只带 `cwd`、不带 `workspaceId` 的创建），浏览器再按 `cwd` 把会话借回该工作区。宿主注册表里的工作区路径本身不变。
 
 当宿主**确实**提供文件夹 API 时（[src/client/host-capabilities.d.ts](src/client/host-capabilities.d.ts) 把这三个方法声明为可选），三个编辑器动作都改走宿主。
@@ -27,7 +35,8 @@
 ## 目录
 
 ```
-src/index.ts                        node 半边——空 apply，仅让该行出现在宿主组合里
+src/index.ts                        node 半边——文件夹路由 + 把源文件夹写进 prompt 的上下文
+src/session-folders.ts              会话属于哪个工作区，以及 prompt 里那句话
 src/client/index.ts                 apply：插槽注册、ctx.uiWorkspace 服务、能力探测
 src/client/host-capabilities.d.ts   宿主可选的文件夹 API，以及为何可选
 src/client/contract/slots.ts        插槽 owner/occupant 契约
@@ -39,6 +48,7 @@ src/client/{tree,stores,pin-order,shortcuts,navigation,locales}.ts
 cordis.patch.yml                    组合包补丁：停用 ui-workspace，插入本插件
 cordis.patch.dev.yml                同样替换，但用绝对路径，供 --patch 使用
 scripts/build-client.mjs            经 harness 的 client 预设产出 lib/client.js
+scripts/bundle-node.mjs             没有 checkout 时，从 tsc 产物拼出 lib/index.js
 ```
 
 ## 安装
@@ -47,6 +57,8 @@ scripts/build-client.mjs            经 harness 的 client 预设产出 lib/clie
 dsh plugin --profile desktop add github:lihongxu0221/dsh-workspace-browser
 ```
 
+宿主在启动时组合各插件的 node 半边，所以 `lib/index.js` 的改动能生效的前提是重启 App——包括下文那个在每次组装会话 prompt 时解析的上下文。client 半边不受这条限制。
+
 GUI 里的插件管理器等价。`cordis.patch.yml` 由 `dsh.bundle.patch` 声明，必须留在 `files` 里：打包后（git 或 npm 安装）缺了它，DSH 会以 `failed to read overlay` 拒绝安装。
 
 ## 构建
@@ -54,11 +66,13 @@ GUI 里的插件管理器等价。`cordis.patch.yml` 由 `dsh.bundle.patch` 声�
 ```powershell
 pnpm install
 pnpm run typecheck              # 对着 devDependencies 里钉住的世代做类型检查
-pnpm run build                  # tsc：src -> lib/types（client 预设消费它）
-node scripts/build-client.mjs   # harness 的 client 预设：lib/types -> lib/client.js + lib/index.js
+pnpm run build                  # tsc：src -> lib/types，再由 scripts/bundle-node.mjs 产出 lib/index.js
+node scripts/build-client.mjs   # harness 的 client 预设：lib/types -> lib/client.js（+ lib/index.js）
 ```
 
 `scripts/build-client.mjs` 使用 dsh 源码 checkout 里的 client 打包预设（`packages/client/tsdown.client.ts`，默认 `..\..\deepseek-harness`，可用 `$DSH_HARNESS` 或参数覆盖）。该预设通过 `packages/<group>/<dir>/package.json` 定位包，所以脚本会在 checkout 内临时放一个"门面包"，把本仓库的 `node_modules` 链进去，按 Client 构建面跑 tsdown，把产物里夹带的 checkout 路径归一化，拷回后删除临时目录——checkout 本身不留改动。
+
+没有 harness checkout 时，node 半边用 `scripts/bundle-node.mjs`：它把 `lib/types` 拼成包入口指定的单文件 `lib/index.js`，这正是 client 预设的 Node 构建面对这三个模块所做的变换。client 半边仍需要预设。
 
 ## 验证
 
@@ -69,6 +83,8 @@ node scripts/build-client.mjs   # harness 的 client 预设：lib/types -> lib/c
 ## 已知缺口
 
 - **「设为主要」不改宿主注册表里的路径。** 出厂宿主没有这个 API。插件记住提升后的目录，新建会话落在那里，并按 cwd 借回工作区；宿主仍把原路径当作工作区路径。宿主带文件夹 API 时改走宿主，路径会真正换掉。
+- **有歧义的文件夹不点名。** 两个工作区可以列出同一个目录；在那里新建的会话不属于其中任何一个，prompt 保持沉默而不是猜（宿主的额外根解析同样会放弃）。
+- **`workspace-write` 下额外文件夹可读不可写**：沙箱根仍只有一个，且写目标要 realpath 后落在根内，所以在工作区里做 junction/软链指向外部目录也会被拒。
 - **文件夹归属按会话 `cwd` 匹配**，且只"借用"宿主留作未分组的会话；宿主已归到某个工作区下的会话不会被搬走。
 - `src/` 是 0.2.1-rc.2 树内 `ui-workspace` 快照加上插件层（最近会话、项目编辑器、文件夹持久化）。换宿主世代时重新取用共享文件，并保留能力探测。
-- 包内测试覆盖悬停卡片的文件夹事实（`tests/hover-card.test.mjs`）。树内测试留在所取用修订的 `packages/client/ui-workspace/tests`。
+- 包内测试覆盖悬停卡片的文件夹事实、会话到工作区的归属与那句话（`tests/session-folders.test.mjs`），以及 node 半边（路由 + prompt 上下文，`tests/node-half.test.mjs`）。树内测试留在所取用修订的 `packages/client/ui-workspace/tests`。

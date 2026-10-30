@@ -16,6 +16,14 @@ The 2026-09-29 Desktop build (**0.2.0-rc.2**) shipped a workspace browser with n
 - the browser merges those folders into the Workspace list it derives from (`mergePluginFolders` in [src/client/tree.ts](src/client/tree.ts)) and attributes Sessions to a Workspace by matching their `cwd` against the list — the host leaves such Sessions ungrouped, so only unclaimed ones are borrowed;
 - adding and removing folders works from the project editor exactly as it does on a newer host.
 
+The node half also tells the model about them. It registers a prompt context (`workspace-browser:folders`, order `SANDBOX_POLICY + 1`) that resolves the Session's Workspace from `ctx.workspaceRegistry` — membership first, then an exact `cwd` match, then the deepest folder containing the `cwd`, which is what finds a Session started in a promoted folder — and renders:
+
+```
+The session workspace "E:\proj" also includes these source folders: "D:\shared", "D:\other". Reads may use all of them; writes stay inside the primary folder unless the file policy above allows more.
+```
+
+That sentence is the whole mechanism: the host's `workspace-write` policy still resolves a single root (`session.header.cwd`), so the plugin can widen what the model *knows*, never what it may *write*. Under `danger-full-access` the write caveat is moot. Nothing is injected when the Workspace has no extra folder, when the Session is unknown to the registry, or when the host has no `systemPrompt` service.
+
 *Set as primary* is plugin-owned where the host lacks the API: the promoted directory is stored in the same viewing store, and the previous host path becomes an extra folder. Later New Session creates with that `cwd` alone (the shipped host accepts a create that sends `cwd` and no `workspaceId`), and the browser borrows the Session back by `cwd`. The host registry path itself does not change.
 
 Where the host *does* expose the folder API ([src/client/host-capabilities.d.ts](src/client/host-capabilities.d.ts) declares the three methods optional), all three editor actions route to it instead.
@@ -27,7 +35,8 @@ The tag `appgen-0.3.0` keeps an earlier parity-only build (exactly the host's ow
 ## Layout
 
 ```
-src/index.ts                        node half — empty apply so the row exists in the host composition
+src/index.ts                        node half — folder-layer route + the prompt context that names the folders
+src/session-folders.ts              which workspace a Session belongs to, and the paragraph the prompt carries
 src/client/index.ts                 apply: registrations, the ctx.uiWorkspace service, capability probe
 src/client/host-capabilities.d.ts   the optional host folder APIs and why they are optional
 src/client/contract/slots.ts        slot owner/occupant contracts
@@ -39,6 +48,7 @@ src/client/{tree,stores,pin-order,shortcuts,navigation,locales}.ts
 cordis.patch.yml                    bundle patch: disable ui-workspace, insert this plugin
 cordis.patch.dev.yml                the same swap with an absolute path, for `--patch` runs
 scripts/build-client.mjs            emits lib/client.js through the harness client preset
+scripts/bundle-node.mjs             emits lib/index.js from the tsc output (no checkout needed)
 ```
 
 ## Install
@@ -49,14 +59,18 @@ dsh plugin --profile desktop add github:lihongxu0221/dsh-workspace-browser
 
 The GUI plugin manager does the same. `cordis.patch.yml` is declared by `dsh.bundle.patch`, so it must stay in `files`: a packed package (git or npm install) that lacks it is rejected with `failed to read overlay`.
 
+The host composes plugin node halves at startup, so a change to `lib/index.js` shows up only after the app restarts — including the prompt context below, whose text is resolved at every Session prompt assembly. The client half is unaffected by that restart rule.
+
 ## Build
 
 ```powershell
 pnpm install
 pnpm run typecheck              # against the generation pinned in devDependencies
-pnpm run build                  # tsc: src -> lib/types (the client preset consumes this)
-node scripts/build-client.mjs   # harness client preset: lib/types -> lib/client.js + lib/index.js
+pnpm run build                  # tsc: src -> lib/types, then scripts/bundle-node.mjs -> lib/index.js
+node scripts/build-client.mjs   # harness client preset: lib/types -> lib/client.js (+ lib/index.js)
 ```
+
+`scripts/bundle-node.mjs` is the fallback for the node half when no harness checkout is available: it concatenates `lib/types` into the single-file `lib/index.js` the package entry names, which is exactly the transformation the preset's Node build face performs for these three modules. The client half still needs the preset.
 
 `scripts/build-client.mjs` uses the client-bundle preset from a dsh source checkout (`packages/client/tsdown.client.ts`, default `..\..\deepseek-harness`, override with `$DSH_HARNESS` or an argument). The preset resolves a package through `packages/<group>/<dir>/package.json`, so the script stages a temporary face package inside the checkout, links this repo's `node_modules` into it, runs tsdown for the Client face, normalizes the checkout path out of the emitted banners, copies the artifacts back and deletes the staging directory. The checkout itself is left untouched.
 
@@ -69,6 +83,8 @@ node scripts/build-client.mjs   # harness client preset: lib/types -> lib/client
 ## Known gaps
 
 - **"Set as primary" does not rewrite the host registry path.** The shipped host has no such API. The plugin remembers the promoted directory, creates new Sessions there, and borrows them back by cwd; the host still treats the original path as the Workspace path. On a host with the folder API the action goes to the host and the path really changes.
+- **An ambiguous folder names nothing.** Two Workspaces may list the same directory; a Session started there is then attributed to neither, and the prompt stays silent rather than guess (the host's own extra-root resolution bails the same way).
 - **Folder membership is matched by Session `cwd`**, and only Sessions the host left ungrouped are borrowed. A Session that the host already groups under its own Workspace stays there.
 - `src/` is the 0.2.1-rc.2 in-tree `ui-workspace` snapshot plus the plugin layer (Recents, project editor, folder persistence). Re-vendor the shared files when moving to another host generation and keep the capability probes.
-- Package tests cover the hover-card folder facts (`tests/hover-card.test.mjs`). The in-tree suite stays in `packages/client/ui-workspace/tests` at the vendored revision.
+- **Extra folders are readable, not writable, under `workspace-write`.** The host resolves one sandbox root (`session.header.cwd`), and a canonicalizing containment check rejects a junction or symlink that points outside it. Only the prompt context is plugin-owned; `danger-full-access` is the mode that makes the extras writable.
+- Package tests cover the hover-card folder facts (`tests/hover-card.test.mjs`), the folder-selection logic (`tests/session-folders.test.mjs`) and the node half's registered route plus prompt context (`tests/node-half.test.mjs`). The in-tree suite stays in `packages/client/ui-workspace/tests` at the vendored revision.
