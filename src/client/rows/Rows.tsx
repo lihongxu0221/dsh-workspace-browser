@@ -10,7 +10,7 @@
  * context; this package's own actions are entries like any plugin's. The
  * session and workspace hover cards are suppressed while a menu is open.
  */
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { RefObject } from 'react'
 import clsx from 'clsx'
 import type { PropsRenderSlots } from '@deepseek-ai/dsh-client-ui-slots'
@@ -146,6 +146,17 @@ function hoverTimeLabel(updatedAt: number, now: number, t: RowTranslate): string
   return unit === 'now' ? t('time.now') : t('time.ago', { t: t(`time.${unit}`, { n }) })
 }
 
+/**
+ * The Host hover card pins its own width (244px in its HoverCard.module.css) and
+ * takes no width prop, so the workspace card sizes itself instead: the card is
+ * this body's parent element, and its React style never carries a width, which
+ * lets the inline values below survive the Host's re-renders. The body keeps the
+ * familiar width for a workspace with one source folder and grows to the cap
+ * when a long folder list would otherwise wrap into a narrow column.
+ */
+const HOVER_CARD_MIN_WIDTH = '244px'
+const HOVER_CARD_MAX_WIDTH = 'min(420px, calc(100vw - 24px))'
+
 /** Hover-card body: title, latest session, task count, and every source folder. */
 function WorkspaceHoverContent({
   label, cwd, folders, sessionCount, latestSessionTitle, home, pinned = false, onPin, onEdit, onOpenMenu, onOpenFolder, t,
@@ -167,8 +178,16 @@ function WorkspaceHoverContent({
 }) {
   const paths = workspaceSourcePaths(cwd, folders)
   const plural = sessionCount === 1 ? 'one' : 'other'
+  const bodyRef = useRef<HTMLDivElement>(null)
+  useLayoutEffect(() => {
+    const card = bodyRef.current?.parentElement
+    if (card == null) return
+    card.style.width = 'max-content'
+    card.style.minWidth = HOVER_CARD_MIN_WIDTH
+    card.style.maxWidth = HOVER_CARD_MAX_WIDTH
+  }, [])
   return (
-    <div className={css.hoverContent}>
+    <div ref={bodyRef} className={css.hoverContent}>
       <div className={css.hoverHead}>
         <div className={css.hoverTitle}>{label}</div>
         {onOpenMenu !== undefined && (
