@@ -22,8 +22,67 @@ import type {} from '@deepseek-ai/dsh-client-ui-layout/client'
 import type { DraftInitializationOptions } from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type { RowToast } from './contract/slots.ts'
 import { pinOrderAccounts, pinOrderSource } from './pin-order.ts'
-import { samePath } from './tree.ts'
+import { conversationId, missingRoot, rerootAction, samePath, sessionRoot, type RerootAction, type SessionRoot } from './tree.ts'
 import type { WorkspaceViewStoreActions } from './stores.ts'
+
+/** Authenticated route reporting whether a directory still exists. */
+const DIRECTORY_ROUTE = '/api/workspace-browser/directory'
+
+/** Authenticated route moving one conversation off a folder that is gone. */
+const REROOT_ROUTE = '/api/workspace-browser/reroot'
+
+/**
+ * Whether `path` is still an existing directory. A missing path is the only
+ * "no": when the probe itself fails (no node half, a transport error, an
+ * unreadable parent) the answer is yes, so the browser keeps behaving as it
+ * did before the probe rather than blocking the user.
+ */
+export async function directoryExists(path: string | undefined): Promise<boolean> {
+  if (path === undefined || path === '') return false
+  try {
+    const response = await fetch(`${DIRECTORY_ROUTE}?path=${encodeURIComponent(path)}`, {
+      credentials: 'same-origin',
+      cache: 'no-store',
+    })
+    if (!response.ok) return true
+    const body: unknown = await response.json()
+    if (typeof body !== 'object' || body === null) return true
+    return (body as { exists?: unknown }).exists !== false
+  } catch {
+    return true
+  }
+}
+
+/** The node half's answer to one request to move a conversation off a dead root. */
+type RerootAnswer =
+  | { readonly ok: true; readonly changed: boolean; readonly path?: string }
+  | { readonly ok: false; readonly reason: string; readonly path?: string; readonly error?: string }
+
+/**
+ * Ask the node half to re-root one conversation, before it becomes current.
+ *
+ * Never throws and never guesses: an unreadable, unparsable, or absent answer
+ * reads as no answer, which the caller treats as "keep today's behaviour".
+ * @param sessionId - the conversation whose recorded folder is gone.
+ * @returns the node half's answer, or undefined when it did not answer.
+ */
+async function rerootSession(sessionId: SessionId): Promise<RerootAnswer | undefined> {
+  try {
+    const response = await fetch(REROOT_ROUTE, {
+      method: 'POST',
+      credentials: 'same-origin',
+      cache: 'no-store',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ sessionId }),
+    })
+    const body: unknown = await response.json()
+    if (typeof body !== 'object' || body === null) return undefined
+    if (typeof (body as { ok?: unknown }).ok !== 'boolean') return undefined
+    return body as RerootAnswer
+  } catch {
+    return undefined
+  }
+}
 
 interface MainSelection {
   readonly sessionId?: SessionId
@@ -227,8 +286,16 @@ class UiWorkspaceService extends Service implements UiWorkspace {
     return attempt
   }
 
-  private createInWorkspace(workspace: WorkspaceView, options: Pick<StartSessionOptions, 'agentPreset'>): Promise<SessionId> {
-    const cwd = this.primaryOf(workspace.workspaceId) ?? workspace.path
+  private async createInWorkspace(workspace: WorkspaceView, options: Pick<StartSessionOptions, 'agentPreset'>): Promise<SessionId> {
+    const primary = this.primaryOf(workspace.workspaceId) ?? workspace.path
+    // The effective primary folder is the only root a new Session may start in:
+    // a folder that is neither the primary nor listed among the workspace's
+    // folders was deliberately removed and is never used as a root. A primary
+    // that is gone is refused outright — the host's own Session creation would
+    // otherwise recreate the deleted folder as an empty directory.
+    const root = sessionRoot(primary, await directoryExists(primary))
+    if (!root.ok) throw new Error(root.error)
+    const cwd = root.cwd
     const hostPrimary = samePath(cwd, workspace.path)
     const archived = this.workspaces.list.getSnapshot().archivedSessionIds
     const sessions = this.sessions.list.getSnapshot()
@@ -329,7 +396,55 @@ class UiWorkspaceService extends Service implements UiWorkspace {
   }
 
   openSession(target: SessionTarget): void {
+    void this.openSessionSettled(target)
+  }
+
+  /**
+   * Show one Session, re-rooting it first when its recorded folder is gone.
+   *
+   * The move has to finish before the conversation becomes current: the node
+   * half appends the working-directory change, and the first turn must not
+   * assemble on the dead root. A deliberate row click always reveals the
+   * conversation, whatever the move answered — the user asked for it, so even a
+   * failed attempt at the move must not keep them away from it.
+   */
+  private async openSessionSettled(target: SessionTarget): Promise<void> {
+    try {
+      await this.rerootDeadRoot(conversationId(target))
+    } catch (error) {
+      console.warn('the conversation was not re-rooted:', error)
+    }
     this.replaceMain(target, this.lifetime.signal, 'reveal')
+  }
+
+  /**
+   * Move one conversation off a folder that is gone, or report why not.
+   *
+   * A conversation whose recorded folder still exists is never touched. When
+   * the Workspace's own primary folder is gone there is nowhere to move it, so
+   * the same actionable notice the create path throws is raised instead.
+   * `restored` also covers a conversation whose current root was already live.
+   * @param sessionId - the conversation to inspect.
+   * @returns whether the caller may make it current, must report a notice, or
+   * should keep today's behaviour.
+   */
+  private async rerootDeadRoot(sessionId: SessionId): Promise<RerootAction> {
+    const summary = this.sessions.list.getSnapshot().byId[sessionId]
+    if (!(await missingRoot(summary?.cwd, directoryExists))) return 'restored'
+    const answer = await rerootSession(sessionId)
+    const action = rerootAction(answer)
+    if (action === 'notice') {
+      const primary = answer !== undefined && !answer.ok && answer.path !== undefined ? answer.path : ''
+      const refusal: SessionRoot = sessionRoot(primary, false)
+      this.notify({
+        kind: 'createFailed',
+        message: refusal.ok ? 'the primary folder no longer exists' : refusal.error,
+      })
+    } else if (action === 'fallback') {
+      const reason = answer === undefined ? 'no answer' : answer.ok ? 'already live' : answer.reason
+      console.warn('the conversation was not re-rooted:', reason)
+    }
+    return action
   }
 
   openWorkspace(
@@ -499,19 +614,42 @@ class UiWorkspaceService extends Service implements UiWorkspace {
   private async restoreSelection(workspaces: WorkspaceSnapshot, sessions: SessionListState): Promise<void> {
     const saved = this.selection.getSnapshot()
     if (saved.subagentAddress !== undefined) {
+      // A persisted child conversation has its own recorded root: inspect and
+      // move the child, not its parent. Whatever that answers, the conversation
+      // is still revealed — the selection is what the user last had open.
+      try {
+        await this.rerootDeadRoot(conversationId(saved.subagentAddress))
+      } catch (error) {
+        console.warn('the conversation was not re-rooted:', error)
+      }
       this.replaceMain(saved.subagentAddress, this.lifetime.signal, 'preserve')
       return
     }
     const summary = saved.sessionId === undefined ? undefined : sessions.byId[saved.sessionId]
     const workspace = summary === undefined ? undefined
       : workspaces.items.find(item => item.sessionIds.includes(summary.id))
+    // A Session whose recorded folder no longer exists must not be restored
+    // into that dead root: every cwd-rooted host consumer (file index, sandbox)
+    // fails there. The node half moves such a conversation onto the Workspace's
+    // primary before it becomes current, which keeps the conversation usable and
+    // leaves nothing deleted. When there is nowhere to move it, the create path
+    // below takes over and reports the missing primary. A Session that records
+    // no cwd at all is not stale: the host still resolves it to its own default
+    // directory, so it is restored as before.
+    const stale = summary !== undefined && await missingRoot(summary.cwd, directoryExists)
     if (summary !== undefined && (!summary.blank || workspace === undefined)) {
-      this.replaceMain(summary.id, this.lifetime.signal, 'preserve')
-      return
+      if (!stale) {
+        this.replaceMain(summary.id, this.lifetime.signal, 'preserve')
+        return
+      }
+      if (await this.rerootDeadRoot(summary.id) === 'restored') {
+        this.replaceMain(summary.id, this.lifetime.signal, 'preserve')
+        return
+      }
     }
     const navigation = AbortSignal.any([this.ctx.layout.beginNavigation(), this.lifetime.signal])
     let sessionId: SessionId | undefined
-    if (summary !== undefined && workspace !== undefined && summary.cwd === workspace.path
+    if (!stale && summary !== undefined && workspace !== undefined && summary.cwd === workspace.path
       && !workspaces.archivedSessionIds.includes(summary.id)) {
       sessionId = await this.restoreBlank(workspace.workspaceId, summary.id)
     }

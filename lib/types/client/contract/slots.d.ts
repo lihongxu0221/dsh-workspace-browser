@@ -290,6 +290,12 @@ export type WorkspaceBrowserInjected = {
      * Finder, or the Linux file manager; the browser does not.
      */
     openFolder: (path: string) => void;
+    /**
+     * Open one Host directory in the native file manager and report the failure
+     * instead of only warning, so a dialog row can show it inline. A null answer
+     * means the Host accepted the open.
+     */
+    revealFolder?: (path: string) => Promise<string | null>;
 };
 /** The browser's declared viewing store handle, shared with the row actions that write view state. */
 export type WorkspaceViewStoreHandle = ReturnType<typeof createWorkspaceViewStore>;

@@ -7,6 +7,13 @@ import type { SessionId } from '@deepseek-ai/dsh-session/types';
 import type { DraftInitializationOptions } from '@deepseek-ai/dsh-client-ui-conversation/client';
 import type { RowToast } from './contract/slots.ts';
 import type { WorkspaceViewStoreActions } from './stores.ts';
+/**
+ * Whether `path` is still an existing directory. A missing path is the only
+ * "no": when the probe itself fails (no node half, a transport error, an
+ * unreadable parent) the answer is yes, so the browser keeps behaving as it
+ * did before the probe rather than blocking the user.
+ */
+export declare function directoryExists(path: string | undefined): Promise<boolean>;
 /** Content preparation and Agent preset for the Session a Workspace flow opens. */
 export interface StartSessionOptions extends DraftInitializationOptions {
     /** Agent preset the Session runs; the Host default when omitted. */
@@ -171,6 +178,28 @@ declare class UiWorkspaceService extends Service implements UiWorkspace {
      */
     private restoreBlank;
     openSession(target: SessionTarget): void;
+    /**
+     * Show one Session, re-rooting it first when its recorded folder is gone.
+     *
+     * The move has to finish before the conversation becomes current: the node
+     * half appends the working-directory change, and the first turn must not
+     * assemble on the dead root. A deliberate row click always reveals the
+     * conversation, whatever the move answered — the user asked for it, so even a
+     * failed attempt at the move must not keep them away from it.
+     */
+    private openSessionSettled;
+    /**
+     * Move one conversation off a folder that is gone, or report why not.
+     *
+     * A conversation whose recorded folder still exists is never touched. When
+     * the Workspace's own primary folder is gone there is nowhere to move it, so
+     * the same actionable notice the create path throws is raised instead.
+     * `restored` also covers a conversation whose current root was already live.
+     * @param sessionId - the conversation to inspect.
+     * @returns whether the caller may make it current, must report a notice, or
+     * should keep today's behaviour.
+     */
+    private rerootDeadRoot;
     openWorkspace(workspaceId: WorkspaceId, beforeOpen?: (sessionId: SessionId) => void, options?: Pick<StartSessionOptions, 'agentPreset'>): Promise<void>;
     private openWorkspaceSession;
     forkSession(sessionId: SessionId, onCreated?: (childId: SessionId) => void, options?: Pick<Parameters<ISessions['fork']>[0], 'allowMigration'>): Promise<SessionId>;

@@ -8,7 +8,8 @@
 import { defineStore, type EngineStoreHandle } from '@deepseek-ai/dsh-client-store'
 import type { SessionListState } from '@deepseek-ai/dsh-api-session-controller/client'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
-import { reconcileManualOrder, samePath, type ArchivedFilter, type SessionRowState } from './tree.ts'
+import { reconcileManualOrder, type ArchivedFilter, type SessionRowState } from './tree.ts'
+import { addExtraFolderTo, promotePrimaryIn, removeExtraFolderFrom } from './folder-transition.ts'
 
 /** Browser-local order account for the hierarchy-free flat Session list. */
 export const FLAT_SESSION_ORDER_KEY = '__flat_session_order__'
@@ -113,6 +114,11 @@ function copySessionOrders(
   return Object.fromEntries(Object.entries(orders).map(([key, order]) => [key, [...order]]))
 }
 
+/** Copy a read-only extra-folder map into the draft's mutable representation. */
+function mutableFolders(map: Readonly<Record<string, readonly string[]>>): Record<string, string[]> {
+  return Object.fromEntries(Object.entries(map).map(([key, folders]) => [key, [...folders]]))
+}
+
 /**
  * Create the workspace browser viewing store handle.
  * @returns the store handle (spec + type + identity + factory in one).
@@ -196,40 +202,19 @@ export function createWorkspaceViewStore(): EngineStoreHandle<WorkspaceViewState
       setWorkspacesOpen: (d, open: boolean) => { d.workspacesOpen = open },
       setRecentsOpen: (d, open: boolean) => { d.recentsOpen = open },
       addExtraFolder: (d, workspaceId: string, path: string) => {
-        const folders = d.extraFoldersByWorkspace?.[workspaceId] ?? []
-        if (folders.some(folder => samePath(folder, path))) return
-        if (samePath(d.primaryByWorkspace?.[workspaceId], path)) return
-        d.extraFoldersByWorkspace = { ...d.extraFoldersByWorkspace, [workspaceId]: [...folders, path] }
+        const folders = addExtraFolderTo(d, workspaceId, path)
+        if (folders === d.extraFoldersByWorkspace) return
+        d.extraFoldersByWorkspace = mutableFolders(folders)
       },
       removeExtraFolder: (d, workspaceId: string, path: string) => {
-        const folders = d.extraFoldersByWorkspace?.[workspaceId] ?? []
-        const remaining = folders.filter(folder => !samePath(folder, path))
-        const byWorkspace = { ...d.extraFoldersByWorkspace }
-        if (remaining.length === 0) delete byWorkspace[workspaceId]
-        else byWorkspace[workspaceId] = remaining
-        d.extraFoldersByWorkspace = byWorkspace
+        d.extraFoldersByWorkspace = mutableFolders(removeExtraFolderFrom(d, workspaceId, path))
       },
       promotePrimary: (d, workspaceId: string, path: string, hostPath: string) => {
-        const extras = d.extraFoldersByWorkspace?.[workspaceId] ?? []
-        const current = d.primaryByWorkspace?.[workspaceId]
-        const effective = current !== undefined && !samePath(current, hostPath) ? current : hostPath
-        if (samePath(path, effective)) return
-        let nextExtras = extras.filter(folder => !samePath(folder, path))
-        const primary = { ...(d.primaryByWorkspace ?? {}) }
-        if (samePath(path, hostPath)) {
-          if (!samePath(effective, hostPath) && !nextExtras.some(folder => samePath(folder, effective))) {
-            nextExtras = [...nextExtras, effective]
-          }
-          delete primary[workspaceId]
-        } else {
-          if (!nextExtras.some(folder => samePath(folder, effective))) nextExtras = [...nextExtras, effective]
-          primary[workspaceId] = path
-        }
-        d.primaryByWorkspace = primary
-        const byWorkspace = { ...d.extraFoldersByWorkspace }
-        if (nextExtras.length === 0) delete byWorkspace[workspaceId]
-        else byWorkspace[workspaceId] = nextExtras
-        d.extraFoldersByWorkspace = byWorkspace
+        const next = promotePrimaryIn(d, workspaceId, path, hostPath)
+        if (next.extraFoldersByWorkspace === d.extraFoldersByWorkspace
+          && next.primaryByWorkspace === d.primaryByWorkspace) return
+        d.extraFoldersByWorkspace = mutableFolders(next.extraFoldersByWorkspace)
+        d.primaryByWorkspace = { ...next.primaryByWorkspace }
       },
       installFolderLayer: (d, layer) => {
         d.extraFoldersByWorkspace = layer.extraFoldersByWorkspace

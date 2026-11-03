@@ -7,6 +7,14 @@
  * It also turns that layer into prompt context: the shipped host has neither the
  * folder API nor a multi-root sandbox, so naming the folders is the only way a
  * Session learns about them.
+ *
+ * The shipped host cannot repath a Workspace over its remote API either, so a
+ * second route moves the Workspace record itself in process, through the
+ * registry's own write path. A third route reports whether a directory still
+ * exists, which is what keeps a Session whose folder was deleted from being
+ * restored onto a dead root. A fourth route re-roots one such conversation
+ * through the working-directory service, which the browser calls before it
+ * makes that conversation current.
  */
 import { type SessionLike } from './session-folders.ts';
 /** Required host service: the authenticated Fetch registry. */
@@ -44,10 +52,6 @@ interface HostContext {
         systemPrompt: SystemPromptService;
     }) => void): void;
 }
-/**
- * Register the folder-layer route for this plugin's lifetime.
- * @param ctx - host context carrying the connection Fetch registry.
- */
 export declare function apply(ctx: HostContext): void;
 export {};
 //# sourceMappingURL=index.d.ts.map

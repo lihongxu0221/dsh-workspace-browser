@@ -48,7 +48,7 @@
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "tsc -p tsconfig.json && node --test tests/hover-card.test.mjs tests/session-folders.test.mjs tests/node-half.test.mjs",
+    "test": "tsc -p tsconfig.json && node --test tests/hover-card.test.mjs tests/session-folders.test.mjs tests/folder-transition.test.mjs tests/node-half.test.mjs",
     "build": "tsc -p tsconfig.json && node scripts/bundle-node.mjs"
   },
   "dependencies": {

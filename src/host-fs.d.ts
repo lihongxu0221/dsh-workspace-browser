@@ -10,6 +10,9 @@ declare module 'node:fs/promises' {
   export function writeFile(path: string, data: string, encoding: 'utf8'): Promise<void>
   export function mkdir(path: string, options: { recursive: boolean }): Promise<void>
   export function rename(from: string, to: string): Promise<void>
+  /** Canonical path; rejects when the path does not exist. */
+  export function realpath(path: string): Promise<string>
+  export function stat(path: string): Promise<{ isDirectory(): boolean }>
 }
 
 declare module 'node:os' {

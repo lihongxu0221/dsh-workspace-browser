@@ -11,6 +11,7 @@ export declare function folderLabel(path: string): string;
  * @param props.folders - extra directories in the draft (not including path).
  * @param props.busy - Save / directory pick in flight; inputs disable.
  * @param props.error - host or conflict message under the form.
+ * @param props.revealError - a failed reveal of one folder row, shown next to the list.
  * @param props.duplicateName - another Workspace already uses the trimmed title.
  * @param props.flowAvailable - directory-flow hole occupied; hides Add folder otherwise.
  * @param props.onTitleChange - display-name draft changed.
@@ -20,10 +21,11 @@ export declare function folderLabel(path: string): string;
  * @param props.onAddFolder - open the directory flow for one extra folder.
  * @param props.onRemoveFolder - drop one extra folder from the draft.
  * @param props.onSetPrimary - promote an extra folder in the draft.
+ * @param props.onReveal - open one folder in the native file manager, from its name.
  * @param props.t - workspace locale seat.
  * @returns the modal, or null while closed.
  */
-export declare function WorkspaceEditDialog({ open, title, path, folders, busy, pickingFolder, error, duplicateName, flowAvailable, onTitleChange, onClose, onSave, onRemoveProject, onAddFolder, onRemoveFolder, onSetPrimary, t, }: {
+export declare function WorkspaceEditDialog({ open, title, path, folders, busy, pickingFolder, error, revealError, duplicateName, flowAvailable, onTitleChange, onClose, onSave, onRemoveProject, onAddFolder, onRemoveFolder, onSetPrimary, onReveal, t, }: {
     open: boolean;
     title: string;
     path: string;
@@ -31,6 +33,7 @@ export declare function WorkspaceEditDialog({ open, title, path, folders, busy, 
     busy: boolean;
     pickingFolder?: boolean;
     error: string | null;
+    revealError?: string | null;
     duplicateName: boolean;
     flowAvailable: boolean;
     onTitleChange: (title: string) => void;
@@ -41,6 +44,8 @@ export declare function WorkspaceEditDialog({ open, title, path, folders, busy, 
     onRemoveFolder: (path: string) => void;
     /** Promote an extra folder to primary; absent when the host cannot repoint a Workspace. */
     onSetPrimary?: ((path: string) => void) | undefined;
+    /** Open one folder in the native file manager, from its name; absent without that seam. */
+    onReveal?: ((path: string) => void) | undefined;
     t: EditTranslate;
 }): import("react").JSX.Element;
 export {};

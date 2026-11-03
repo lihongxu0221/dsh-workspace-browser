@@ -46,14 +46,33 @@
   opacity: 1;
 }
 
+/* The folder name doubles as the reveal control: it opens that folder in the
+   host file manager, so it is a button reset that keeps the name's layout. */
 .folderName {
   flex: 1;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  border: none;
+  border-radius: 8px;
+  padding: 0 4px;
+  background: transparent;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
   font-size: 14px;
   line-height: 22px;
+}
+
+.folderName:hover:not(:disabled),
+.folderName:focus-visible:not(:disabled) {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+.folderName:disabled {
+  cursor: default;
 }
 
 .primary,

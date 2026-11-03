@@ -27,6 +27,7 @@ export function folderLabel(path: string): string {
  * @param props.folders - extra directories in the draft (not including path).
  * @param props.busy - Save / directory pick in flight; inputs disable.
  * @param props.error - host or conflict message under the form.
+ * @param props.revealError - a failed reveal of one folder row, shown next to the list.
  * @param props.duplicateName - another Workspace already uses the trimmed title.
  * @param props.flowAvailable - directory-flow hole occupied; hides Add folder otherwise.
  * @param props.onTitleChange - display-name draft changed.
@@ -36,12 +37,14 @@ export function folderLabel(path: string): string {
  * @param props.onAddFolder - open the directory flow for one extra folder.
  * @param props.onRemoveFolder - drop one extra folder from the draft.
  * @param props.onSetPrimary - promote an extra folder in the draft.
+ * @param props.onReveal - open one folder in the native file manager, from its name.
  * @param props.t - workspace locale seat.
  * @returns the modal, or null while closed.
  */
 export function WorkspaceEditDialog({
-  open, title, path, folders, busy, pickingFolder = false, error, duplicateName, flowAvailable,
-  onTitleChange, onClose, onSave, onRemoveProject, onAddFolder, onRemoveFolder, onSetPrimary, t,
+  open, title, path, folders, busy, pickingFolder = false, error, revealError = null, duplicateName,
+  flowAvailable, onTitleChange, onClose, onSave, onRemoveProject, onAddFolder, onRemoveFolder,
+  onSetPrimary, onReveal, t,
 }: {
   open: boolean
   title: string
@@ -50,6 +53,7 @@ export function WorkspaceEditDialog({
   busy: boolean
   pickingFolder?: boolean
   error: string | null
+  revealError?: string | null
   duplicateName: boolean
   flowAvailable: boolean
   onTitleChange: (title: string) => void
@@ -60,6 +64,8 @@ export function WorkspaceEditDialog({
   onRemoveFolder: (path: string) => void
   /** Promote an extra folder to primary; absent when the host cannot repoint a Workspace. */
   onSetPrimary?: ((path: string) => void) | undefined
+  /** Open one folder in the native file manager, from its name; absent without that seam. */
+  onReveal?: ((path: string) => void) | undefined
   t: EditTranslate
 }) {
   const trimmed = title.trim()
@@ -108,7 +114,16 @@ export function WorkspaceEditDialog({
       <ul className={css.folders}>
         <li className={css.folderRow}>
           <IconFolderCloseRegular />
-          <span className={css.folderName} title={path}>{folderLabel(path)}</span>
+          <button
+            type="button"
+            className={css.folderName}
+            title={path}
+            aria-label={t('edit.project.reveal.aria', { name: folderLabel(path) })}
+            disabled={busy || onReveal === undefined}
+            onClick={() => { onReveal?.(path) }}
+          >
+            {folderLabel(path)}
+          </button>
           <span className={css.primary}>{t('edit.project.primary')}</span>
           <button
             type="button"
@@ -122,13 +137,22 @@ export function WorkspaceEditDialog({
         {folders.map(folder => (
           <li className={css.folderRow} key={folder}>
             <IconFolderCloseRegular />
-            <span className={css.folderName} title={folder}>{folderLabel(folder)}</span>
+            <button
+              type="button"
+              className={css.folderName}
+              title={folder}
+              aria-label={t('edit.project.reveal.aria', { name: folderLabel(folder) })}
+              disabled={busy || onReveal === undefined}
+              onClick={() => { onReveal?.(folder) }}
+            >
+              {folderLabel(folder)}
+            </button>
             {onSetPrimary === undefined ? null : (
               <button
                 type="button"
                 className={css.setPrimary}
                 disabled={busy}
-                onClick={() => { onSetPrimary(folder) }}
+                onClick={(event) => { event.stopPropagation(); onSetPrimary(folder) }}
               >
                 {t('edit.project.setPrimary')}
               </button>
@@ -138,13 +162,14 @@ export function WorkspaceEditDialog({
               className={css.removeFolder}
               aria-label={t('edit.project.removeFolder.aria', { name: folderLabel(folder) })}
               disabled={busy}
-              onClick={() => { onRemoveFolder(folder) }}
+              onClick={(event) => { event.stopPropagation(); onRemoveFolder(folder) }}
             >
               <IconCloseOutlineRegular size={14} />
             </button>
           </li>
         ))}
       </ul>
+      {revealError !== null && <div className={css.error} role="alert">{revealError}</div>}
       {flowAvailable && (
         <button
           type="button"

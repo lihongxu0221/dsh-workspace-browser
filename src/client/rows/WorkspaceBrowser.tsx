@@ -39,7 +39,8 @@ import {
 import { ProjectRowItem, SearchResultItem, SessionNodeItem } from './Rows.tsx'
 import { AnimatedRows } from './AnimatedRows.tsx'
 import { FLAT_SESSION_ORDER_KEY, type SessionGroupBy } from '../stores.ts'
-import { WorkspaceEditDialog } from '../WorkspaceEditDialog.tsx'
+import { WorkspaceEditDialog, folderLabel } from '../WorkspaceEditDialog.tsx'
+import { directoryExists } from '../navigation.ts'
 import { nativeDirectoryPick, WorkspacePickFlow } from '../WorkspacePicker.tsx'
 import css from './WorkspaceBrowser.module.css'
 
@@ -1063,6 +1064,7 @@ export function WorkspaceBrowser({
   setDirectoryBusy,
   dismissForkError,
   openFolder,
+  revealFolder,
   renderSlot,
   t,
 }: WorkspaceBrowserProps) {
@@ -1442,6 +1444,9 @@ export function WorkspaceBrowser({
   const [editFolders, setEditFolders] = useState<string[]>([])
   const [editSaving, setEditSaving] = useState(false)
   const [editError, setEditError] = useState<string | null>(null)
+  // A failed reveal keeps its own seat: it must not clobber a save error, nor
+  // the other way round.
+  const [revealError, setRevealError] = useState<string | null>(null)
   const editTrimmed = editTitle.trim()
   const editDuplicate = editTarget !== null && editTrimmed !== '' && editTrimmed !== editTarget.currentTitle
     && storedWorkspaces.some(workspace =>
@@ -1455,8 +1460,35 @@ export function WorkspaceBrowser({
     if (editSaving) return
     setEditTarget(null)
     setEditError(null)
+    setRevealError(null)
     addFolderTargetRef.current = null
     setAddFolderTarget(null)
+  }
+  /**
+   * Reveal one folder row in the Host's file manager.
+   *
+   * The probe keeps a folder that is gone from reaching the Host, which does
+   * not stat its target; a refusal from the Host itself is reported the same
+   * way, next to the list rather than only in the console.
+   */
+  const revealFolderRow = (folder: string) => {
+    if (editSaving) return
+    setRevealError(null)
+    void (async () => {
+      if (!(await directoryExists(folder))) {
+        setRevealError(t('edit.project.reveal.missing', { name: folderLabel(folder) }))
+        console.warn('the folder no longer exists:', folder)
+        return
+      }
+      if (revealFolder === undefined) {
+        openFolder(folder)
+        return
+      }
+      const failure = await revealFolder(folder)
+      if (failure === null) return
+      setRevealError(failure)
+      console.warn('open folder rejected:', failure)
+    })()
   }
   const confirmEdit = () => {
     if (editTarget === null || editSaving || editorPickingFolder || editTrimmed === '' || editDuplicate) return
@@ -1774,6 +1806,7 @@ export function WorkspaceBrowser({
                     setEditPath(workspace.path)
                     setEditFolders([...folders])
                     setEditError(null)
+                    setRevealError(null)
                   },
                 })}
                 {...(removeFolder === undefined ? {} : {
@@ -1809,6 +1842,7 @@ export function WorkspaceBrowser({
         busy={editSaving}
         pickingFolder={addFolderTarget !== null}
         error={editError}
+        revealError={revealError}
         duplicateName={editDuplicate}
         flowAvailable={directoryFlowAvailable}
         onTitleChange={(next) => { setEditTitle(next); setEditError(null) }}
@@ -1820,6 +1854,7 @@ export function WorkspaceBrowser({
           setDeleteError(null)
           setEditTarget(null)
           setEditError(null)
+          setRevealError(null)
           addFolderTargetRef.current = null
           setAddFolderTarget(null)
         }}
@@ -1843,6 +1878,7 @@ export function WorkspaceBrowser({
             setEditError(null)
           },
         })}
+        onReveal={revealFolderRow}
         t={t}
       />
 

@@ -139,6 +139,8 @@ export declare const zh: {
     'edit.project.setPrimary': string;
     'edit.project.addFolder': string;
     'edit.project.removeFolder.aria': string;
+    'edit.project.reveal.aria': string;
+    'edit.project.reveal.missing': string;
     'edit.project.remove': string;
     'edit.project.saving': string;
     'hover.pin': string;
@@ -284,6 +286,8 @@ export declare const en: {
     'edit.project.setPrimary': string;
     'edit.project.addFolder': string;
     'edit.project.removeFolder.aria': string;
+    'edit.project.reveal.aria': string;
+    'edit.project.reveal.missing': string;
     'edit.project.remove': string;
     'edit.project.saving': string;
     'hover.pin': string;

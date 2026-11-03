@@ -53,6 +53,87 @@ function normalizeDirectory(path: string): string {
   return /^[a-z]:\//i.test(trimmed) ? trimmed.toLowerCase() : trimmed
 }
 
+/**
+ * Whether a Session records a root that has gone away.
+ *
+ * Only a *recorded* root the probe reports gone counts as missing. A Session
+ * that records no cwd is not a dead root: the host resolves it to its own
+ * default directory (`header.cwd ?? defaultDirectory`), so it keeps the
+ * treatment it had before this guard existed.
+ * @param cwd - the cwd a Session summary records, if any.
+ * @param usable - existence probe for a recorded cwd.
+ * @returns whether the Session is stranded on a missing root.
+ */
+export async function missingRoot(
+  cwd: string | undefined,
+  usable: (path: string) => Promise<boolean>,
+): Promise<boolean> {
+  if (cwd === undefined || cwd === '') return false
+  return !(await usable(cwd))
+}
+
+/** Either the root a new Session starts in, or the refusal to report. */
+export type SessionRoot =
+  | { readonly ok: true; readonly cwd: string }
+  | { readonly ok: false; readonly error: string }
+
+/**
+ * The one root a new Session may start in, or the refusal to report.
+ *
+ * The effective primary folder is the only candidate: a folder that is neither
+ * the primary nor listed among the workspace's folders was deliberately
+ * removed, so it is never used as a root. A primary the probe reports gone is
+ * refused instead of handed to the Host, whose Session creation would recreate
+ * the deleted folder as an empty directory.
+ * @param primary - the effective primary folder.
+ * @param exists - whether the probe found an existing directory there.
+ * @returns the cwd to use, or the sentence to throw.
+ */
+export function sessionRoot(primary: string, exists: boolean): SessionRoot {
+  if (!exists) {
+    return {
+      ok: false,
+      error: `the primary folder "${primary}" no longer exists: `
+        + 'restore it, or set an existing folder as the primary folder',
+    }
+  }
+  return { ok: true, cwd: primary }
+}
+
+/** What opening one conversation should do once the node half has answered. */
+export type RerootAction = 'restored' | 'notice' | 'fallback'
+
+/**
+ * Read the node half's answer to one request to move a conversation off a dead root.
+ *
+ * `restored` - the conversation has a live root (it moved, or it was already
+ * live); the caller may make it current. `notice` - the Workspace's primary
+ * folder itself is gone, so report the same actionable sentence the create path
+ * throws. `fallback` - no answer, or any other refusal: keep today's behaviour.
+ * @param answer - the node half's answer, or undefined when it said nothing.
+ * @returns which of the three outcomes the caller should take.
+ */
+export function rerootAction(
+  answer: { readonly ok: boolean; readonly reason?: string } | undefined,
+): RerootAction {
+  if (answer === undefined) return 'fallback'
+  if (answer.ok) return 'restored'
+  return answer.reason === 'primary-missing' ? 'notice' : 'fallback'
+}
+
+/**
+ * The conversation a Session target names.
+ *
+ * A plain target is its own id; a durable direct-parent subagent address is the
+ * child's own conversation, which has its own root and must be inspected on its
+ * own (its parent's root says nothing about it).
+ * @param target - the Session id or subagent address being revealed.
+ * @returns the id of the conversation that target names.
+ */
+export function conversationId<T extends string>(target: T | { readonly childSessionId: T }): T {
+  return typeof target === 'string' ? target : target.childSessionId
+}
+
 /** Whether one Session cwd lies inside one of the given source folders. */
 export function cwdInsideFolders(cwd: string | undefined, folders: readonly string[]): boolean {
   if (cwd === undefined || cwd === '') return false

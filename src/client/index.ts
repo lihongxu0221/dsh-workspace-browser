@@ -269,6 +269,9 @@ export function apply(ctx: Context): void {
   // promoted primary in its own persisted viewing store. New Sessions for a
   // promoted folder are created with that cwd (the host's create accepts a cwd
   // when no workspaceId is sent) and the browser borrows them back by cwd.
+  // Promoting a primary also asks the node half to move the host Workspace
+  // record itself; when that host cannot be repathed the layer above is still
+  // the fallback.
   const folderView = (workspaceId: WorkspaceId): WorkspaceView & { readonly folders: readonly string[] } => {
     const view = workspaces.list.getSnapshot().items.find(item => item.workspaceId === workspaceId)
     if (view === undefined) throw new Error('unknown workspace')
@@ -278,6 +281,32 @@ export function apply(ctx: Context): void {
     const path = override !== undefined && !samePath(override, view.path) ? override : view.path
     const folders = stored.filter(folder => !samePath(folder, path))
     return { ...view, path, folders }
+  }
+  /**
+   * Ask the node half to move the host Workspace record itself. Fire and
+   * forget: the browser-local layer is what the UI already reads, so a host
+   * that cannot be repathed (or exposes no route) must not fail the action.
+   */
+  const moveHostPrimary = (workspaceId: WorkspaceId, path: string): void => {
+    void (async () => {
+      try {
+        const response = await fetch('/api/workspace-browser/primary', {
+          method: 'POST',
+          credentials: 'same-origin',
+          cache: 'no-store',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ workspaceId, path }),
+        })
+        if (response.ok) return
+        const body: unknown = await response.json().catch(() => undefined)
+        const reason = typeof body === 'object' && body !== null && 'error' in body
+          ? String((body as { error: unknown }).error)
+          : `status ${response.status}`
+        console.warn('the host workspace path was not moved:', reason)
+      } catch (error) {
+        console.warn('the host workspace path was not moved:', error)
+      }
+    })()
   }
   const pluginFolders = {
     addFolder: async (workspaceId: WorkspaceId, path: string): Promise<WorkspaceView> => {
@@ -292,6 +321,7 @@ export function apply(ctx: Context): void {
       const view = workspaces.list.getSnapshot().items.find(item => item.workspaceId === workspaceId)
       if (view === undefined) throw new Error('unknown workspace')
       viewInstance.actions.promotePrimary(workspaceId, path, view.path)
+      moveHostPrimary(workspaceId, path)
       return folderView(workspaceId)
     },
   }
@@ -340,6 +370,16 @@ export function apply(ctx: Context): void {
       }, (reason: unknown) => {
         console.warn('open folder rejected:', reason)
       })
+    },
+    // The same seam, but the caller gets the failure: a dialog row reports it
+    // next to itself instead of only writing to the console.
+    revealFolder: async (path) => {
+      try {
+        const result = await ctx.remote.session.openWorkspacePath({ path })
+        return result.ok ? null : result.error.message
+      } catch (error) {
+        return error instanceof Error ? error.message : String(error)
+      }
     },
     hooks: { directoryFlow: browserFlowSource, hostInfo, workspaceShortcuts: shortcutControls.state, shortcuts: ctx.shortcuts.catalog },
   })
