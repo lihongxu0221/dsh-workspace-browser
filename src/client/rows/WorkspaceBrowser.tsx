@@ -818,7 +818,6 @@ function SessionTree({
         )}
         {groupRows}
       </AnimatedRows>
-      <span className={css.fade} />
     </HoverCardGroup>
   )
 }
@@ -921,7 +920,6 @@ function FlatList({
           )
         })}
       </AnimatedRows>
-      <span className={css.fade} />
     </HoverCardGroup>
   )
 }
@@ -1021,7 +1019,6 @@ function SearchResults({
           </div>
         )}
       </div>
-      <span className={css.fade} />
     </div>
   )
 }
@@ -1035,6 +1032,7 @@ export function WorkspaceBrowser({
   wide,
   usePanelInfo,
   expandSidebar,
+  useSectionScroller,
   useSessions,
   useSessionStatus,
   useWorkspaces,
@@ -1068,6 +1066,10 @@ export function WorkspaceBrowser({
   renderSlot,
   t,
 }: WorkspaceBrowserProps) {
+  // The sidebar viewport hands wheel scrolling to the section scroller bound
+  // below once the navigation is out of the way. The hook must run
+  // unconditionally; the ref is only attached in the expanded section.
+  const { bindScrollerRef } = useSectionScroller()
   const home = useHostInfo(info => info.home)
   const shortcuts = useShortcuts(rows => rows)
   const searchShortcut = shortcuts.find(row => row.id === 'session.search')
@@ -1729,8 +1731,10 @@ export function WorkspaceBrowser({
       </div>}
 
       {/* Always-mounted seat keeps the region's flex slot while the list
-          itself is wide-only. */}
-      <div className={css.listArea}>
+          itself is wide-only. Expanded, the seat is the section's own vertical
+          scroller below the toolbar; the sidebar viewport hands wheel gestures
+          to it through the bound ref once the navigation has scrolled away. */}
+      <div ref={wide ? bindScrollerRef : undefined} className={css.listArea} data-sidebar-list-area="">
         {wide && (normalizedQuery !== ''
           ? (
             <SearchResults
@@ -1833,6 +1837,10 @@ export function WorkspaceBrowser({
               />
             ))}
       </div>
+
+      {/* Pinned to the section's bottom edge; it sits outside the scrolling
+          seat so the gradient stays put while the rows move. */}
+      {wide && <span className={css.fade} />}
 
       <WorkspaceEditDialog
         open={editTarget !== null}
