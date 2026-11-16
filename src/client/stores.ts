@@ -10,6 +10,10 @@ import type { SessionListState } from '@deepseek-ai/dsh-api-session-controller/c
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import { reconcileManualOrder, type ArchivedFilter, type SessionRowState } from './tree.ts'
 import { addExtraFolderTo, promotePrimaryIn, removeExtraFolderFrom } from './folder-transition.ts'
+import {
+  assignWorkspace, createSection, createSectionsState, deleteSection, moveSection, normalizeSections,
+  renameSection, type SectionsState,
+} from './sections/model.ts'
 
 /** Browser-local order account for the hierarchy-free flat Session list. */
 export const FLAT_SESSION_ORDER_KEY = '__flat_session_order__'
@@ -49,6 +53,18 @@ type WorkspaceViewState = {
    * Workspace path. Absent means the host path stays primary.
    */
   primaryByWorkspace?: Record<string, string>
+  /** Optional workspace-section layout (Codex-style). Off keeps the original grouped tree. */
+  sectionsEnabled?: boolean
+  /** Custom and built-in sections; absent in pre-section snapshots and read as the default pair. */
+  sections?: SectionsState
+  /** Optional compact panel navigation above the Workspace list; off by default. */
+  panelNavEnabled?: boolean
+  /** User order of `sidebar.panellist` entry ids. */
+  panelOrder?: string[]
+  /** Panel ids pinned above the "more" accordion; absent means none pinned. */
+  panelPinned?: string[]
+  /** Section collapse state, keyed by section id. */
+  sectionExpansion?: Record<string, boolean>
 }
 
 type SessionOrderSource = {
@@ -103,8 +119,29 @@ type WorkspaceViewActions = {
   /** Replace the plugin folder layer with the merged home-file result. */
   installFolderLayer: (
     draft: WorkspaceViewState,
-    layer: { extraFoldersByWorkspace: Record<string, string[]>; primaryByWorkspace: Record<string, string> },
+    layer: {
+      extraFoldersByWorkspace: Record<string, string[]>
+      primaryByWorkspace: Record<string, string>
+      sectionsEnabled?: boolean
+      sections?: SectionsState
+    },
   ) => void
+  /** Turn the optional section layout on or off without discarding its structure. */
+  setSectionsEnabled: (draft: WorkspaceViewState, enabled: boolean) => void
+  /** Put one Workspace into a section (and keep the pin set consistent). */
+  assignWorkspaceSection: (draft: WorkspaceViewState, workspaceId: string, sectionId: string) => void
+  /** Create a custom section before the fallback "projects" section. */
+  createWorkspaceSection: (draft: WorkspaceViewState, sectionId: string, name: string) => void
+  renameWorkspaceSection: (draft: WorkspaceViewState, sectionId: string, name: string) => void
+  deleteWorkspaceSection: (draft: WorkspaceViewState, sectionId: string) => void
+  moveWorkspaceSection: (draft: WorkspaceViewState, sectionId: string, beforeSectionId: string | null) => void
+  setSectionExpanded: (draft: WorkspaceViewState, sectionId: string, expanded: boolean) => void
+  /** Show or hide the compact panel navigation. */
+  setPanelNavEnabled: (draft: WorkspaceViewState, enabled: boolean) => void
+  /** Persist a new panel order after an in-place drag. */
+  setPanelOrder: (draft: WorkspaceViewState, order: readonly string[]) => void
+  /** Persist which panels stay visible outside the "more" accordion. */
+  setPanelPinned: (draft: WorkspaceViewState, pinned: readonly string[]) => void
 }
 
 /** Copy read-only projections into the persisted mutable store representation. */
@@ -117,6 +154,11 @@ function copySessionOrders(
 /** Copy a read-only extra-folder map into the draft's mutable representation. */
 function mutableFolders(map: Readonly<Record<string, readonly string[]>>): Record<string, string[]> {
   return Object.fromEntries(Object.entries(map).map(([key, folders]) => [key, [...folders]]))
+}
+
+/** Current section structure, tolerating snapshots written before sections existed. */
+function currentSections(draft: WorkspaceViewState): SectionsState {
+  return draft.sections ?? createSectionsState()
 }
 
 /**
@@ -136,6 +178,9 @@ export function createWorkspaceViewStore(): EngineStoreHandle<WorkspaceViewState
       recentsOpen: true,
       extraFoldersByWorkspace: {},
       primaryByWorkspace: {},
+      sectionsEnabled: undefined,
+      sections: undefined,
+      sectionExpansion: {},
     }),
     persist: 'dsh.workspace.view.v5',
     actions: {
@@ -157,6 +202,7 @@ export function createWorkspaceViewStore(): EngineStoreHandle<WorkspaceViewState
         delete (d as WorkspaceViewState & { sessionUpdatedAtByAccount?: unknown }).sessionUpdatedAtByAccount
         const pinned = Array.isArray(d.pinnedWorkspaceIds) ? d.pinnedWorkspaceIds : []
         d.pinnedWorkspaceIds = pinned.filter(id => retained.has(id))
+        if (d.sections) d.sections = normalizeSections(d.sections, workspaceKeys)
         if (typeof d.workspacesOpen !== 'boolean') d.workspacesOpen = true
         if (typeof d.recentsOpen !== 'boolean') d.recentsOpen = true
         // Pre-folder snapshots carry neither map; read them as empty rather than
@@ -216,9 +262,54 @@ export function createWorkspaceViewStore(): EngineStoreHandle<WorkspaceViewState
         d.extraFoldersByWorkspace = mutableFolders(next.extraFoldersByWorkspace)
         d.primaryByWorkspace = { ...next.primaryByWorkspace }
       },
+      setSectionsEnabled: (d, enabled: boolean) => {
+        d.sectionsEnabled = enabled
+        if (!d.sections) d.sections = createSectionsState()
+      },
+      assignWorkspaceSection: (d, workspaceId: string, sectionId: string) => {
+        const next = assignWorkspace(currentSections(d), workspaceId, sectionId)
+        if (next === d.sections) return
+        d.sections = normalizeSections(next)
+        if (sectionId === 'pinned') {
+          const pinned = Array.isArray(d.pinnedWorkspaceIds) ? d.pinnedWorkspaceIds : []
+          if (!pinned.includes(workspaceId)) d.pinnedWorkspaceIds = [...pinned, workspaceId]
+        } else {
+          d.pinnedWorkspaceIds = (Array.isArray(d.pinnedWorkspaceIds) ? d.pinnedWorkspaceIds : [])
+            .filter(id => id !== workspaceId)
+        }
+      },
+      createWorkspaceSection: (d, sectionId: string, name: string) => {
+        d.sections = normalizeSections(createSection(currentSections(d), sectionId, name))
+      },
+      renameWorkspaceSection: (d, sectionId: string, name: string) => {
+        const next = renameSection(currentSections(d), sectionId, name)
+        if (next !== d.sections) d.sections = next
+      },
+      deleteWorkspaceSection: (d, sectionId: string) => {
+        const next = deleteSection(currentSections(d), sectionId)
+        if (next !== d.sections) d.sections = next
+      },
+      moveWorkspaceSection: (d, sectionId: string, beforeSectionId: string | null) => {
+        const next = moveSection(currentSections(d), sectionId, beforeSectionId)
+        if (next !== d.sections) d.sections = next
+      },
+      setSectionExpanded: (d, sectionId: string, expanded: boolean) => {
+        d.sectionExpansion = { ...(d.sectionExpansion ?? {}), [sectionId]: expanded }
+      },
+      setPanelNavEnabled: (d, enabled: boolean) => {
+        d.panelNavEnabled = enabled
+      },
+      setPanelOrder: (d, order: readonly string[]) => {
+        d.panelOrder = [...new Set(order)]
+      },
+      setPanelPinned: (d, pinned: readonly string[]) => {
+        d.panelPinned = [...new Set(pinned)]
+      },
       installFolderLayer: (d, layer) => {
         d.extraFoldersByWorkspace = layer.extraFoldersByWorkspace
         d.primaryByWorkspace = layer.primaryByWorkspace
+        if (layer.sectionsEnabled !== undefined) d.sectionsEnabled = layer.sectionsEnabled
+        if (layer.sections !== undefined) d.sections = normalizeSections(layer.sections)
       },
     },
   })

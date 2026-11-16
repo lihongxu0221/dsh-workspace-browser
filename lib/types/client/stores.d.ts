@@ -9,6 +9,7 @@ import { type EngineStoreHandle } from '@deepseek-ai/dsh-client-store';
 import type { SessionListState } from '@deepseek-ai/dsh-api-session-controller/client';
 import type { SessionId } from '@deepseek-ai/dsh-session/types';
 import { type ArchivedFilter, type SessionRowState } from './tree.ts';
+import { type SectionsState } from './sections/model.ts';
 /** Browser-local order account for the hierarchy-free flat Session list. */
 export declare const FLAT_SESSION_ORDER_KEY = "__flat_session_order__";
 /** Session-list grouping mode: sibling Workspace sections, a Workspace tree, or one flat list. */
@@ -45,6 +46,18 @@ type WorkspaceViewState = {
      * Workspace path. Absent means the host path stays primary.
      */
     primaryByWorkspace?: Record<string, string>;
+    /** Optional workspace-section layout (Codex-style). Off keeps the original grouped tree. */
+    sectionsEnabled?: boolean;
+    /** Custom and built-in sections; absent in pre-section snapshots and read as the default pair. */
+    sections?: SectionsState;
+    /** Optional compact panel navigation above the Workspace list; off by default. */
+    panelNavEnabled?: boolean;
+    /** User order of `sidebar.panellist` entry ids. */
+    panelOrder?: string[];
+    /** Panel ids pinned above the "more" accordion; absent means none pinned. */
+    panelPinned?: string[];
+    /** Section collapse state, keyed by section id. */
+    sectionExpansion?: Record<string, boolean>;
 };
 type SessionOrderSource = {
     members: Readonly<Record<string, readonly SessionId[]>>;
@@ -81,7 +94,25 @@ type WorkspaceViewActions = {
     installFolderLayer: (draft: WorkspaceViewState, layer: {
         extraFoldersByWorkspace: Record<string, string[]>;
         primaryByWorkspace: Record<string, string>;
+        sectionsEnabled?: boolean;
+        sections?: SectionsState;
     }) => void;
+    /** Turn the optional section layout on or off without discarding its structure. */
+    setSectionsEnabled: (draft: WorkspaceViewState, enabled: boolean) => void;
+    /** Put one Workspace into a section (and keep the pin set consistent). */
+    assignWorkspaceSection: (draft: WorkspaceViewState, workspaceId: string, sectionId: string) => void;
+    /** Create a custom section before the fallback "projects" section. */
+    createWorkspaceSection: (draft: WorkspaceViewState, sectionId: string, name: string) => void;
+    renameWorkspaceSection: (draft: WorkspaceViewState, sectionId: string, name: string) => void;
+    deleteWorkspaceSection: (draft: WorkspaceViewState, sectionId: string) => void;
+    moveWorkspaceSection: (draft: WorkspaceViewState, sectionId: string, beforeSectionId: string | null) => void;
+    setSectionExpanded: (draft: WorkspaceViewState, sectionId: string, expanded: boolean) => void;
+    /** Show or hide the compact panel navigation. */
+    setPanelNavEnabled: (draft: WorkspaceViewState, enabled: boolean) => void;
+    /** Persist a new panel order after an in-place drag. */
+    setPanelOrder: (draft: WorkspaceViewState, order: readonly string[]) => void;
+    /** Persist which panels stay visible outside the "more" accordion. */
+    setPanelPinned: (draft: WorkspaceViewState, pinned: readonly string[]) => void;
 };
 /**
  * Create the workspace browser viewing store handle.

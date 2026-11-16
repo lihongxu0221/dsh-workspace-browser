@@ -5,7 +5,6 @@
  */
 import { type SessionListState, type SessionSearchResultItem } from '@deepseek-ai/dsh-api-session-controller/client';
 import type { WorkspaceId, WorkspaceView } from '@deepseek-ai/dsh-api-workspace-controller/client';
-import type { SessionStatusSnapshot } from '@deepseek-ai/dsh-client-ui-session/client';
 import type { SessionId } from '@deepseek-ai/dsh-session/types';
 /** Group key for Sessions outside every Workspace. */
 export declare const UNGROUPED_KEY = "";
@@ -98,7 +97,19 @@ export declare function cwdInsideFolders(cwd: string | undefined, folders: reado
 export declare function mergePluginFolders<W extends ListedWorkspace>(workspaces: readonly W[], list: SessionListState, extraFolders: Readonly<Record<string, readonly string[]>> | undefined, primaryByWorkspace?: Readonly<Record<string, string>> | undefined): W[];
 /** Pending interaction kinds with dedicated Workspace-row presentation. */
 export type SessionPendingInteractionStatus = 'approval' | 'plan-review' | 'question';
-type SessionStatuses = SessionStatusSnapshot;
+/**
+ * Structural subset of the Host session-status snapshot used by the tree.
+ * The type lives in `dsh-client-ui-session-status`, which is not a direct
+ * dependency here; keeping the shape local avoids importing a package the
+ * current release does not ship as a public peer.
+ */
+type SessionStatuses = ReadonlyMap<SessionId, {
+    readonly running: boolean | undefined;
+    readonly pendingInteraction: {
+        readonly kind: string;
+    } | undefined;
+    readonly completionUnread: boolean;
+}>;
 /** One top-level session row in a group or the flat list. */
 export interface SessionNode {
     id: SessionId;

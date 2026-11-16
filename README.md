@@ -1,6 +1,75 @@
 # dsh-workspace-browser
 
-Standalone Cordis client plugin that gives the shipped dsh web client the workspace features it does not have: the sidebar **Recents** section, collapsible section headers, the **project editor** with extra source folders, pin/rename/fork/archive row actions, search, shortcuts, and the conversation-hero **workspace picker**. In the project editor a folder's own name opens that folder in the OS file manager, and a conversation whose own folder has vanished is silently re-rooted to the Workspace's primary folder when it is opened.
+Standalone Cordis client plugin that keeps the workspace-browser feature set and integrates
+`@michengai/dsh-codex-ui`: composer prediction and input history, themes and glass, the native
+settings workbench, sidebar panel navigation, workspace sections, unread sessions, generated
+session titles, the desktop titlebar menu, mobile layout, and ecosystem dependency management.
+
+The original workspace-browser feature set remains: the sidebar **Recents** section,
+collapsible section headers, the **project editor** with extra source folders,
+pin/rename/fork/archive row actions, search, shortcuts, and the conversation-hero
+**workspace picker**. In the project editor a folder's own name opens that folder in the OS
+file manager, and a conversation whose own folder has vanished is silently re-rooted to the
+Workspace's primary folder when it is opened.
+
+## Integrated features
+
+Workspace browser:
+
+- Workspace tree, flat list, Recents, search, archive filter, manual/updated ordering.
+- Pin, rename, fork, archive, unarchive, and copy Session ID.
+- Project editor with title, primary folder, extra source folders, set-as-primary, and reveal.
+- Plugin-owned source-folder persistence and the `workspace-browser:folders` prompt context.
+- Directory probe, reroot before opening, workspace picker, shortcuts, toasts.
+
+Optional workspace sections (off by default):
+
+- Pinned, Projects, and custom sections; collapse, rename, reorder, delete.
+- Move a workspace from its row menu, drag across sections, and auto-place unassigned ones.
+- Add a workspace directly from a section header and route it to that section.
+- Section data lives in `dsh.workspace.view.v5` and is mirrored through the existing folder
+  layer into `.dsh/storages/workspace-browser-folders.json`.
+
+Panel navigation (off by default):
+
+- Reads `sidebar.panellist`, renders pinned and “more” groups, supports pin/unpin and drag.
+- Selects panels through `layout.selectPanel`; never hides or clones native sidebar nodes.
+
+Composer enhancements (on by default):
+
+- Inline prediction and continuation, Tab to accept, Alt+Up/Down to cycle, Esc to dismiss.
+- Three modes: off, continuation-only, prediction plus continuation; model, effort, and
+  suggestion count are configurable.
+- Empty-input Up/Down history scoped to the current session or the same-cwd workspace.
+- Draggable composer width, new-conversation suggestion cards, and a Composer settings card.
+
+Themes and settings:
+
+- Fourteen built-in themes, three glass levels, tiled-glass/mica layouts, and ground glow.
+- Default theme is `stock` and glass is off; global design tokens are written only after an
+  explicit choice.
+- Native settings skin: full-screen twin islands, grouped navigation, native-input search,
+  Ambient Ground.
+- A Workspace Browser settings section with theme, Composer, ecosystem plugins, and About.
+
+Other sub-plugins:
+
+- Session titles: generated from the first prompt, with fallback on ambiguity or failure.
+- Desktop menu: Electron titlebar help, reload, and app/Host restart.
+- Mobile layout: full-height viewport, safe areas, 44px touch targets, 16px inputs, viewport
+  clamping.
+- Eight locales: zh, en, ja, es, fr, de, ru, pt.
+- Ecosystem dependencies: managed-plugin status, versions, npm downloads, single and bulk
+  updates.
+
+`cordis.patch.yml` keeps `ui-workspace` disabled and the root plugin inserted, then adds six
+sub-plugins: `workspace-browser-session-title`, `workspace-browser-theme`,
+`workspace-browser-settings-skin`, `workspace-browser-composer`,
+`workspace-browser-sidebar`, and `workspace-browser-desktop-menu`. Each can be disabled
+independently; the root still requires only `connection`.
+
+See [INTEGRATION.md](INTEGRATION.md) for the item-by-item comparison, conflict decisions,
+batch order, and verification record.
 
 ## Why it exists
 
@@ -35,9 +104,25 @@ The tag `appgen-0.3.0` keeps an earlier parity-only build (exactly the host's ow
 ## Layout
 
 ```
-src/index.ts                        node half — folder-layer route, the host repath route, the conversation reroot route, the directory probe + the prompt context that names the folders
+src/index.ts                        node half — folder routes, dependency route, prompt context
 src/session-folders.ts              which workspace a Session belongs to, and the paragraph the prompt carries
-src/client/index.ts                 apply: registrations, the ctx.uiWorkspace service, capability probe
+src/client/index.ts                 apply: registrations, ctx.uiWorkspace, all extension observers
+src/client/PanelNav.tsx             in-tree panel navigation (off by default)
+src/client/sections/                pure section model and ordering
+src/client/composer/                prediction, history, width, suggestions, settings
+src/client/theme/                   fourteen themes, glass, token injection
+src/client/settings-skin/           full-screen settings workbench
+src/client/sidebar/session-unread/  unread session menu
+src/client/desktop-menu/            Electron titlebar help menu
+src/client/AboutSection.tsx         theme, Composer, ecosystem plugins, About
+src/client/mobile-web.ts            mobile layout
+src/client/codex-locales.ts         eight-locale dictionary for integrated features
+src/composer-plugin.ts              composer host entry
+src/settings-skin-plugin.ts         settings skin host entry
+src/sidebar-plugin.ts               sidebar host entry
+src/theme-plugin.ts                 theme host entry
+src/desktop-menu-plugin.ts          desktop menu host entry
+src/session-title-plugin.ts         session title host entry
 src/client/host-capabilities.d.ts   the optional host folder APIs and why they are optional
 src/client/folder-transition.ts     the pure add/remove/promote folder-layer math the store actions apply
 src/client/contract/slots.ts        slot owner/occupant contracts
@@ -49,7 +134,7 @@ src/client/{tree,stores,pin-order,shortcuts,navigation,locales}.ts
 cordis.patch.yml                    bundle patch: disable ui-workspace, insert this plugin
 cordis.patch.dev.yml                the same swap with an absolute path, for `--patch` runs
 scripts/build-client.mjs            emits lib/client.js through the harness client preset
-scripts/bundle-node.mjs             emits lib/index.js from the tsc output (no checkout needed)
+scripts/bundle-node.mjs             esbuild multi-entry: root plus six sub-plugin entries
 ```
 
 ## Install
@@ -67,17 +152,36 @@ The host composes plugin node halves at startup, so a change to `lib/index.js` s
 ```powershell
 pnpm install
 pnpm run typecheck              # against the generation pinned in devDependencies
-pnpm run build                  # tsc: src -> lib/types, then scripts/bundle-node.mjs -> lib/index.js
-node scripts/build-client.mjs   # harness client preset: lib/types -> lib/client.js (+ lib/index.js)
+pnpm run contract-check         # peers, source imports, named exports, client inject
+pnpm run build                  # tsc -> lib/types, then esbuild -> seven node entries
+node scripts/build-client.mjs 'E:\AI\Agents\Deepseek Harness\Code'
+pnpm test                       # reads lib/index.js, so build first
 ```
 
-`scripts/bundle-node.mjs` is the fallback for the node half when no harness checkout is available: it concatenates `lib/types` into the single-file `lib/index.js` the package entry names, which is exactly the transformation the preset's Node build face performs for these three modules. The client half still needs the preset.
+`scripts/bundle-node.mjs` now uses esbuild in external mode and emits seven entries:
+`lib/index.js`, `lib/composer.js`, `lib/settings-skin.js`, `lib/sidebar.js`,
+`lib/theme.js`, `lib/desktop-menu.js`, and `lib/session-title.js`. Keep `package.json`
+`exports` and `files` in sync with those names.
 
 `scripts/build-client.mjs` uses the client-bundle preset from a dsh source checkout (`packages/client/tsdown.client.ts`, default `..\..\deepseek-harness`, override with `$DSH_HARNESS` or an argument). The preset resolves a package through `packages/<group>/<dir>/package.json`, so the script stages a temporary face package inside the checkout, links this repo's `node_modules` into it, runs tsdown for the Client face, normalizes the checkout path out of the emitted banners, copies the artifacts back and deletes the staging directory. The checkout itself is left untouched.
 
 ## Verification
 
-1. **Types.** `devDependencies` pins every `@deepseek-ai/*` package to the published generation this plugin targets (`0.2.1-rc.2`; cordis `^4.0.5`), so `pnpm run typecheck` fails on any atom, prop or service that generation lacks. The three host folder APIs are still absent from the published surface and are declared optional locally — the project editor falls back to the plugin's own store when they are missing. The client inject list also names `@deepseek-ai/dsh-api-remote-access`, which the rc.2 `remoteAccess` service comes from.
+Current status:
+
+- `pnpm run typecheck` passes.
+- `pnpm run contract-check` passes: 35 peers, 104 source files across 26 packages, 135 named imports, and 15 client inject entries with no missing symbols.
+- `pnpm run build` emits all seven node entries.
+- `pnpm test` passes 86/86, covering hover cards, session attribution, folder transitions, node routes and prompt context, section models, and section round-trips through the folder layer.
+- `node scripts/build-client.mjs 'E:\AI\Agents\Deepseek Harness\Code'` produces `lib/client.js` (1.34 MB), its source map, and `lib/index.js`.
+- `npm pack --dry-run` lists 118 files: every entry, type declaration, icon, `INTEGRATION.md`, `cordis.patch.yml`, and the license/notice files.
+- A throwaway profile boots successfully; with the sub-plugins enabled, composer/theme/settings-skin/sidebar/desktop-menu return `enabled:true`, while the dependencies endpoint returns 401 because its route is registered behind the host auth fence.
+- A headless Chrome run rendered the real UI: the settings workbench and Workspace Browser section, theme switching and the glass toggle, workspace sections with move/fold/add, the PanelNav accordion, Composer suggestion cards, width handles, and ArrowUp input-history recall. The console had no boot errors. The desktop menu is a no-op on Web because there is no `[data-windows-menu]`.
+- The composer disable path was spot-checked: its endpoint returns 401 and neither the width handles nor the new-conversation cards render. The other sub-plugins and the full rc.3 host combination are still pending; see [INTEGRATION.md](INTEGRATION.md).
+
+### Historical host-surface checks
+
+1. **Types.** `devDependencies` pins every `@deepseek-ai/*` package to the published generation this plugin targets (`0.2.2-rc.2`; cordis `^4.1.0`), so `pnpm run typecheck` fails on any atom, prop or service that generation lacks. The three host folder APIs are still absent from the published surface and are declared optional locally — the project editor falls back to the plugin's own store when they are missing. The client inject list also names `@deepseek-ai/dsh-api-remote-access`, which the rc.2 `remoteAccess` service comes from.
 2. **Bundle surface.** Diff the bundle against the host build: extract the host's own `dsh/node_modules/@deepseek-ai/dsh-client-ui-workspace/lib/client.js` from `resources/app.asar`, then compare the `//#region lib/types/...` module lists and the member sets required from each module-table entry (`_deepseek_ai_dsh_client_ui_primitives.X`, `…dsh_client_store.X`, `_deepseek_ai_dsh_cordis.X`, `react.X`, `react_jsx_runtime.X`), and check every required primitives symbol against the host's single `export { … }` list. Extra modules (the project editor) and extra members are fine only when the host exports them.
 3. **Runtime.** Boot the host's own runtime against a throwaway profile with this bundle installed, then load the served UI in a headless browser and assert that the added features render: the `最近会话` / `Recents` section (the in-tree plugin has no such key), a workspace row menu that offers *编辑项目*, a project editor dialog carrying *源文件夹* and *添加文件夹*, and a console with no errors.
 
@@ -91,4 +195,9 @@ node scripts/build-client.mjs   # harness client preset: lib/types -> lib/client
 - **Folder membership is matched by Session `cwd`**, and only Sessions the host left ungrouped are borrowed. A Session that the host already groups under its own Workspace stays there.
 - `src/` is the 0.2.1-rc.2 in-tree `ui-workspace` snapshot plus the plugin layer (Recents, project editor, folder persistence). Re-vendor the shared files when moving to another host generation and keep the capability probes.
 - **Extra folders are readable, not writable, under `workspace-write`.** The host resolves one sandbox root (`session.header.cwd`), and a canonicalizing containment check rejects a junction or symlink that points outside it. Only the prompt context is plugin-owned; `danger-full-access` is the mode that makes the extras writable.
-- Package tests cover the hover-card folder facts (`tests/hover-card.test.mjs`), the folder-selection logic (`tests/session-folders.test.mjs`), the folder-layer transitions including the promote-then-remove sequence and the dead-root re-root decision (`tests/folder-transition.test.mjs`) and the node half's routes — folders, primary, directory and reroot — plus prompt context (`tests/node-half.test.mjs`). The in-tree suite stays in `packages/client/ui-workspace/tests` at the vendored revision.
+- Package tests cover the hover-card folder facts (`tests/hover-card.test.mjs`), the folder-selection logic (`tests/session-folders.test.mjs`), the folder-layer transitions including the promote-then-remove sequence and the dead-root re-root decision (`tests/folder-transition.test.mjs`), the node half's routes and prompt context (`tests/node-half.test.mjs`), and the section model plus folder-layer round-trips (`tests/sections.test.mjs`).
+- The reference plugin's DOM takeover layers are not vendored: panel navigation is an in-tree simplification (off by default) and workspace sections use the current store/tree instead of the official `sectionHeader`. See [INTEGRATION.md](INTEGRATION.md) for the full comparison and limitations.
+
+## License
+
+This package is distributed under the MIT license (see `LICENSE`). Portions adapted from `@michengai/dsh-codex-ui` 2.2.5 remain under the Apache License 2.0; the full text is in `LICENSE-APACHE`, and attribution plus the adapted areas are listed in `THIRD_PARTY_NOTICES.md`.

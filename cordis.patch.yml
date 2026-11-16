@@ -14,5 +14,17 @@
   disabled: true
 
 - insert:
+    - id: workspace-browser-session-title
+      name: '@deepseek-ai/dsh-client-ui-workspace-browser/session-title'
+    - id: workspace-browser-theme
+      name: '@deepseek-ai/dsh-client-ui-workspace-browser/theme'
+    - id: workspace-browser-settings-skin
+      name: '@deepseek-ai/dsh-client-ui-workspace-browser/settings-skin'
+    - id: workspace-browser-composer
+      name: '@deepseek-ai/dsh-client-ui-workspace-browser/composer'
+    - id: workspace-browser-sidebar
+      name: '@deepseek-ai/dsh-client-ui-workspace-browser/sidebar'
+    - id: workspace-browser-desktop-menu
+      name: '@deepseek-ai/dsh-client-ui-workspace-browser/desktop-menu'
     - id: ui-workspace-browser
       name: '@deepseek-ai/dsh-client-ui-workspace-browser'

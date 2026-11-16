@@ -8,6 +8,8 @@ interface FolderStore {
   getSnapshot(): {
     extraFoldersByWorkspace?: Record<string, string[]>
     primaryByWorkspace?: Record<string, string>
+    sectionsEnabled?: boolean
+    sections?: FolderLayer['sections']
   }
   subscribe(fn: () => void): () => void
   actions: {
@@ -20,6 +22,8 @@ function layerOf(store: FolderStore): FolderLayer {
   return {
     extraFoldersByWorkspace: snap.extraFoldersByWorkspace ?? {},
     primaryByWorkspace: snap.primaryByWorkspace ?? {},
+    ...(snap.sectionsEnabled === undefined ? {} : { sectionsEnabled: snap.sectionsEnabled }),
+    ...(snap.sections === undefined ? {} : { sections: snap.sections }),
   }
 }
 

@@ -1,8 +1,11 @@
 /** Folder list that travels with a copied `.dsh` home, not with browser localStorage. */
-/** Plugin-owned source folders and promoted primaries, keyed by workspace id. */
+import { type SectionsState } from './client/sections/model.ts';
+/** Plugin-owned source folders, promoted primaries, and the optional section layout. */
 export interface FolderLayer {
     extraFoldersByWorkspace: Record<string, string[]>;
     primaryByWorkspace: Record<string, string>;
+    sectionsEnabled?: boolean;
+    sections?: SectionsState;
 }
 /** Empty layer. */
 export declare function emptyFolderLayer(): FolderLayer;

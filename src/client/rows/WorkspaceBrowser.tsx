@@ -39,9 +39,14 @@ import {
 import { ProjectRowItem, SearchResultItem, SessionNodeItem } from './Rows.tsx'
 import { AnimatedRows } from './AnimatedRows.tsx'
 import { FLAT_SESSION_ORDER_KEY, type SessionGroupBy } from '../stores.ts'
+import {
+  createSectionsState, DEFAULT_SECTION_ID, isBuiltinSection,
+  normalizeSections, PINNED_SECTION_ID, type SectionsState, type WorkspaceSection,
+} from '../sections/model.ts'
 import { WorkspaceEditDialog, folderLabel } from '../WorkspaceEditDialog.tsx'
 import { directoryExists } from '../navigation.ts'
 import { nativeDirectoryPick, WorkspacePickFlow } from '../WorkspacePicker.tsx'
+import { PanelNav } from '../PanelNav.tsx'
 import css from './WorkspaceBrowser.module.css'
 
 /** Extra folders the feed projects beside the published Workspace view. */
@@ -164,10 +169,14 @@ function useNativeDragAcceptance(active: boolean): void {
 }
 
 /** Grouping, ordering, and archived-filter menu; own open state so it resets with the wide chrome. */
-function ViewOptionsMenu({ groupBy, orderBy, archivedFilter, onGroupPick, onOrderPick, onArchivedFilterPick, t }: {
+function ViewOptionsMenu({ groupBy, orderBy, archivedFilter, sectionsEnabled, panelNavEnabled, onSectionToggle, onPanelNavToggle, onGroupPick, onOrderPick, onArchivedFilterPick, t }: {
   groupBy: SessionGroupBy
   orderBy: SessionOrderBy
   archivedFilter: ArchivedFilter
+  sectionsEnabled: boolean
+  panelNavEnabled: boolean
+  onSectionToggle: () => void
+  onPanelNavToggle: () => void
   onGroupPick: (mode: SessionGroupBy) => void
   onOrderPick: (mode: SessionOrderBy) => void
   onArchivedFilterPick: (filter: ArchivedFilter) => void
@@ -183,6 +192,17 @@ function ViewOptionsMenu({ groupBy, orderBy, archivedFilter, onGroupPick, onOrde
         { id: 'workspace', label: t('groupBy.workspace'), icon: <IconFolderCloseRegular /> },
         { id: 'workspace-tree', label: t('groupBy.workspaceTree'), icon: <IconWorkspaceTreeOutlineRegular /> },
         { id: 'flat', label: t('groupBy.flat'), icon: <IconFlatListOutlineRegular /> },
+        { type: 'separator' as const, id: 'sections-separator' },
+        {
+          id: 'sections-toggle',
+          label: sectionsEnabled ? t('sections.disable') : t('sections.enable'),
+          icon: <IconSlidersTwoOutlineRegular />,
+        },
+        {
+          id: 'panels-toggle',
+          label: panelNavEnabled ? t('panels.disable') : t('panels.enable'),
+          icon: <IconWorkspaceTreeOutlineRegular />,
+        },
         { type: 'separator' as const, id: 'order-by-separator' },
         { type: 'label' as const, id: 'order-by', text: t('orderBy.label') },
         { id: 'manual', label: t('orderBy.manual'), icon: <IconChevronsUpDownOutlineRegular /> },
@@ -197,9 +217,13 @@ function ViewOptionsMenu({ groupBy, orderBy, archivedFilter, onGroupPick, onOrde
         groupBy,
         orderBy,
         { default: 'hide-archived', show: 'show-archived', only: 'only-archived' }[archivedFilter],
+        ...(sectionsEnabled ? ['sections-toggle'] : []),
+        ...(panelNavEnabled ? ['panels-toggle'] : []),
       ]}
       onSelect={(id) => {
-        if (id === 'workspace' || id === 'workspace-tree' || id === 'flat') onGroupPick(id)
+        if (id === 'sections-toggle') onSectionToggle()
+        else if (id === 'panels-toggle') onPanelNavToggle()
+        else if (id === 'workspace' || id === 'workspace-tree' || id === 'flat') onGroupPick(id)
         else if (id === 'manual' || id === 'updated') onOrderPick(id)
         else if (id === 'hide-archived') onArchivedFilterPick('default')
         else if (id === 'show-archived') onArchivedFilterPick('show')
@@ -331,6 +355,17 @@ type SessionTreeProps = Pick<
   revealSessionId?: SessionId | undefined
   /** Acknowledge that the chosen Session row has been revealed. */
   onSessionRevealed: (sessionId: SessionId) => void
+  /** Optional Codex-style section layout. */
+  sectionsEnabled: boolean
+  sectionsState: SectionsState
+  sectionExpansion: Readonly<Record<string, boolean>>
+  setSectionExpanded: (sectionId: string, expanded: boolean) => void
+  assignWorkspaceSection: (workspaceId: string, sectionId: string) => void
+  createSection: () => void
+  addWorkspaceToSection: (sectionId: string) => void
+  renameSection: (sectionId: string) => void
+  deleteSection: (sectionId: string, name: string) => void
+  moveSection: (sectionId: string, beforeSectionId: string | null) => void
 }
 
 /** The list-empty placeholder — a glyph over the text; the archived-only view names its filter and offers the way back. */
@@ -419,6 +454,89 @@ function RecentSessionsSection({
   )
 }
 
+/** One section heading in the optional section layout. */
+function SectionHeading({
+  section, count, expanded, canUp, canDown, onToggle, onCreate, onAddWorkspace, onRename, onDelete, onMove, t,
+}: {
+  section: WorkspaceSection
+  count: number
+  expanded: boolean
+  canUp: boolean
+  canDown: boolean
+  onToggle: () => void
+  onCreate: () => void
+  onAddWorkspace: () => void
+  onRename: () => void
+  onDelete: () => void
+  onMove: (direction: 'up' | 'down') => void
+  t: WorkspaceBrowserProps['t']
+}) {
+  const [menuOpen, setMenuOpen] = useState(false)
+  const builtin = isBuiltinSection(section.id)
+  const label = section.id === PINNED_SECTION_ID
+    ? t('sections.pinned')
+    : section.id === DEFAULT_SECTION_ID
+      ? t('sections.projects')
+      : section.name
+  return (
+    <div className={css.workspaceSectionHeader} data-row-key={`section:${section.id}`}>
+      <button
+        type="button"
+        className={css.workspaceSectionToggle}
+        aria-label={t('sections.toggle')}
+        aria-expanded={expanded}
+        onClick={onToggle}
+      >
+        <IconTriangleRightFillRegular className={clsx(css.arrow, expanded && css.arrowOpen)} />
+      </button>
+      <span className={css.workspaceSectionTitle}>{label}</span>
+      <span className={css.workspaceSectionCount}>{t('sections.count', { n: count })}</span>
+      <span className={css.workspaceSectionActions}>
+        <Tooltip label={t('workspace.add')} side="bottom" delayMs={500}>
+          <button type="button" className={css.iconButton} aria-label={t('workspace.add')} onClick={onAddWorkspace}>
+            <IconProjectAddOutlineRegular size={14} />
+          </button>
+        </Tooltip>
+        <Tooltip label={t('sections.new')} side="bottom" delayMs={500}>
+          <button type="button" className={css.iconButton} aria-label={t('sections.new')} onClick={onCreate}>
+            +
+          </button>
+        </Tooltip>
+        {!builtin && (
+          <Menu
+            open={menuOpen}
+            onClose={() => { setMenuOpen(false) }}
+            portal
+            items={[
+              { id: 'rename', label: t('sections.renamePrompt') },
+              ...(canUp ? [{ id: 'up', label: t('sections.moveUp') }] : []),
+              ...(canDown ? [{ id: 'down', label: t('sections.moveDown') }] : []),
+              { id: 'delete', label: t('delete'), danger: true },
+            ]}
+            onSelect={(id) => {
+              setMenuOpen(false)
+              if (id === 'rename') onRename()
+              else if (id === 'up') onMove('up')
+              else if (id === 'down') onMove('down')
+              else if (id === 'delete') onDelete()
+            }}
+            anchor={(
+              <button
+                type="button"
+                className={css.iconButton}
+                aria-label={t('sections.menu')}
+                onClick={(e) => { e.stopPropagation(); setMenuOpen(value => !value) }}
+              >
+                …
+              </button>
+            )}
+          />
+        )}
+      </span>
+    </div>
+  )
+}
+
 /** The scrolling session tree; unmounting drops the sessions subscription and local row limits. */
 function SessionTree({
   list, useSessionStatus, startSession, open, workspaces, ungroupedSessionIds,
@@ -432,6 +550,8 @@ function SessionTree({
   nestWorkspaces, groupExpansion, setGroupExpanded,
   setSessionOrder, home, t,
   revealSessionId, onSessionRevealed, shortcuts,
+  sectionsEnabled, sectionsState, sectionExpansion, setSectionExpanded,
+  assignWorkspaceSection, createSection, addWorkspaceToSection, renameSection, deleteSection, moveSection,
 }: SessionTreeProps) {
   const panelActive = usePanelInfo(info => info.activePanelId !== null)
   const statuses = useSessionStatus(s => s)
@@ -488,6 +608,37 @@ function SessionTree({
     }),
     [list, workspaces, rowState, statuses, expandedGroups, pinnedWorkspaceIds, ungroupedSessionIds],
   )
+  const sectionLayout = useMemo(() => {
+    if (!sectionsEnabled) return undefined
+    const groupByWorkspace = new Map<string, GroupNode>(
+      groups.filter(group => group.workspaceId !== undefined).map(group => [group.workspaceId!, group]),
+    )
+    const pinned = new Set(pinnedWorkspaceIds)
+    const state = normalizeSections(sectionsState, workspaces.map(workspace => workspace.workspaceId))
+    const assigned = new Set<string>()
+    const entries = state.sections.map(section => {
+      const members = section.id === PINNED_SECTION_ID
+        ? pinnedWorkspaceIds
+          .map(id => groupByWorkspace.get(id))
+          .filter((group): group is GroupNode => group !== undefined && group.pinned)
+        : section.ids
+          .filter(id => !pinned.has(id))
+          .map(id => groupByWorkspace.get(id))
+          .filter((group): group is GroupNode => group !== undefined)
+      for (const group of members) if (group.workspaceId !== undefined) assigned.add(group.workspaceId)
+      return { section, members: [...members] }
+    })
+    const fallback = entries.find(entry => entry.section.id === DEFAULT_SECTION_ID)
+    if (fallback !== undefined) {
+      for (const group of groups) {
+        if (group.workspaceId !== undefined && assigned.has(group.workspaceId)) continue
+        if (group.workspaceId !== undefined && pinned.has(group.workspaceId)) continue
+        if (fallback.members.some(item => item.key === group.key)) continue
+        fallback.members.push(group)
+      }
+    }
+    return entries
+  }, [groups, pinnedWorkspaceIds, sectionsEnabled, sectionsState, workspaces])
   useEffect(() => {
     for (let key = revealGroup; key !== undefined; key = parents.get(key)) {
       if (groupExpansion[key] === false || (key === revealGroup && groupExpansion[key] !== true)) {
@@ -553,6 +704,17 @@ function SessionTree({
     const anchor = over.half === 'before' ? over.id : siblings[rowIndex + 1]?.workspaceId
     if (anchor === activeDrag.workspaceId) return
     const sourceIndex = siblings.findIndex(workspace => workspace.workspaceId === activeDrag.workspaceId)
+    // Section mode: a cross-section drop is first a membership change, then a
+    // host reorder. Without this the row would snap back to its old section.
+    if (sectionsEnabled && sectionLayout !== undefined) {
+      const sectionOf = (workspaceId: string | undefined): string | undefined =>
+        sectionLayout.find(entry => entry.members.some((group) => group.workspaceId === workspaceId))?.section.id
+      const sourceSection = sectionOf(activeDrag.workspaceId)
+      const targetSection = sectionOf(over.id)
+      if (sourceSection !== undefined && targetSection !== undefined && sourceSection !== targetSection) {
+        assignWorkspaceSection(activeDrag.workspaceId, targetSection)
+      }
+    }
     const anchorIndex = anchor === undefined
       ? siblings.length
       : siblings.findIndex(workspace => workspace.workspaceId === anchor)
@@ -713,6 +875,21 @@ function SessionTree({
               /* v8 ignore next -- narrowing guard: the actions object exists only for real-workspace groups. */
                 if (group.workspaceId !== undefined) onRenameRequest(group.workspaceId, group.label)
               },
+              ...(sectionsEnabled && sectionLayout !== undefined ? {
+                sectionId: sectionLayout.find(entry => entry.members.some(item => item.key === group.key))?.section.id,
+                sections: sectionLayout.map(entry => ({
+                  id: entry.section.id,
+                  label: entry.section.id === PINNED_SECTION_ID
+                    ? t('sections.pinned')
+                    : entry.section.id === DEFAULT_SECTION_ID
+                      ? t('sections.projects')
+                      : entry.section.name,
+                })),
+                moveToSection: (sectionId: string) => {
+                  /* v8 ignore next -- guarded by the actions object's workspace check. */
+                  if (group.workspaceId !== undefined) assignWorkspaceSection(group.workspaceId, sectionId)
+                },
+              } : {}),
               delete: () => {
               /* v8 ignore next -- narrowing guard: the actions object exists only for real-workspace groups. */
                 if (group.workspaceId !== undefined) onDeleteRequest(group.workspaceId, group.label)
@@ -799,7 +976,47 @@ function SessionTree({
     )
   }
 
-  const groupRows = rootGroups.map(group => renderGroup(group, 0))
+  const sectionRows: ReactNode[] = []
+  if (sectionsEnabled && sectionLayout !== undefined) {
+    const custom = sectionLayout
+      .map(entry => entry.section)
+      .filter(section => !isBuiltinSection(section.id))
+    for (const entry of sectionLayout) {
+      const expanded = sectionExpansion[entry.section.id] ?? true
+      rowKeys.push(`section:${entry.section.id}`)
+      const customIndex = custom.findIndex(section => section.id === entry.section.id)
+      sectionRows.push(
+        <SectionHeading
+          key={`section:${entry.section.id}`}
+          section={entry.section}
+          count={entry.members.length}
+          expanded={expanded}
+          canUp={customIndex > 0}
+          canDown={customIndex >= 0 && customIndex < custom.length - 1}
+          onToggle={() => { setSectionExpanded(entry.section.id, !expanded) }}
+          onCreate={() => { createSection() }}
+          onAddWorkspace={() => { addWorkspaceToSection(entry.section.id) }}
+          onRename={() => { renameSection(entry.section.id) }}
+          onDelete={() => { deleteSection(entry.section.id, entry.section.name) }}
+          onMove={(direction) => {
+            if (customIndex < 0) return
+            if (direction === 'up') {
+              const before = custom[customIndex - 1]
+              if (before !== undefined) moveSection(entry.section.id, before.id)
+              return
+            }
+            const after = custom[customIndex + 2]
+            moveSection(entry.section.id, after === undefined ? null : after.id)
+          }}
+          t={t}
+        />,
+      )
+      if (expanded) for (const group of entry.members) sectionRows.push(renderGroup(group, 0))
+    }
+  }
+  const groupRows = sectionsEnabled && sectionLayout !== undefined
+    ? sectionRows
+    : rootGroups.map(group => renderGroup(group, 0))
   if (groups.length === 0) rowKeys.unshift('empty')
   return (
     <HoverCardGroup className={clsx(css.treeBody, css.wide)}>
@@ -1110,6 +1327,16 @@ export function WorkspaceBrowser({
   // without the field; they read as the default hide-archived view.
   const archivedFilter = useStore(s => s.archivedFilter ?? 'default')
   const pinnedWorkspaceIds = useStore(s => Array.isArray(s.pinnedWorkspaceIds) ? s.pinnedWorkspaceIds : [])
+  const sectionsEnabled = useStore(s => s.sectionsEnabled === true)
+  const storedSections = useStore(s => s.sections ?? createSectionsState())
+  const sectionsState = useMemo(
+    () => normalizeSections(storedSections, workspaces.map(workspace => workspace.workspaceId)),
+    [storedSections, workspaces],
+  )
+  const sectionExpansion = useStore(s => s.sectionExpansion ?? {})
+  const panelNavEnabled = useStore(s => s.panelNavEnabled === true)
+  const panelOrder = useStore(s => s.panelOrder ?? [])
+  const panelPinned = useStore(s => s.panelPinned ?? [])
   const recentsOpen = useStore(s => s.recentsOpen !== false)
   const groupExpansion = useStore(s => s.groupExpansion)
   const sessionOrderByAccount = useStore(s => s.sessionOrderByAccount)
@@ -1255,6 +1482,10 @@ export function WorkspaceBrowser({
   // Section-header ＋ opens the picker menu (same popover in wide and rail
   // states; the menu anchors on this button).
   const wsPickerOpen = shortcutState.addRequested
+  const [pendingSectionId, setPendingSectionId] = useState<string | null>(null)
+  useEffect(() => {
+    if (!wsPickerOpen) setPendingSectionId(null)
+  }, [wsPickerOpen])
   const wsPlusRef = useRef<HTMLButtonElement>(null)
   const composingRef = useRef(false)
 
@@ -1575,6 +1806,9 @@ export function WorkspaceBrowser({
 
   return (
     <div className={clsx(css.root, !wide && css.rail)}>
+      {wide && panelNavEnabled && (
+        <PanelNav order={panelOrder} pinned={panelPinned} onOrder={actions.setPanelOrder} onPinned={actions.setPanelPinned} t={t} />
+      )}
       {wide && normalizedQuery === '' && groupBy !== 'flat' && (
         <RecentSessionsSection
           recents={recents}
@@ -1667,6 +1901,13 @@ export function WorkspaceBrowser({
               groupBy={groupBy}
               orderBy={orderBy}
               archivedFilter={archivedFilter}
+              sectionsEnabled={sectionsEnabled}
+              panelNavEnabled={panelNavEnabled}
+              onSectionToggle={() => {
+                actions.setSectionsEnabled(!sectionsEnabled)
+                if (!sectionsEnabled) actions.setGroupBy('workspace')
+              }}
+              onPanelNavToggle={() => { actions.setPanelNavEnabled(!panelNavEnabled) }}
               onGroupPick={actions.setGroupBy}
               onOrderPick={(mode) => { actions.setOrderBy(mode, activeSessionOrders) }}
               onArchivedFilterPick={actions.setArchivedFilter}
@@ -1706,6 +1947,7 @@ export function WorkspaceBrowser({
           onBusyChange={setDirectoryBusy}
           side="right"
           onPick={(workspaceId) => {
+            if (pendingSectionId !== null) actions.assignWorkspaceSection(workspaceId, pendingSectionId)
             closeAddWorkspace()
             startSession(workspaceId, { clearPreviousDraft: false })
           }}
@@ -1792,6 +2034,33 @@ export function WorkspaceBrowser({
                 onLeaveArchivedOnly={leaveArchivedOnly}
                 startSession={startSession}
                 pinnedWorkspaceIds={pinnedWorkspaceIds}
+                sectionsEnabled={sectionsEnabled}
+                sectionsState={sectionsState}
+                sectionExpansion={sectionExpansion}
+                setSectionExpanded={actions.setSectionExpanded}
+                assignWorkspaceSection={actions.assignWorkspaceSection}
+                addWorkspaceToSection={(sectionId) => {
+                  setPendingSectionId(sectionId)
+                  requestAddWorkspace()
+                }}
+                createSection={() => {
+                  const name = window.prompt(t('sections.newPrompt'))
+                  if (name === null || name.trim() === '') return
+                  const id = `section-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`
+                  actions.createWorkspaceSection(id, name.trim())
+                }}
+                renameSection={(sectionId) => {
+                  const section = sectionsState.sections.find(item => item.id === sectionId)
+                  if (section === undefined) return
+                  const name = window.prompt(t('sections.renamePrompt'), section.name)
+                  if (name === null || name.trim() === '') return
+                  actions.renameWorkspaceSection(sectionId, name.trim())
+                }}
+                deleteSection={(sectionId, name) => {
+                  if (!window.confirm(t('sections.deleteConfirm', { name }))) return
+                  actions.deleteWorkspaceSection(sectionId)
+                }}
+                moveSection={actions.moveWorkspaceSection}
                 pinWorkspace={actions.pinWorkspace}
                 unpinWorkspace={actions.unpinWorkspace}
                 onOpenFolder={openFolder}

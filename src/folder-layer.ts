@@ -1,9 +1,12 @@
 /** Folder list that travels with a copied `.dsh` home, not with browser localStorage. */
+import { normalizeSections, type SectionsState } from './client/sections/model.ts'
 
-/** Plugin-owned source folders and promoted primaries, keyed by workspace id. */
+/** Plugin-owned source folders, promoted primaries, and the optional section layout. */
 export interface FolderLayer {
   extraFoldersByWorkspace: Record<string, string[]>
   primaryByWorkspace: Record<string, string>
+  sectionsEnabled?: boolean
+  sections?: SectionsState
 }
 
 /** Empty layer. */
@@ -35,15 +38,27 @@ function stringMap(value: unknown): Record<string, string> {
   return out
 }
 
+function parseSectionsField(value: unknown): SectionsState | undefined {
+  if (typeof value !== 'object' || value === null) return undefined
+  try {
+    return normalizeSections(value as SectionsState)
+  } catch {
+    return undefined
+  }
+}
+
 /** Read one persisted layer. Malformed input becomes empty rather than throwing. */
 export function parseFolderLayer(raw: string): FolderLayer {
   try {
     const value: unknown = JSON.parse(raw)
     if (typeof value !== 'object' || value === null) return emptyFolderLayer()
     const record = value as Record<string, unknown>
+    const sections = parseSectionsField(record.sections)
     return {
       extraFoldersByWorkspace: stringListMap(record.extraFoldersByWorkspace),
       primaryByWorkspace: stringMap(record.primaryByWorkspace),
+      ...(typeof record.sectionsEnabled === 'boolean' ? { sectionsEnabled: record.sectionsEnabled } : {}),
+      ...(sections === undefined ? {} : { sections }),
     }
   } catch {
     return emptyFolderLayer()
@@ -98,6 +113,13 @@ export function mergeFolderLayer(local: FolderLayer, file: FolderLayer): { layer
     const primary = localPrimary !== undefined && localPrimary !== '' ? localPrimary : filePrimary
     if (primary !== undefined && primary !== '') primaryByWorkspace[id] = primary
   }
-  const layer = { extraFoldersByWorkspace, primaryByWorkspace }
+  const sectionsEnabled = local.sectionsEnabled ?? file.sectionsEnabled
+  const sections = local.sections ?? file.sections
+  const layer = {
+    extraFoldersByWorkspace,
+    primaryByWorkspace,
+    ...(sectionsEnabled === undefined ? {} : { sectionsEnabled }),
+    ...(sections === undefined ? {} : { sections }),
+  }
   return { layer, changed: JSON.stringify(layer) !== JSON.stringify(local) }
 }

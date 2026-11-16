@@ -37,6 +37,9 @@ import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import type {} from '@deepseek-ai/dsh-client-ui-layout/client'
 // Type-only: pulls the Session root standard-hook merge.
 import type {} from '@deepseek-ai/dsh-client-ui-session/client'
+import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
+import type {} from '@deepseek-ai/dsh-client-ui-input-trigger/client'
+import type {} from '@deepseek-ai/dsh-client-ui-theme/client'
 import {
   type ArchiveSessionInjected, type ForkSessionInjected, menuOpenStateFactory, type PinSessionInjected,
   type SessionArchiveConfirmInjected, type SessionArchiveConfirmRequest,
@@ -59,6 +62,16 @@ import { registerToasts } from './toast/register.ts'
 import { SessionIdMenuItem } from './session-actions/SessionId.tsx'
 import { WorkspacePicker } from './WorkspacePicker.tsx'
 import { en, zh, type WorkspaceKey } from './locales.ts'
+import { AboutSection } from './AboutSection.tsx'
+import { observeComposerEnhancements } from './composer/index.tsx'
+import { de as codexDe, en as codexEn, es as codexEs, fr as codexFr, ja as codexJa, NS as codexNS, pt as codexPt, ru as codexRu, zh as codexZh } from './codex-locales.ts'
+import { observeDesktopTitlebarMenus, checkDesktopMenuEnabled } from './desktop-menu/index.ts'
+import { observeMobileWeb } from './mobile-web.ts'
+import { observeSettingsNavIcon, CodexUiNavIcon } from './settings-nav-icon.ts'
+import { observeSettingsSkin } from './settings-skin/index.ts'
+import { observeSessionUnread } from './sidebar/session-unread/index.tsx'
+import { observeTheme } from './theme/index.ts'
+import { setClientContext } from './runtime.ts'
 
 export type { StartSessionOptions, UiWorkspace } from './navigation.ts'
 export type {
@@ -447,6 +460,61 @@ export function apply(ctx: Context): void {
     },
     WorkspacePicker,
   ))
+
+  // ── Integrated extension surface (formerly Codex UI) ─────────────────────
+  // The workspace browser above stays the only owner of sidebar.workspaces and
+  // ctx.uiWorkspace. The modules below add independent capabilities only: none
+  // hides or clones host DOM, and every mount is fail-closed through its own
+  // host endpoint.
+  setClientContext(ctx)
+  ctx.effect(() => ctx.locale.register(codexNS, {
+    zh: codexZh, en: codexEn, ja: codexJa, es: codexEs, fr: codexFr, de: codexDe, ru: codexRu, pt: codexPt,
+  }), 'workspace-browser: extension dictionaries')
+  const tCodex = ctx.locale.bind(codexNS)
+
+  ctx.effect(() => observeMobileWeb(), 'workspace-browser: mobile web layout')
+  ctx.effect(() => observeTheme(ctx), 'workspace-browser: theme & appearance')
+  ctx.effect(() => observeComposerEnhancements(ctx), 'workspace-browser: composer enhancements')
+  ctx.effect(() => observeSettingsSkin(), 'workspace-browser: official settings skin')
+  ctx.effect(() => observeSettingsNavIcon(() => tCodex('about.nav')), 'workspace-browser: settings nav icon')
+  ctx.effect(() => observeSessionUnread(ctx), 'workspace-browser: session unread')
+
+  ctx.effect(() => {
+    let stop: (() => void) | undefined
+    let cancelled = false
+    void checkDesktopMenuEnabled().then(enabled => {
+      if (cancelled || !enabled) return
+      const translate = (key: string, fallback?: string): string => {
+        try {
+          const value = (tCodex as unknown as (name: string) => string)(key)
+          return typeof value === 'string' && value !== '' && value !== key ? value : (fallback ?? key)
+        } catch {
+          return fallback ?? key
+        }
+      }
+      stop = observeDesktopTitlebarMenus(translate)
+    })
+    return () => {
+      cancelled = true
+      stop?.()
+    }
+  }, 'workspace-browser: desktop titlebar menus')
+
+  // A missing settings.section.icon on older hosts is safe: inject waits for a
+  // declaration and never calls back, so the official icon remains in place.
+  ;(ctx.slots.inject as any)('settings.section.icon', () => (ctx.slots.register as any)({
+    name: 'settings.section.icon',
+    id: 'workspace-browser',
+    locale: codexNS,
+  }, CodexUiNavIcon))
+
+  ctx.slots.inject('settings.section', () => ctx.slots.register({
+    name: 'settings.section',
+    id: 'workspace-browser',
+    order: Number.MAX_SAFE_INTEGER,
+    label: tCodex('about.nav'),
+    locale: codexNS,
+  }, AboutSection))
 }
 
 /**

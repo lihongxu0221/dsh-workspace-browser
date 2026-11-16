@@ -305,6 +305,10 @@ export function ProjectRowItem({ group, containsCurrentDescendant = false, onTog
     edit?: () => void
     removeFolder?: (path: string) => void
     pin?: () => void
+    /** Optional Codex-style section layout. */
+    sectionId?: string
+    sections?: readonly { id: string; label: string }[]
+    moveToSection?: (sectionId: string) => void
   } | undefined
   /** Present only for real Workspace rows in the grouped view. */
   drag?: WorkspaceRowDragProps | undefined
@@ -332,6 +336,16 @@ export function ProjectRowItem({ group, containsCurrentDescendant = false, onTog
     ...(actions?.pin === undefined
       ? []
       : [{ id: 'pin', label: t(group.pinned ? 'hover.unpin' : 'hover.pin'), icon: <IconPinFillRegular /> }]),
+    ...(actions?.sections === undefined || actions.moveToSection === undefined
+      ? []
+      : [{
+        id: 'section',
+        label: t('sections.moveTo'),
+        submenu: actions.sections.map(section => ({
+          id: `section:${section.id}`,
+          label: section.label,
+        })),
+      }]),
     { id: 'rename', label: t('rename'), icon: <IconEditOutlineRegular /> },
     { id: 'delete', label: t('delete.workspace'), icon: <IconTrashOutlineRegular />, danger: true },
   ]
@@ -375,6 +389,10 @@ export function ProjectRowItem({ group, containsCurrentDescendant = false, onTog
               }
               if (id === 'pin') {
                 actions.pin?.()
+                return
+              }
+              if (id.startsWith('section:')) {
+                actions.moveToSection?.(id.slice('section:'.length))
                 return
               }
               if (id.startsWith('remove:')) {

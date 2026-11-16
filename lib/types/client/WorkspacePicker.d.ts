@@ -52,12 +52,12 @@ export interface WorkspacePickFlowProps {
  * @param props - owner-controlled flow props.
  * @returns menu + dialog elements.
  */
-export declare function WorkspacePickFlow({ t, open, anchorRef, useWorkspaces, createWorkspace, useDirectoryFlow, renderDirectoryFlow, onPick, onClose, addOnly, onBusyChange, side, selectedId, onPickCancelled, }: WorkspacePickFlowProps): import("react").JSX.Element;
+export declare function WorkspacePickFlow({ t, open, useWorkspaces, createWorkspace, useDirectoryFlow, renderDirectoryFlow, onPick, onClose, addOnly, onBusyChange, side, selectedId, onPickCancelled, }: WorkspacePickFlowProps): import("react").JSX.Element;
 /**
  * The conversation empty-state registration: adapts the owner share to the
  * core flow (all state and semantics live in the flow / the owner).
  * @param props - empty-state slot props (owner share + injected creation callback).
  * @returns the flow element.
  */
-export declare function WorkspacePicker({ open, anchorRef, useWorkspaces, selectedId, onPick, onClose, createWorkspace, useDirectoryFlow, renderSlot, t, }: WorkspacePickerProps): import("react").JSX.Element;
+export declare function WorkspacePicker({ open, useWorkspaces, selectedId, onPick, onClose, createWorkspace, useDirectoryFlow, renderSlot, t, }: WorkspacePickerProps): import("react").JSX.Element;
 //# sourceMappingURL=WorkspacePicker.d.ts.map

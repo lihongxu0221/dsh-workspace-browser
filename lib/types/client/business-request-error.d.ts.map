@@ -1,0 +1,1 @@
+{"version":3,"file":"business-request-error.d.ts","sourceRoot":"","sources":["../../../src/client/business-request-error.ts"],"names":[],"mappings":"AAAA,8CAA8C;AAC9C,OAAO,KAAK,EAAE,UAAU,EAAE,MAAM,oBAAoB,CAAA;AAEpD,qBAAa,oBAAqB,SAAQ,KAAK;IACjC,QAAQ,CAAC,MAAM,EAAE,MAAM;gBAAd,MAAM,EAAE,MAAM;CAIpC;AAED,wBAAgB,uBAAuB,CAAC,KAAK,EAAE,OAAO,GAAG,UAAU,GAAG,SAAS,CAM9E"}

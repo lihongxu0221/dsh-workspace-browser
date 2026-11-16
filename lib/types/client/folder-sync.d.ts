@@ -4,6 +4,8 @@ interface FolderStore {
     getSnapshot(): {
         extraFoldersByWorkspace?: Record<string, string[]>;
         primaryByWorkspace?: Record<string, string>;
+        sectionsEnabled?: boolean;
+        sections?: FolderLayer['sections'];
     };
     subscribe(fn: () => void): () => void;
     actions: {

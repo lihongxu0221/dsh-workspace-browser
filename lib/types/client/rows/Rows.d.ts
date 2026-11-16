@@ -52,6 +52,13 @@ export declare function ProjectRowItem({ group, containsCurrentDescendant, onTog
         edit?: () => void;
         removeFolder?: (path: string) => void;
         pin?: () => void;
+        /** Optional Codex-style section layout. */
+        sectionId?: string;
+        sections?: readonly {
+            id: string;
+            label: string;
+        }[];
+        moveToSection?: (sectionId: string) => void;
     } | undefined;
     /** Present only for real Workspace rows in the grouped view. */
     drag?: WorkspaceRowDragProps | undefined;

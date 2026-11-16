@@ -7,9 +7,6 @@ import {
   type SessionListState, type SessionSearchResultItem, type SessionSummary,
 } from '@deepseek-ai/dsh-api-session-controller/client'
 import type { WorkspaceId, WorkspaceView } from '@deepseek-ai/dsh-api-workspace-controller/client'
-import type {
-  SessionStatusSnapshot,
-} from '@deepseek-ai/dsh-client-ui-session/client'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import { assertNever } from '@deepseek-ai/dsh-util-values'
 import { workspaceTitleOf } from '@deepseek-ai/dsh-util-workspace-path'
@@ -188,7 +185,17 @@ export function mergePluginFolders<W extends ListedWorkspace>(
 
 /** Pending interaction kinds with dedicated Workspace-row presentation. */
 export type SessionPendingInteractionStatus = 'approval' | 'plan-review' | 'question'
-type SessionStatuses = SessionStatusSnapshot
+/**
+ * Structural subset of the Host session-status snapshot used by the tree.
+ * The type lives in `dsh-client-ui-session-status`, which is not a direct
+ * dependency here; keeping the shape local avoids importing a package the
+ * current release does not ship as a public peer.
+ */
+type SessionStatuses = ReadonlyMap<SessionId, {
+  readonly running: boolean | undefined
+  readonly pendingInteraction: { readonly kind: string } | undefined
+  readonly completionUnread: boolean
+}>
 
 function mainSessionId(list: SessionListState): SessionId | undefined {
   return Object.values(list.byId)

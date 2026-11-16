@@ -73,7 +73,6 @@ export interface WorkspacePickFlowProps {
 export function WorkspacePickFlow({
   t,
   open,
-  anchorRef,
   useWorkspaces,
   createWorkspace,
   useDirectoryFlow,
@@ -237,7 +236,6 @@ export function WorkspacePickFlow({
         onClose={onClose}
         side={side}
         portal
-        anchorRef={anchorRef}
       />
       {open && !addIsTheOnlyEntry && !menuIsEmpty && workspaceSnapshot.phase === 'pending' && <div className={css.menuStatus} role="status">{t('picker.loading')}</div>}
       {renderDirectoryFlow(flowOwner)}
@@ -269,7 +267,6 @@ export function WorkspacePickFlow({
  */
 export function WorkspacePicker({
   open,
-  anchorRef,
   useWorkspaces,
   selectedId,
   onPick,
@@ -283,7 +280,6 @@ export function WorkspacePicker({
     <WorkspacePickFlow
       t={t}
       open={open}
-      anchorRef={anchorRef}
       useWorkspaces={useWorkspaces}
       createWorkspace={createWorkspace}
       useDirectoryFlow={useDirectoryFlow}

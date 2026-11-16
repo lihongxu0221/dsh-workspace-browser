@@ -23,6 +23,7 @@ import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { emptyFolderLayer, parseFolderLayer, sameDirectory, type FolderLayer } from './folder-layer.ts'
 import { sourceFoldersContext, effectivePrimary, selectWorkspace, type SessionLike, type WorkspaceRecord } from './session-folders.ts'
+import { registerDependencyRoutes } from './dependencies-route.ts'
 
 /** Authenticated route the browser half reads and writes. */
 const ROUTE = '/api/workspace-browser/folders'
@@ -451,6 +452,7 @@ async function rerootSession(ctx: HostContext, request: Request): Promise<Reroot
 }
 
 export function apply(ctx: HostContext): void {
+  registerDependencyRoutes(ctx as unknown as import('@deepseek-ai/cordis').Context)
   ctx.connection.fetch.register({
     path: ROUTE,
     methods: ['GET', 'POST'],

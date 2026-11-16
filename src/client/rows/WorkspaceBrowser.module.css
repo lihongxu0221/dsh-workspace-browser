@@ -729,3 +729,92 @@
     transition: none;
   }
 }
+
+/* Optional Codex-style workspace sections. */
+.workspaceSectionHeader {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 28px;
+  padding: 4px 6px 2px 2px;
+  color: var(--dsw-text-secondary, inherit);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.workspaceSectionToggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.workspaceSectionTitle {
+  overflow: hidden;
+  flex: 1;
+  min-width: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspaceSectionCount {
+  flex: none;
+  opacity: 0.65;
+  font-weight: 400;
+  text-transform: none;
+}
+
+.workspaceSectionActions {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 2px;
+  opacity: 0.8;
+}
+
+.panelNav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px 10px 6px;
+}
+
+.panelNavItem {
+  overflow: hidden;
+  max-width: 112px;
+  padding: 3px 8px;
+  border: 1px solid color-mix(in srgb, currentColor 14%, transparent);
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 11px;
+  line-height: 18px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+  opacity: 0.78;
+}
+
+.panelNavItem:hover {
+  opacity: 1;
+  background: color-mix(in srgb, currentColor 8%, transparent);
+}
+
+.panelNavActive {
+  border-color: color-mix(in srgb, currentColor 34%, transparent);
+  opacity: 1;
+}
+.panelNavSlot { display: inline-flex; align-items: center; gap: 0; }
+.panelNavPin { border: 0; background: transparent; color: var(--dsw-alias-text-3); cursor: pointer; padding: 0 3px; font-size: 11px; line-height: 1; }
+.panelNavPin:hover { color: var(--dsw-alias-text-1); }
+.panelNavMoreToggle { border: 1px dashed var(--dsw-alias-separator-2); background: transparent; color: var(--dsw-alias-text-2); border-radius: 6px; padding: 2px 6px; font-size: 11px; cursor: pointer; }
+.panelNavMoreOpen { border-style: solid; }
