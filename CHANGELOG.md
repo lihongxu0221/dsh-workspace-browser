@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.7.1
+
+- Rename the package to `@lihongxu0221/dsh-ui-codex` so it can be published
+  and installed from npm under a shorter name (the GitHub repo keeps its
+  name). All `cordis.patch.yml` row `name:` references and the client build
+  script follow the new name.
+- Upgrade the DSH client generation pinned in `devDependencies` from
+  `0.2.2-rc.2` to `0.2.2-rc.3` (`@deepseek-ai/cordis` stays `^4.1.0`) and
+  regenerate `pnpm-lock.yaml`.
+- Rebuild `lib/client.js`, `lib/index.js` and the seven node entries against
+  rc.3. No source behaviour change; `contract-check` passes (35 peers, 135
+  named imports, 15 client-inject ids, 0 missing) and the suite is 86/86.
+
 ## 0.7.0
 
 - Integrate the former `@michengai/dsh-codex-ui` capabilities into this

@@ -1,7 +1,7 @@
 # dsh-codex-ui 集成说明与执行计划
 
 本文记录把 `@michengai/dsh-codex-ui` 2.2.5 并入
-`@deepseek-ai/dsh-client-ui-workspace-browser` 的完整对照、冲突处理、
+`@lihongxu0221/dsh-ui-codex` 的完整对照、冲突处理、
 实施顺序、验证结果与已知限制。当前仓库已经按本文第 0 至第 3 批完成实现，
 后续维护可以按同一顺序重放。
 
@@ -10,7 +10,7 @@
 参考仓库：https://github.com/MichengAI/dsh-codex-ui，审计时 main 为
 `828a096`，版本 2.2.5。
 
-当前仓库：`@deepseek-ai/dsh-client-ui-workspace-browser` 0.6.1，
+当前仓库：`@lihongxu0221/dsh-ui-codex` 0.7.1，
 工作区为 `E:\AI\Agents\Deepseek Harness\DSH\dsh-workspace-browser`。
 
 硬约束：

@@ -140,7 +140,7 @@ scripts/bundle-node.mjs             esbuild multi-entry: root plus six sub-plugi
 ## Install
 
 ```powershell
-dsh plugin --profile desktop add github:lihongxu0221/dsh-workspace-browser
+dsh plugin --profile desktop add @lihongxu0221/dsh-ui-codex
 ```
 
 The GUI plugin manager does the same. `cordis.patch.yml` is declared by `dsh.bundle.patch`, so it must stay in `files`: a packed package (git or npm install) that lacks it is rejected with `failed to read overlay`.
