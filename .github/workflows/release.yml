@@ -81,6 +81,7 @@ jobs:
           npm pack --dry-run
 
       - name: Publish to npm
+        if: env.NODE_AUTH_TOKEN != ''
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           if npm view "@lihongxu0221/dsh-workspace-ui@${VERSION}" version >/dev/null 2>&1; then
@@ -88,6 +89,11 @@ jobs:
           else
             npm publish --access public --provenance
           fi
+
+      - name: Skip npm publish without NPM_TOKEN
+        if: env.NODE_AUTH_TOKEN == ''
+        run: |
+          echo "::warning::NPM_TOKEN is not configured. Publishing a GitHub Release tarball only; configure the repository secret to publish to npm."
 
       - name: Pack release tarball
         run: npm pack
