@@ -66,7 +66,7 @@ jobs:
 
       - name: Install DSH harness dependencies
         working-directory: .dsh-harness
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --config.dangerously-allow-all-builds=true
 
       - name: Build client bundle
         run: node scripts/build-client.mjs "$GITHUB_WORKSPACE/.dsh-harness"
