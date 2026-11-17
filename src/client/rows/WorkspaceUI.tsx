@@ -370,7 +370,7 @@ type SessionTreeProps = Pick<
   sectionExpansion: Readonly<Record<string, boolean>>
   setSectionExpanded: (sectionId: string, expanded: boolean) => void
   assignWorkspaceSection: (workspaceId: string, sectionId: string) => void
-  createSection: () => void
+  createSection: (name: string) => void
   addWorkspaceToSection: (sectionId: string) => void
   renameSection: (sectionId: string) => void
   deleteSection: (sectionId: string, name: string) => void
@@ -466,7 +466,7 @@ function RecentSessionsSection({
 /** One section heading in the optional section layout. */
 function SectionHeading({
   section, count, expanded, canUp, canDown, canAddWorkspace, canDrag, dragging, dropHalf,
-  onToggle, onCreate, onAddWorkspace, onRename, onDelete, onMove,
+  creating, onToggle, onCreate, onCreateCommit, onCreateCancel, onAddWorkspace, onRename, onDelete, onMove,
   onDragStart, onDragOver, onDrop, onDragEnd, onDragLeave, t,
 }: {
   section: WorkspaceSection
@@ -481,7 +481,11 @@ function SectionHeading({
   dragging: boolean
   dropHalf: 'before' | 'after' | undefined
   onToggle: () => void
+  /** While true the title is replaced by an inline name field. */
+  creating: boolean
   onCreate: () => void
+  onCreateCommit: (name: string) => void
+  onCreateCancel: () => void
   onAddWorkspace: () => void
   onRename: () => void
   onDelete: () => void
@@ -494,6 +498,10 @@ function SectionHeading({
   t: WorkspaceUIProps['t']
 }) {
   const [menuOpen, setMenuOpen] = useState(false)
+  const [draftName, setDraftName] = useState('')
+  useEffect(() => {
+    if (creating) setDraftName('')
+  }, [creating])
   const builtin = isBuiltinSection(section.id)
   const label = section.id === PINNED_SECTION_ID
     ? t('sections.pinned')
@@ -535,8 +543,38 @@ function SectionHeading({
           ? <IconChevronDownOutlineRegular className={css.workspaceSectionChevron} />
           : <IconChevronRightOutlineRegular className={css.workspaceSectionChevron} />}
       </button>
-      <span className={css.workspaceSectionTitle}>{label}</span>
-      <span className={css.workspaceSectionCount}>{t('sections.count', { n: count })}</span>
+      {creating ? (
+        <input
+          className={css.workspaceSectionInput}
+          autoFocus
+          value={draftName}
+          placeholder={t('sections.newPrompt')}
+          aria-label={t('sections.new')}
+          onChange={(event) => { setDraftName(event.target.value) }}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') {
+              event.preventDefault()
+              const name = draftName.trim()
+              if (name === '') onCreateCancel()
+              else onCreateCommit(name)
+            } else if (event.key === 'Escape') {
+              event.preventDefault()
+              onCreateCancel()
+            }
+          }}
+          onBlur={() => {
+            const name = draftName.trim()
+            if (name === '') onCreateCancel()
+            else onCreateCommit(name)
+          }}
+        />
+      ) : (
+        <>
+          <span className={css.workspaceSectionTitle}>{label}</span>
+          <span className={css.workspaceSectionCount}>{t('sections.count', { n: count })}</span>
+        </>
+      )}
+      {!creating && (
       <span className={css.workspaceSectionActions}>
         {canAddWorkspace && (
           <Tooltip label={t('workspace.add')} side="bottom" delayMs={500}>
@@ -576,6 +614,7 @@ function SectionHeading({
           />
         )}
       </span>
+      )}
     </div>
   )
 }
@@ -615,6 +654,8 @@ function SessionTree({
   const workspaceDropCommitted = useRef(false)
   const [sectionDrag, setSectionDrag] = useState<SectionDragState | null>(null)
   const sectionDropCommitted = useRef(false)
+  // The section whose header is showing the inline "new section" name field.
+  const [creatingSectionId, setCreatingSectionId] = useState<string | null>(null)
   const nativeDragActive = drag !== null || workspaceDrag !== null || sectionDrag !== null
   useNativeDragAcceptance(nativeDragActive)
   const currentGroup = current === undefined || !workspaceReady
@@ -1136,8 +1177,14 @@ function SessionTree({
           canDrag={customIndex >= 0}
           dragging={sectionDrag?.id === entry.section.id}
           dropHalf={sectionDrag?.over?.id === entry.section.id ? sectionDrag.over.half : undefined}
+          creating={creatingSectionId === entry.section.id}
           onToggle={() => { setSectionExpanded(entry.section.id, !expanded) }}
-          onCreate={() => { createSection() }}
+          onCreate={() => { setCreatingSectionId(entry.section.id) }}
+          onCreateCommit={(name) => {
+            setCreatingSectionId(null)
+            createSection(name)
+          }}
+          onCreateCancel={() => { setCreatingSectionId(null) }}
           onAddWorkspace={() => { addWorkspaceToSection(entry.section.id) }}
           onRename={() => { renameSection(entry.section.id) }}
           onDelete={() => { deleteSection(entry.section.id, entry.section.name) }}
@@ -2192,11 +2239,9 @@ export function WorkspaceUI({
                   setPendingSectionId(sectionId)
                   requestAddWorkspace()
                 }}
-                createSection={() => {
-                  const name = window.prompt(t('sections.newPrompt'))
-                  if (name === null || name.trim() === '') return
+                createSection={(name) => {
                   const id = `section-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`
-                  actions.createWorkspaceSection(id, name.trim())
+                  actions.createWorkspaceSection(id, name)
                 }}
                 renameSection={(sectionId) => {
                   const section = sectionsState.sections.find(item => item.id === sectionId)

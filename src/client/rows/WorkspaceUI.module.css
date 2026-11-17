@@ -796,6 +796,28 @@
   white-space: nowrap;
 }
 
+/* Inline "new section" name field: takes the title's slot so the header does not grow a row. */
+.workspaceSectionInput {
+  flex: 1;
+  min-width: 0;
+  height: 20px;
+  border: 1px solid var(--dsw-alias-state-business-primary, currentColor);
+  border-radius: var(--dsw-radius-sm);
+  padding: 0 4px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 12px;
+  letter-spacing: normal;
+  text-transform: none;
+  outline: none;
+}
+
+.workspaceSectionInput::placeholder {
+  color: var(--dsw-text-secondary, inherit);
+  opacity: 0.7;
+}
+
 .workspaceSectionCount {
   flex: none;
   opacity: 0.65;
