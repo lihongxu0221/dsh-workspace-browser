@@ -18,7 +18,8 @@ import { type CSSProperties, type DragEvent as ReactDragEvent, type ReactNode, u
 import clsx from 'clsx'
 import {
   Button, HoverCardGroup, IconArchiveCheckOutlineRegular, IconArchiveOffOutlineRegular, IconArchiveOutlineRegular,
-  IconChevronsUpDownOutlineRegular, IconClockOutlineRegular, IconCloseFillRegular,
+  IconChevronDownOutlineRegular, IconChevronRightOutlineRegular, IconChevronsUpDownOutlineRegular,
+  IconClockOutlineRegular, IconCloseFillRegular,
   IconFlatListOutlineRegular, IconFolderCloseRegular, IconProjectAddOutlineRegular,
   IconQueueOutlineRegular, IconSearchOutlineRegular, IconSlidersTwoOutlineRegular,
   IconTriangleRightFillRegular, IconWorkspaceTreeOutlineRegular, Menu, Modal, Toast, Tooltip,
@@ -530,7 +531,9 @@ function SectionHeading({
         aria-expanded={expanded}
         onClick={onToggle}
       >
-        <IconTriangleRightFillRegular className={clsx(css.arrow, expanded && css.arrowOpen)} />
+        {expanded
+          ? <IconChevronDownOutlineRegular className={css.workspaceSectionChevron} />
+          : <IconChevronRightOutlineRegular className={css.workspaceSectionChevron} />}
       </button>
       <span className={css.workspaceSectionTitle}>{label}</span>
       <span className={css.workspaceSectionCount}>{t('sections.count', { n: count })}</span>

@@ -739,9 +739,20 @@
   padding: 4px 6px 2px 2px;
   color: var(--dsw-text-secondary, inherit);
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: 0.02em;
   text-transform: uppercase;
+  transition: color 150ms ease;
+}
+
+.workspaceSectionHeader:hover {
+  color: var(--dsw-alias-label-secondary, inherit);
+}
+
+.workspaceSectionChevron {
+  flex: none;
+  width: 14px;
+  height: 14px;
 }
 
 .workspaceSectionHeader[data-can-drag='true'] {

@@ -131,7 +131,7 @@
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "tsc -p tsconfig.json && node --test tests/hover-card.test.mjs tests/session-folders.test.mjs tests/folder-transition.test.mjs tests/node-half.test.mjs tests/sections.test.mjs",
+    "test": "tsc -p tsconfig.json && node --test tests/hover-card.test.mjs tests/session-folders.test.mjs tests/folder-transition.test.mjs tests/node-half.test.mjs tests/sections.test.mjs tests/sidebar.test.mjs",
     "build": "tsc -p tsconfig.json && node scripts/bundle-node.mjs",
     "contract-check": "node scripts/contract-check.mjs"
   },

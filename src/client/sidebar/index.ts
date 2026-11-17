@@ -3,7 +3,8 @@ import React from 'react'
 import { render, unmountComponentAtNode } from 'react-dom'
 import { WORKSPACE_UI_API_ENDPOINTS } from '../../business-api.ts'
 import { SidebarNav } from './SidebarNav.tsx'
-import { injectSidebarStyles, SIDEBAR_ACTIVE_ATTR } from './styles.ts'
+import { readSidebarCollapse } from './collapsed.ts'
+import { injectSidebarStyles, SIDEBAR_ACTIVE_ATTR, SIDEBAR_COLLAPSED_ATTR } from './styles.ts'
 
 export * from './layout.ts'
 export * from './SidebarNav.tsx'
@@ -42,13 +43,39 @@ export async function checkSidebarEnabled(): Promise<boolean> {
 export function observeSidebarNav(ctx: ClientContext): () => void {
   let disposed = false
   let observer: MutationObserver | null = null
+  let collapsedObserver: MutationObserver | null = null
   let cleanupStyles: (() => void) | null = null
   let currentContainer: HTMLElement | null = null
   let currentSidebarRoot: HTMLElement | null = null
   let rafPending = false
   let isEnabled = false
 
+  const syncCollapsedMarker = (root = currentSidebarRoot): void => {
+    if (!root) return
+    if (readSidebarCollapse(root)) root.setAttribute(SIDEBAR_COLLAPSED_ATTR, 'true')
+    else root.removeAttribute(SIDEBAR_COLLAPSED_ATTR)
+  }
+
+  const observeCollapsed = (root: HTMLElement): void => {
+    if (typeof MutationObserver === 'undefined') return
+    collapsedObserver?.disconnect()
+    collapsedObserver = new MutationObserver(() => {
+      if (!disposed) syncCollapsedMarker()
+    })
+    const options: MutationObserverInit = {
+      attributes: true,
+      attributeFilter: ['class', 'data-sidebar-collapsed'],
+    }
+    collapsedObserver.observe(root, options)
+    // Some hosts put the collapse marker on body/html rather than the sidebar
+    // root. Watching only these attributes keeps the observer cheap.
+    if (document.body) collapsedObserver.observe(document.body, options)
+    if (document.documentElement) collapsedObserver.observe(document.documentElement, options)
+  }
+
   const teardownMount = (): void => {
+    collapsedObserver?.disconnect()
+    collapsedObserver = null
     if (currentContainer) {
       try {
         unmountComponentAtNode(currentContainer)
@@ -60,6 +87,7 @@ export function observeSidebarNav(ctx: ClientContext): () => void {
     }
     if (currentSidebarRoot) {
       currentSidebarRoot.removeAttribute(SIDEBAR_ACTIVE_ATTR)
+      currentSidebarRoot.removeAttribute(SIDEBAR_COLLAPSED_ATTR)
       currentSidebarRoot = null
     }
   }
@@ -75,23 +103,31 @@ export function observeSidebarNav(ctx: ClientContext): () => void {
       teardownMount()
     }
 
-    // 寻找宿主原生 newSession 按钮
+    // 寻找宿主侧栏根节点。优先用原生 newSession 按钮；部分版本在折叠态或
+    // Windows 标题栏下会暂时移除该按钮，此时退回 panelList / 官方槽位，避免
+    // 整个增强导航在收起态被误判为“宿主未加载”。
     const nativeNewSession = document.querySelector('button[class*="newSession"]') as HTMLButtonElement | null
-    if (!nativeNewSession) {
+    const nativePanelList = document.querySelector('nav[class*="panelList"]') as HTMLElement | null
+    const slotRoot = document.querySelector('[data-slot="sidebar"], aside[class*="sidebar"]') as HTMLElement | null
+    const nativeControl = nativeNewSession ?? nativePanelList
+    const sidebarRoot = (nativeControl?.closest('[class*="root"]') ||
+      nativeControl?.parentElement ||
+      slotRoot) as HTMLElement | null
+    if (!sidebarRoot) {
       // 宿主侧栏未加载，等待下一次 DOM 变更
       return
     }
 
-    const sidebarRoot = (nativeNewSession.closest('[class*="root"]') ||
-      nativeNewSession.parentElement) as HTMLElement | null
-    if (!sidebarRoot) return
-
-    // 向上寻找位于 sidebarRoot 下的直接子元素作为挂载插入锚点（兼容 0.2.2-rc.3 newSessionRow 等外层包装）
-    let mountAnchor: HTMLElement = nativeNewSession
-    while (mountAnchor.parentElement && mountAnchor.parentElement !== sidebarRoot) {
-      mountAnchor = mountAnchor.parentElement
+    // 向上寻找位于 sidebarRoot 下的直接子元素作为挂载插入锚点（兼容 0.2.2-rc.3 newSessionRow 等外层包装）。
+    // 没有原生控件时插到根节点第一个子元素之前；没有任何子元素时追加。
+    let mountAnchor: HTMLElement | null = nativeControl
+    if (mountAnchor) {
+      while (mountAnchor.parentElement && mountAnchor.parentElement !== sidebarRoot) {
+        mountAnchor = mountAnchor.parentElement
+      }
+      if (mountAnchor.parentElement !== sidebarRoot) mountAnchor = null
     }
-    if (mountAnchor.parentElement !== sidebarRoot) return
+    if (!mountAnchor) mountAnchor = sidebarRoot.firstElementChild as HTMLElement | null
 
     // 注入样式
     if (!cleanupStyles) {
@@ -112,6 +148,8 @@ export function observeSidebarNav(ctx: ClientContext): () => void {
       // 成功挂载并渲染后标记宿主侧栏根节点
       sidebarRoot.setAttribute(SIDEBAR_ACTIVE_ATTR, 'true')
       currentSidebarRoot = sidebarRoot
+      syncCollapsedMarker()
+      observeCollapsed(sidebarRoot)
     } catch {
       // 容错保障：挂载或渲染失败时彻底清理，绝不隐藏宿主原生入口
       try {

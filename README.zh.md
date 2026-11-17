@@ -175,11 +175,11 @@ node 入口，不会更新 `lib/client.js`。
 当前已完成的验证：
 
 - `pnpm run typecheck` 通过。
-- `pnpm run contract-check` 通过：peerDependencies 35 项、源码 104 个文件 26 个包、named imports 135 项、client inject 15 项均无缺失。
+- `pnpm run contract-check` 通过：peerDependencies 35 项、源码 105 个文件 26 个包、named imports 135 项、client inject 15 项均无缺失。
 - `pnpm run build` 七个 node 入口全部生成。
-- `pnpm test` 90/90 通过，覆盖悬停卡、会话归属、folder transition、node 路由与 prompt、分区模型（含“项目”分区排序）、分区 Host 文件往返。
+- `pnpm test` 93/93 通过，覆盖悬停卡、会话归属、folder transition、node 路由与 prompt、分区模型（含“项目”分区排序）、分区 Host 文件往返、侧栏折叠信号。
 - `node scripts/build-client.mjs 'E:\AI\Agents\Deepseek Harness\Code'` 生成 `lib/client.js` 1.38 MB、source map 和 `lib/index.js`。
-- `npm pack --dry-run` 包含 118 个文件：全部入口、类型声明、图标、`INTEGRATION.md`、`cordis.patch.yml` 以及许可证/归属文件。
+- `npm pack --dry-run` 包含 121 个文件：全部入口、类型声明、图标、`INTEGRATION.md`、`cordis.patch.yml` 以及许可证/归属文件。
 - 一次性 profile 启动成功；启用状态下 composer/theme/settings-skin/sidebar/desktop-menu 端点均返回 `enabled:true`；依赖页端点返回 401，说明路由已注册且认证栅栏生效。
 - 真实 headless Chrome 已加载 UI：设置双岛与 Workspace UI 页、主题切换与玻璃开关、分区启用/移动/折叠、PanelNav 手风琴、Composer 新会话建议卡片、输入框宽度手柄、↑ 召回输入历史均实际渲染；控制台无 boot 错误。桌面菜单因当前 Web 环境没有 `[data-windows-menu]`，按设计 no-op。
 - 已抽测 composer 子插件停用：端点返回 401、输入框宽度手柄与新会话建议卡均不渲染；其余子插件的停用矩阵与完整 rc.3 宿主组合仍未逐项实测，详见 [INTEGRATION.md](INTEGRATION.md)。
@@ -197,7 +197,7 @@ node 入口，不会更新 `lib/client.js`。
 - **`workspace-write` 下额外文件夹可读不可写**：沙箱根仍只有一个，且写目标要 realpath 后落在根内，所以在工作区里做 junction/软链指向外部目录也会被拒。
 - **文件夹归属按会话 `cwd` 匹配**，且只"借用"宿主留作未分组的会话；宿主已归到某个工作区下的会话不会被搬走。
 - `src/` 是 0.2.1-rc.2 树内 `ui-workspace` 快照加上插件层（最近会话、项目编辑器、文件夹持久化）。换宿主世代时重新取用共享文件，并保留能力探测。
-- 包内测试覆盖悬停卡片的文件夹事实、会话到工作区的归属与那句话（`tests/session-folders.test.mjs`）、node 半边（路由 + prompt 上下文，`tests/node-half.test.mjs`）、分区模型与 folder layer 往返（`tests/sections.test.mjs`）。
+- 包内测试覆盖悬停卡片的文件夹事实、会话到工作区的归属与那句话（`tests/session-folders.test.mjs`）、node 半边（路由 + prompt 上下文，`tests/node-half.test.mjs`）、分区模型与 folder layer 往返（`tests/sections.test.mjs`）、侧栏折叠信号（`tests/sidebar.test.mjs`）。
 - 完整侧栏导航层已迁入并挂载：只隐藏原生新会话/面板列表，保留当前工作区树；折叠态回退宿主原生 56px 导轨。可选的当前树内 `PanelNav` 默认关闭。工作区分区仍走当前 store/tree，不接管官方 `sectionHeader`。完整对照项与限制见 [INTEGRATION.md](INTEGRATION.md)。
 
 ## 许可证

@@ -399,8 +399,9 @@ order 0 与 1（实现上保留参考 id，但不再和 -100 抢同一序位）�
    改为本插件前缀。
 
 风险：分区是显式模式，默认关闭，避免改变现有用户路径；启用后强制
-`groupBy='workspace'`。验证：`tests/sections.test.mjs`、手工切换分区、
-折叠、跨区拖拽、重启后 Host 文件回填。
+`groupBy='workspace'`。验证：`tests/sections.test.mjs`、
+`tests/sidebar.test.mjs`、手工切换分区/侧栏展开收起、折叠分区、跨区拖拽、
+重启后 Host 文件回填。
 
 ### 第 3 批：回归与交付
 
@@ -440,14 +441,14 @@ order 0 与 1（实现上保留参考 id，但不再和 -100 抢同一序位）�
 已经完成的验证：
 
 - `npm run typecheck`：通过。
-- `npm run contract-check`：通过。peerDependencies 35 项、源码 104 个
+- `npm run contract-check`：通过。peerDependencies 35 项、源码 105 个
   文件 26 个包、named imports 135 项、client inject 15 项均无缺失。
 - `npm run build`：七个 node 入口全部生成。
-- `npm test`：90/90 通过。覆盖悬停卡、会话归属、folder transition、
-  node 路由与 prompt、分区模型、分区 host 文件往返。
+- `npm test`：93/93 通过。覆盖悬停卡、会话归属、folder transition、
+  node 路由与 prompt、分区模型、分区 host 文件往返、侧栏折叠信号。
 - `node scripts/build-client.mjs 'E:\AI\Agents\Deepseek Harness\Code'`：
   生成 `lib/client.js` 1.38 MB、source map 和 `lib/index.js`。
-- `npm pack --dry-run`：118 个文件，包含全部入口、类型声明、图标、
+- `npm pack --dry-run`：121 个文件，包含全部入口、类型声明、图标、
   `INTEGRATION.md` 与 `cordis.patch.yml`。
 - 一次性 profile `wb-check` 启动成功；启用状态下
   `/api/workspace-ui/extensions/composer` 返回
@@ -493,8 +494,11 @@ order 0 与 1（实现上保留参考 id，但不再和 -100 抢同一序位）�
   也不会在没有 `workspaces.insertBefore` 的宿主上调用宿主排序；没有
   该 API 时只做本地排序。
 - 完整侧栏替换依赖官方 `button[class*="newSession"]` 和
-  `nav[class*="panelList"]` 钩子；宿主改类名时会静默不挂载并回退官方
-  侧栏。折叠态仍使用宿主原生 56px 导轨，不自定义折叠布局。
+  `nav[class*="panelList"]` 钩子；缺少原生新会话按钮时会退回
+  `panelList` / 官方侧栏槽位继续挂载。宿主改类名时会静默不挂载并回退
+  官方侧栏。折叠态仍使用宿主原生 56px 导轨，不自定义折叠布局；插件用
+  `data-wui-sidebar-collapsed` 标记跟随宿主的 `collapsed` 类或
+  `data-sidebar-collapsed` 属性，避免两套导航同时显示。
 - 主题的玻璃 CSS 仍引用部分官方 `sidebarCol`、`data-phase` 等钩子。
   如果未来宿主重命名这些类名，玻璃会降级但不报错。
 - 设置皮肤依赖官方设置弹层的 DOM；如果官方设置结构变化，增强会
