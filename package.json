@@ -1,7 +1,7 @@
 {
   "name": "@lihongxu0221/dsh-workspace-ui",
   "description": "Workspace and session UI for DeepSeek Harness: sidebar, Recents, project folders, sections, composer prediction and history, themes, settings workbench, and mobile layout",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "license": "MIT",
   "icon": "assets/icon.svg",
   "type": "module",
