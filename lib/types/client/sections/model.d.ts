@@ -7,12 +7,13 @@
  *
  * 不变式：
  * - 始终包含内置分区 `pinned`（置顶）与兜底分区 `default`（项目），且各只有一份；
- * - `default` 永远排在最后，`pinned` 可被拖到任意位置（Codex 同样允许）；
+ * - `pinned` 固定排在最前面；`default` 与自定义分区均可自由上下调整顺序；
+ * - `pinned` 不允许拖动；自定义分区可以拖动，`default` 通过菜单排序；
  * - 一个工作区最多出现在一个分区里，未知工作区在归一化时被丢弃。
  */
-/** 内置「置顶」分区 id：可拖动、可重命名，但不能删除。 */
+/** 内置「置顶」分区 id：固定最上，不能删除或移动。 */
 export declare const PINNED_SECTION_ID = "pinned";
-/** 兜底「项目」分区 id：固定最后，成员是尚未归类的工作区。 */
+/** 兜底「项目」分区 id：成员是尚未归类的工作区，不可删除或改名，但支持菜单排序。 */
 export declare const DEFAULT_SECTION_ID = "default";
 /** 持久化键；与侧栏导航布局分键，互不影响。 */
 export declare const SECTIONS_STORAGE_KEY = "michengai.workspace-ui.workspace-sections.v1";
@@ -34,6 +35,13 @@ export declare function createSectionsState(): SectionsState;
 /** 判断是否内置分区（置顶与兜底），内置分区不允许删除。 */
 export declare function isBuiltinSection(id: string): boolean;
 /**
+ * 判断一个分区是否应渲染标题。
+ *
+ * 普通分区没有成员时隐藏，避免一排空标题；「项目」是兜底分区，即使为空也常驻，
+ * 这样用户在没有未归类工作区时仍能通过菜单调整它的位置。
+ */
+export declare function isSectionVisible(id: string, memberCount: number): boolean;
+/**
  * 解析持久化内容。
  * 结构不合法时返回 `undefined`，由调用方回退默认结构（与侧栏布局解析风格一致）。
  */
@@ -43,7 +51,7 @@ export declare function serializeSections(state: SectionsState): string;
 /**
  * 用当前实际存在的工作区集合校正分区结构：
  * - 丢弃已删除的工作区、跨分区重复项（保留首次出现）与重复分区 id；
- * - 补齐缺失的内置分区，`default` 固定到最后；
+ * - 补齐缺失的内置分区，`pinned` 固定在首位；已有 `default` 保留用户排序位置；
  * - 名称空白的内置分区回退默认名。
  *
  * @param state - 待校正的结构。
@@ -85,18 +93,18 @@ export declare function sortSectionMembers(state: SectionsState, order: readonly
  * 调整分区顺序。
  *
  * @param state - 当前结构。
- * @param sectionId - 被移动的分区。
- * @param beforeSectionId - 插入到该分区之前；`null` 表示排到最后（兜底分区之前）。
- * @returns 新的结构；兜底分区不可移动，非法目标原样返回。
+ * @param sectionId - 被移动的分区（除置顶外的任意分区，包括项目分区）。
+ * @param beforeSectionId - 插入到该分区之前；`null` 表示排到最后。
+ * @returns 新的结构；置顶分区不可移动，非法目标原样返回。
  */
 export declare function moveSection(state: SectionsState, sectionId: string, beforeSectionId: string | null): SectionsState;
-/** 判断某个分区是否可以向上移动（必须是非内置分区，且上方还有其他自定义分区）。 */
+/** 判断某个分区是否可以向上移动（除置顶外，且上方还有其他可移动分区）。 */
 export declare function canMoveSectionUp(state: SectionsState, sectionId: string): boolean;
-/** 判断某个分区是否可以向下移动（必须是非内置分区，且下方还有其他自定义分区）。 */
+/** 判断某个分区是否可以向下移动（除置顶外，且下方还有其他可移动分区）。 */
 export declare function canMoveSectionDown(state: SectionsState, sectionId: string): boolean;
-/** 向上移动自定义分区（与上方相邻的自定义分区交换位置）。 */
+/** 向上移动分区（与上方相邻的可移动分区交换位置）。 */
 export declare function moveSectionUp(state: SectionsState, sectionId: string): SectionsState;
-/** 向下移动自定义分区（与下方相邻的自定义分区交换位置）。 */
+/** 向下移动分区（与下方相邻的可移动分区交换位置）。 */
 export declare function moveSectionDown(state: SectionsState, sectionId: string): SectionsState;
 /**
  * 用宿主的最新顺序校正归属（用户在原生树上直接拖动项目后调用）。

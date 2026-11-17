@@ -69,6 +69,7 @@ import { observeDesktopTitlebarMenus, checkDesktopMenuEnabled } from './desktop-
 import { observeMobileWeb } from './mobile-web.ts'
 import { observeSettingsNavIcon, WorkspaceUiNavIcon } from './settings-nav-icon.ts'
 import { observeSettingsSkin } from './settings-skin/index.ts'
+import { observeSidebarNav } from './sidebar/index.ts'
 import { observeSessionUnread } from './sidebar/session-unread/index.tsx'
 import { observeTheme } from './theme/index.ts'
 import { setClientContext } from './runtime.ts'
@@ -477,6 +478,7 @@ export function apply(ctx: Context): void {
   ctx.effect(() => observeComposerEnhancements(ctx), 'workspace-ui: composer enhancements')
   ctx.effect(() => observeSettingsSkin(), 'workspace-ui: official settings skin')
   ctx.effect(() => observeSettingsNavIcon(() => tWorkspaceUi('about.nav')), 'workspace-ui: settings nav icon')
+  ctx.effect(() => observeSidebarNav(ctx), 'workspace-ui: sidebar navigation')
   ctx.effect(() => observeSessionUnread(ctx), 'workspace-ui: session unread')
 
   ctx.effect(() => {

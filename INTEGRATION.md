@@ -137,9 +137,10 @@ R8 模块化侧栏。模块 `src/client/sidebar/SidebarNav.tsx`、`layout.ts`。
 功能：面板导航、常驻/更多手风琴、拖拽排序、plugins 固定、折叠导轨对齐、
 新会话入口。参考实现用独立 React 根并隐藏原生节点。
 
-R9 工作区分区。模块 `src/client/sidebar/sections/`、`src/sections-store.ts`。
+R9 工作区分区。模块 `src/client/sections/`、`src/folder-layer.ts`。
 功能：置顶/项目/自定义分区、分区改名与排序、工作区归属、跨区拖拽、
-从分区标题添加工作区并自动归位。
+从分区标题添加工作区并自动归位。置顶固定最上；项目与自定义分区都能
+通过标题菜单上移/下移，自定义分区还支持标题拖拽排序。
 
 R10 会话未读。模块 `src/client/sidebar/session-unread/`。功能：右键标记
 未读/已读；新宿主走原生 contextMenus，老宿主走槽位与右键兜底。
@@ -217,9 +218,11 @@ R8 面板导航和 R11 智能标题按“冲突项”处理，见 3.3。
 
 参考 `SidebarNav` 会找原生 `button[class*="newSession"]`，隐藏
 `nav[class*="panelList"]`，插入独立根。当前 `sidebar.workspaces` 已经
-渲染整块工作区区域，二者会抢同一视觉位置。处理：不挂载参考
-`observeSidebarNav`；新增 `PanelNav.tsx`，只在当前 React 树内渲染
-面板导航，默认关闭，不隐藏、不克隆任何宿主节点。
+渲染整块工作区区域，二者会抢同一视觉位置。处理：挂载参考
+`observeSidebarNav`，由它隐藏原生 `newSession`/`panelList` 并插入
+独立导航；`SidebarNav` 已包含固定新会话、`plugins` 常驻、常驻/更多
+手风琴、拖拽排序和折叠态 56px 原生导轨。`PanelNav.tsx` 保留为可选的
+紧凑面板导航，默认关闭；完整侧栏激活时用 CSS 隐藏它，避免双入口。
 
 冲突三：工作区分区。
 
@@ -387,10 +390,13 @@ order 0 与 1（实现上保留参考 id，但不再和 -100 抢同一序位）�
 4. Host 持久化。`src/folder-layer.ts`、`src/client/folder-sync.ts`：
    复用 `/api/workspace-ui/folders` 与
    `.dsh/storages/workspace-ui-folders.json`。
-5. 面板导航。`src/client/PanelNav.tsx`：当前树内的面板列表，支持
-   常驻/更多、固定、拖拽、选择面板；默认关闭。
-6. 冲突清理。`src/client/index.ts` 不挂载参考 `observeSidebarNav`；
-   主题/设置/composer 的 id 与日志前缀改为本插件前缀。
+5. 面板导航。`src/client/sidebar/index.ts` 的 `observeSidebarNav` 已在
+   `src/client/index.ts` 挂载：固定新会话、`plugins` 常驻、常驻/更多、
+   拖拽、折叠态 56px 原生导轨随子插件探活启用。`PanelNav.tsx` 保留为
+   可选紧凑模式，默认关闭，完整侧栏激活时自动隐藏。
+6. 冲突清理。完整侧栏与当前 `sidebar.workspaces` 共存，只隐藏原生
+   新会话/面板列表，不动工作区树；主题/设置/composer 的 id 与日志前缀
+   改为本插件前缀。
 
 风险：分区是显式模式，默认关闭，避免改变现有用户路径；启用后强制
 `groupBy='workspace'`。验证：`tests/sections.test.mjs`、手工切换分区、
@@ -413,9 +419,9 @@ order 0 与 1（实现上保留参考 id，但不再和 -100 抢同一序位）�
 
 - 分区模式默认关闭。原因：现有分组、Recents、拖拽、水位线是当前
   用户的主路径；开启后强制工作区分组，避免树形嵌套与分区语义冲突。
-- 面板导航默认关闭。原因：参考实现会隐藏原生侧栏节点并插入独立根，
-  与当前 `sidebar.workspaces` 抢同一区域；当前实现只读面板条目，
-  不接管原生 DOM。
+- 完整侧栏默认随 `workspace-ui-sidebar` 子插件启用；它只隐藏原生
+  新会话/面板列表，不隐藏当前 `sidebar.workspaces` 工作区树。可选的
+  `PanelNav` 默认关闭，完整侧栏激活时自动隐藏，避免双面板入口。
 - 主题默认 `stock`，玻璃默认关闭。原因：升级后保持当前视觉；用户
   在 Workspace UI 设置里显式选择主题或开启玻璃后才写全局 Token。
 - 设置皮肤默认启用但只在玻璃开启且官方设置弹层存在时生效，失败
@@ -437,10 +443,10 @@ order 0 与 1（实现上保留参考 id，但不再和 -100 抢同一序位）�
 - `npm run contract-check`：通过。peerDependencies 35 项、源码 104 个
   文件 26 个包、named imports 135 项、client inject 15 项均无缺失。
 - `npm run build`：七个 node 入口全部生成。
-- `npm test`：86/86 通过。覆盖悬停卡、会话归属、folder transition、
+- `npm test`：90/90 通过。覆盖悬停卡、会话归属、folder transition、
   node 路由与 prompt、分区模型、分区 host 文件往返。
 - `node scripts/build-client.mjs 'E:\AI\Agents\Deepseek Harness\Code'`：
-  生成 `lib/client.js` 1.34 MB、source map 和 `lib/index.js`。
+  生成 `lib/client.js` 1.38 MB、source map 和 `lib/index.js`。
 - `npm pack --dry-run`：118 个文件，包含全部入口、类型声明、图标、
   `INTEGRATION.md` 与 `cordis.patch.yml`。
 - 一次性 profile `wb-check` 启动成功；启用状态下
@@ -462,7 +468,10 @@ order 0 与 1（实现上保留参考 id，但不再和 -100 抢同一序位）�
   卡、依赖列表（状态/下载量/单项安装/全部更新）均渲染。
 - 主题：Codex 暗色全局生效，官方默认可恢复；玻璃开关默认关闭且可开/关。
 - 分区：视图菜单可启用；置顶/项目计数随工作区移动变化；折叠、分区内
-  添加工作区、新建分区按钮均渲染。
+  添加工作区、新建分区按钮均渲染；默认“项目”与自定义分区都能通过标题
+  菜单上移/下移；自定义分区标题可拖拽排序；普通空分区不渲染，默认
+  “项目”分区即使为空也常驻显示；没有目录流时不显示分区标题的
+  “添加工作区”按钮。
 - PanelNav：启用后显示“会话 / 更多面板”手风琴，关闭后恢复；不隐藏
   原生侧栏 DOM。
 - Composer：新会话建议卡片渲染；输入框左右宽度手柄渲染；输入后 ↑ 可
@@ -483,8 +492,9 @@ order 0 与 1（实现上保留参考 id，但不再和 -100 抢同一序位）�
 - 分区不是参考的独立 DOM 分区层。它不会接管官方 `sectionHeader`，
   也不会在没有 `workspaces.insertBefore` 的宿主上调用宿主排序；没有
   该 API 时只做本地排序。
-- 面板导航不是参考的完整侧栏替换。它没有隐藏原生导航、没有 56px
-  导轨对齐，也不接管原生折叠态；默认关闭。
+- 完整侧栏替换依赖官方 `button[class*="newSession"]` 和
+  `nav[class*="panelList"]` 钩子；宿主改类名时会静默不挂载并回退官方
+  侧栏。折叠态仍使用宿主原生 56px 导轨，不自定义折叠布局。
 - 主题的玻璃 CSS 仍引用部分官方 `sidebarCol`、`data-phase` 等钩子。
   如果未来宿主重命名这些类名，玻璃会降级但不报错。
 - 设置皮肤依赖官方设置弹层的 DOM；如果官方设置结构变化，增强会
@@ -497,9 +507,11 @@ order 0 与 1（实现上保留参考 id，但不再和 -100 抢同一序位）�
 - 输入历史的存储键仍保留参考实现的 `workspace-ui.*` 前缀。当前插件与
   参考插件不应同时启用；如果未来要并行安装，需要统一改前缀并迁移
   旧数据。
-- 当前 `src/` 仍保留参考的 `sidebar/SidebarNav.tsx` 等未挂载模块，
-  作为后续完整侧栏方案的参考。它们不会在运行时执行，但会增加类型
-  检查与打包体积。
+- 当前 `src/client/sidebar/` 已是运行时挂载的完整侧栏实现；
+  `PanelNav.tsx` 仅作为可选紧凑模式保留。R9 分区仍走当前 store/tree，
+  标题拖拽排序、普通空分区隐藏、默认“项目”空分区常驻、无目录流时隐藏
+  添加按钮，以及默认“项目”分区与自定义分区的菜单上移/下移均已接入；
+  置顶分区固定最上，不参与排序。
 
 ## 8. 后续维护顺序
 

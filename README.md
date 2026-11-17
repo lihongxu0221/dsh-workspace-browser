@@ -25,6 +25,10 @@ Workspace UI:
 Optional workspace sections (off by default):
 
 - Pinned, Projects, and custom sections; collapse, rename, reorder, delete.
+- Pinned stays first; both Projects and custom sections move up/down from the
+  section menu. Custom headers also drag-reorder; ordinary empty sections stay
+  hidden, while the Projects section stays visible even when empty; the section
+  “add workspace” button is hidden when no directory flow exists.
 - Move a workspace from its row menu, drag across sections, and auto-place unassigned ones.
 - Add a workspace directly from a section header and route it to that section.
 - Section data lives in `dsh.workspace.view.v5` and is mirrored through the existing folder
@@ -107,7 +111,8 @@ The tag `appgen-0.3.0` keeps an earlier parity-only build (exactly the host's ow
 src/index.ts                        node half — folder routes, dependency route, prompt context
 src/session-folders.ts              which workspace a Session belongs to, and the paragraph the prompt carries
 src/client/index.ts                 apply: registrations, ctx.uiWorkspace, all extension observers
-src/client/PanelNav.tsx             in-tree panel navigation (off by default)
+src/client/sidebar/                 full sidebar navigation (mounted; fixed new chat, plugins, 56px rail)
+src/client/PanelNav.tsx             optional compact panel navigation (off by default)
 src/client/sections/                pure section model and ordering
 src/client/composer/                prediction, history, width, suggestions, settings
 src/client/theme/                   fourteen themes, glass, token injection
@@ -179,8 +184,8 @@ Current status:
 - `pnpm run typecheck` passes.
 - `pnpm run contract-check` passes: 35 peers, 104 source files across 26 packages, 135 named imports, and 15 client inject entries with no missing symbols.
 - `pnpm run build` emits all seven node entries.
-- `pnpm test` passes 86/86, covering hover cards, session attribution, folder transitions, node routes and prompt context, section models, and section round-trips through the folder layer.
-- `node scripts/build-client.mjs 'E:\AI\Agents\Deepseek Harness\Code'` produces `lib/client.js` (1.34 MB), its source map, and `lib/index.js`.
+- `pnpm test` passes 90/90, covering hover cards, session attribution, folder transitions, node routes and prompt context, section models including Projects ordering, and section round-trips through the folder layer.
+- `node scripts/build-client.mjs 'E:\AI\Agents\Deepseek Harness\Code'` produces `lib/client.js` (1.38 MB), its source map, and `lib/index.js`.
 - `npm pack --dry-run` lists 118 files: every entry, type declaration, icon, `INTEGRATION.md`, `cordis.patch.yml`, and the license/notice files.
 - A throwaway profile boots successfully; with the sub-plugins enabled, composer/theme/settings-skin/sidebar/desktop-menu return `enabled:true`, while the dependencies endpoint returns 401 because its route is registered behind the host auth fence.
 - A headless Chrome run rendered the real UI: the settings workbench and Workspace UI section, theme switching and the glass toggle, workspace sections with move/fold/add, the PanelNav accordion, Composer suggestion cards, width handles, and ArrowUp input-history recall. The console had no boot errors. The desktop menu is a no-op on Web because there is no `[data-windows-menu]`.
@@ -203,7 +208,7 @@ Current status:
 - `src/` is the 0.2.1-rc.2 in-tree `ui-workspace` snapshot plus the plugin layer (Recents, project editor, folder persistence). Re-vendor the shared files when moving to another host generation and keep the capability probes.
 - **Extra folders are readable, not writable, under `workspace-write`.** The host resolves one sandbox root (`session.header.cwd`), and a canonicalizing containment check rejects a junction or symlink that points outside it. Only the prompt context is plugin-owned; `danger-full-access` is the mode that makes the extras writable.
 - Package tests cover the hover-card folder facts (`tests/hover-card.test.mjs`), the folder-selection logic (`tests/session-folders.test.mjs`), the folder-layer transitions including the promote-then-remove sequence and the dead-root re-root decision (`tests/folder-transition.test.mjs`), the node half's routes and prompt context (`tests/node-half.test.mjs`), and the section model plus folder-layer round-trips (`tests/sections.test.mjs`).
-- The reference plugin's DOM takeover layers are not vendored: panel navigation is an in-tree simplification (off by default) and workspace sections use the current store/tree instead of the official `sectionHeader`. See [INTEGRATION.md](INTEGRATION.md) for the full comparison and limitations.
+- The full sidebar navigation layer is vendored and mounted: it hides only the native new-session/panel-list rows, keeps the current workspace tree, and falls back to the native 56px rail when collapsed. The optional in-tree `PanelNav` stays off by default. Workspace sections still use the current store/tree instead of the official `sectionHeader`. See [INTEGRATION.md](INTEGRATION.md) for the full comparison and limitations.
 
 ## License
 

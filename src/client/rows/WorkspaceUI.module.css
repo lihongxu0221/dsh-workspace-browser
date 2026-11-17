@@ -744,6 +744,26 @@
   text-transform: uppercase;
 }
 
+.workspaceSectionHeader[data-can-drag='true'] {
+  cursor: grab;
+}
+
+.workspaceSectionHeader[data-can-drag='true']:active {
+  cursor: grabbing;
+}
+
+.workspaceSectionDragging {
+  opacity: 0.45;
+}
+
+.workspaceSectionDropBefore {
+  box-shadow: inset 0 2px 0 currentColor;
+}
+
+.workspaceSectionDropAfter {
+  box-shadow: inset 0 -2px 0 currentColor;
+}
+
 .workspaceSectionToggle {
   display: inline-flex;
   align-items: center;

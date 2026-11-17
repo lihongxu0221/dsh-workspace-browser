@@ -160,7 +160,7 @@ export function PanelNav({ order, pinned, onOrder, onPinned, t }: PanelNavProps)
   }
 
   return (
-    <nav className={css.panelNav} aria-label={t('panels.toggle')}>
+    <nav className={css.panelNav} data-wui-panel-nav="true" aria-label={t('panels.toggle')}>
       <button
         type="button"
         className={clsx(css.panelNavItem, active === null && css.panelNavActive)}

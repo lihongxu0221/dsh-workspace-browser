@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import {
-  assignWorkspace, createSection, createSectionsState, deleteSection, moveSection, normalizeSections,
+  assignWorkspace, canMoveSectionDown, canMoveSectionUp, createSection, createSectionsState,
+  deleteSection, isSectionVisible, moveSection, moveSectionDown, moveSectionUp, normalizeSections,
 } from '../lib/types/client/sections/model.js'
 import { mergeFolderLayer, parseFolderLayer } from '../lib/types/folder-layer.js'
 
@@ -27,9 +28,16 @@ describe('workspace section home-file round trip', () => {
 })
 
 describe('workspace section model', () => {
-  it('starts with a pinned section and a trailing projects section', () => {
+  it('starts with a pinned section and a projects section', () => {
     const state = createSectionsState()
     assert.deepEqual(state.sections.map(section => section.id), ['pinned', 'default'])
+  })
+
+  it('keeps the projects section visible even when it has no members', () => {
+    assert.equal(isSectionVisible('default', 0), true)
+    assert.equal(isSectionVisible('pinned', 0), false)
+    assert.equal(isSectionVisible('client', 0), false)
+    assert.equal(isSectionVisible('client', 1), true)
   })
 
   it('drops duplicate and unknown workspace ids without changing membership order', () => {
@@ -57,10 +65,36 @@ describe('workspace section model', () => {
     assert.deepEqual(removed.sections.find(section => section.id === 'default').ids, ['w1'])
   })
 
-  it('reorders custom sections but keeps projects last and pinned first', () => {
+  it('reorders custom sections while keeping pinned first', () => {
     let state = createSection(createSectionsState(), 'one', 'One')
     state = createSection(state, 'two', 'Two')
     const moved = moveSection(state, 'two', 'one')
     assert.deepEqual(moved.sections.map(section => section.id), ['pinned', 'two', 'one', 'default'])
+  })
+
+  it('keeps a moved projects section in place while normalizing', () => {
+    let state = createSection(createSectionsState(), 'one', 'One')
+    state = createSection(state, 'two', 'Two')
+    const moved = moveSection(state, 'default', 'one')
+    assert.deepEqual(moved.sections.map(section => section.id), ['pinned', 'default', 'one', 'two'])
+    assert.deepEqual(normalizeSections(moved).sections.map(section => section.id), ['pinned', 'default', 'one', 'two'])
+  })
+
+  it('moves projects up and down around custom sections', () => {
+    let state = createSection(createSectionsState(), 'one', 'One')
+    state = createSection(state, 'two', 'Two')
+    assert.equal(canMoveSectionUp(state, 'default'), true)
+    assert.equal(canMoveSectionDown(state, 'default'), false)
+    assert.deepEqual(moveSectionUp(state, 'default').sections.map(section => section.id), ['pinned', 'one', 'default', 'two'])
+    const top = moveSection(state, 'default', 'one')
+    assert.deepEqual(moveSectionDown(top, 'default').sections.map(section => section.id), ['pinned', 'one', 'default', 'two'])
+    assert.equal(canMoveSectionUp(state, 'pinned'), false)
+    assert.equal(canMoveSectionDown(state, 'pinned'), false)
+  })
+
+  it('never moves pinned or inserts another section before it', () => {
+    const state = createSection(createSectionsState(), 'one', 'One')
+    assert.deepEqual(moveSection(state, 'pinned', null), state)
+    assert.deepEqual(moveSection(state, 'one', 'pinned'), state)
   })
 })

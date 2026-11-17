@@ -19,6 +19,12 @@ export const SIDEBAR_CSS = `
   display: none !important;
 }
 
+/* The full replacement owns panel navigation; hide the optional compact strip
+   so enabling both surfaces cannot render two panel switchers. */
+[${SIDEBAR_ACTIVE_ATTR}] [data-wui-panel-nav="true"] {
+  display: none !important;
+}
+
 /* 折叠收缩态下隐藏自研导航，完全回退展示宿主原生折叠导轨（自带全部图标与完整生态） */
 [${SIDEBAR_ACTIVE_ATTR}][class*="collapsed"] .wui-sb-root,
 [data-sidebar-collapsed="true"] .wui-sb-root {

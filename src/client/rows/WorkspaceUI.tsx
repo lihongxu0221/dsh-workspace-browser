@@ -14,7 +14,7 @@
  * are slot entries with their own behavior, so this component threads no
  * action callbacks and hosts no action surface.
  */
-import { type CSSProperties, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { type CSSProperties, type DragEvent as ReactDragEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import clsx from 'clsx'
 import {
   Button, HoverCardGroup, IconArchiveCheckOutlineRegular, IconArchiveOffOutlineRegular, IconArchiveOutlineRegular,
@@ -40,7 +40,7 @@ import { ProjectRowItem, SearchResultItem, SessionNodeItem } from './Rows.tsx'
 import { AnimatedRows } from './AnimatedRows.tsx'
 import { FLAT_SESSION_ORDER_KEY, type SessionGroupBy } from '../stores.ts'
 import {
-  createSectionsState, DEFAULT_SECTION_ID, isBuiltinSection,
+  createSectionsState, DEFAULT_SECTION_ID, isBuiltinSection, isSectionVisible,
   normalizeSections, PINNED_SECTION_ID, type SectionsState, type WorkspaceSection,
 } from '../sections/model.ts'
 import { WorkspaceEditDialog, folderLabel } from '../WorkspaceEditDialog.tsx'
@@ -293,6 +293,12 @@ interface WorkspaceDragState {
   over: { id: WorkspaceId; half: 'before' | 'after' } | null
 }
 
+/** In-flight section-heading drag: source id plus the heading it would insert around. */
+interface SectionDragState {
+  id: string
+  over: { id: string; half: 'before' | 'after' } | null
+}
+
 /** Resolve an insertion side across the Workspace header, descendants, and Sessions. */
 function workspaceGroupHalf(e: { clientY: number; currentTarget: HTMLElement }): 'before' | 'after' {
   const rect = e.currentTarget.getBoundingClientRect()
@@ -358,6 +364,8 @@ type SessionTreeProps = Pick<
   /** Optional Codex-style section layout. */
   sectionsEnabled: boolean
   sectionsState: SectionsState
+  /** Whether the host (or the in-app fallback) can pick a directory for a new workspace. */
+  directoryFlowAvailable: boolean
   sectionExpansion: Readonly<Record<string, boolean>>
   setSectionExpanded: (sectionId: string, expanded: boolean) => void
   assignWorkspaceSection: (workspaceId: string, sectionId: string) => void
@@ -456,19 +464,32 @@ function RecentSessionsSection({
 
 /** One section heading in the optional section layout. */
 function SectionHeading({
-  section, count, expanded, canUp, canDown, onToggle, onCreate, onAddWorkspace, onRename, onDelete, onMove, t,
+  section, count, expanded, canUp, canDown, canAddWorkspace, canDrag, dragging, dropHalf,
+  onToggle, onCreate, onAddWorkspace, onRename, onDelete, onMove,
+  onDragStart, onDragOver, onDrop, onDragEnd, onDragLeave, t,
 }: {
   section: WorkspaceSection
   count: number
   expanded: boolean
   canUp: boolean
   canDown: boolean
+  /** The header offers "add workspace" only when a directory flow (native or in-app) exists. */
+  canAddWorkspace: boolean
+  /** Pinned stays fixed; projects and custom sections move through the menu, custom ones can also be dragged. */
+  canDrag: boolean
+  dragging: boolean
+  dropHalf: 'before' | 'after' | undefined
   onToggle: () => void
   onCreate: () => void
   onAddWorkspace: () => void
   onRename: () => void
   onDelete: () => void
   onMove: (direction: 'up' | 'down') => void
+  onDragStart: (event: ReactDragEvent<HTMLDivElement>) => void
+  onDragOver: (event: ReactDragEvent<HTMLDivElement>) => void
+  onDrop: (event: ReactDragEvent<HTMLDivElement>) => void
+  onDragEnd: () => void
+  onDragLeave: (event: ReactDragEvent<HTMLDivElement>) => void
   t: WorkspaceUIProps['t']
 }) {
   const [menuOpen, setMenuOpen] = useState(false)
@@ -478,8 +499,30 @@ function SectionHeading({
     : section.id === DEFAULT_SECTION_ID
       ? t('sections.projects')
       : section.name
+  // Built-in sections only expose ordering: rename and delete stay custom-only.
+  const menuItems = [
+    ...(!builtin ? [{ id: 'rename', label: t('sections.renamePrompt') }] : []),
+    ...(canUp ? [{ id: 'up', label: t('sections.moveUp') }] : []),
+    ...(canDown ? [{ id: 'down', label: t('sections.moveDown') }] : []),
+    ...(!builtin ? [{ id: 'delete', label: t('delete'), danger: true }] : []),
+  ]
   return (
-    <div className={css.workspaceSectionHeader} data-row-key={`section:${section.id}`}>
+    <div
+      className={clsx(
+        css.workspaceSectionHeader,
+        dragging && css.workspaceSectionDragging,
+        dropHalf === 'before' && css.workspaceSectionDropBefore,
+        dropHalf === 'after' && css.workspaceSectionDropAfter,
+      )}
+      data-row-key={`section:${section.id}`}
+      data-can-drag={canDrag ? 'true' : undefined}
+      draggable={canDrag}
+      onDragStart={onDragStart}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
+      onDragEnd={onDragEnd}
+      onDragLeave={onDragLeave}
+    >
       <button
         type="button"
         className={css.workspaceSectionToggle}
@@ -492,27 +535,24 @@ function SectionHeading({
       <span className={css.workspaceSectionTitle}>{label}</span>
       <span className={css.workspaceSectionCount}>{t('sections.count', { n: count })}</span>
       <span className={css.workspaceSectionActions}>
-        <Tooltip label={t('workspace.add')} side="bottom" delayMs={500}>
-          <button type="button" className={css.iconButton} aria-label={t('workspace.add')} onClick={onAddWorkspace}>
-            <IconProjectAddOutlineRegular size={14} />
-          </button>
-        </Tooltip>
+        {canAddWorkspace && (
+          <Tooltip label={t('workspace.add')} side="bottom" delayMs={500}>
+            <button type="button" className={css.iconButton} aria-label={t('workspace.add')} onClick={onAddWorkspace}>
+              <IconProjectAddOutlineRegular size={14} />
+            </button>
+          </Tooltip>
+        )}
         <Tooltip label={t('sections.new')} side="bottom" delayMs={500}>
           <button type="button" className={css.iconButton} aria-label={t('sections.new')} onClick={onCreate}>
             +
           </button>
         </Tooltip>
-        {!builtin && (
+        {menuItems.length > 0 && (
           <Menu
             open={menuOpen}
             onClose={() => { setMenuOpen(false) }}
             portal
-            items={[
-              { id: 'rename', label: t('sections.renamePrompt') },
-              ...(canUp ? [{ id: 'up', label: t('sections.moveUp') }] : []),
-              ...(canDown ? [{ id: 'down', label: t('sections.moveDown') }] : []),
-              { id: 'delete', label: t('delete'), danger: true },
-            ]}
+            items={menuItems}
             onSelect={(id) => {
               setMenuOpen(false)
               if (id === 'rename') onRename()
@@ -550,7 +590,7 @@ function SessionTree({
   nestWorkspaces, groupExpansion, setGroupExpanded,
   setSessionOrder, home, t,
   revealSessionId, onSessionRevealed, shortcuts,
-  sectionsEnabled, sectionsState, sectionExpansion, setSectionExpanded,
+  sectionsEnabled, sectionsState, directoryFlowAvailable, sectionExpansion, setSectionExpanded,
   assignWorkspaceSection, createSection, addWorkspaceToSection, renameSection, deleteSection, moveSection,
 }: SessionTreeProps) {
   const panelActive = usePanelInfo(info => info.activePanelId !== null)
@@ -570,7 +610,9 @@ function SessionTree({
   const sessionDropCommitted = useRef(false)
   const [workspaceDrag, setWorkspaceDrag] = useState<WorkspaceDragState | null>(null)
   const workspaceDropCommitted = useRef(false)
-  const nativeDragActive = drag !== null || workspaceDrag !== null
+  const [sectionDrag, setSectionDrag] = useState<SectionDragState | null>(null)
+  const sectionDropCommitted = useRef(false)
+  const nativeDragActive = drag !== null || workspaceDrag !== null || sectionDrag !== null
   useNativeDragAcceptance(nativeDragActive)
   const currentGroup = current === undefined || !workspaceReady
     ? undefined
@@ -976,14 +1018,108 @@ function SessionTree({
     )
   }
 
+  /** Reorder one custom section around another; pinned stays first and projects may sit anywhere below it. */
+  const applySectionDrop = (
+    id: string,
+    targetId: string,
+    half: 'before' | 'after',
+    order: readonly string[],
+    layoutOrder: readonly string[],
+  ): void => {
+    const from = order.indexOf(id)
+    const target = order.indexOf(targetId)
+    if (from < 0 || target < 0 || from === target) return
+    // Dropping onto the neighbour on the same side is already the current order.
+    if (half === 'before' && target === from + 1) return
+    if (half === 'after' && target === from - 1) return
+    const targetInLayout = layoutOrder.indexOf(targetId)
+    const before = half === 'after'
+      ? (targetInLayout >= 0 ? layoutOrder[targetInLayout + 1] ?? null : null)
+      : targetId
+    if (before === id) return
+    moveSection(id, before)
+  }
+
+  const beginSectionDrag = (event: ReactDragEvent<HTMLDivElement>, id: string): void => {
+    if (event.target instanceof Element && event.target.closest('button, [role="menu"]') !== null) {
+      event.preventDefault()
+      return
+    }
+    sectionDropCommitted.current = false
+    if (event.dataTransfer !== null) {
+      event.dataTransfer.effectAllowed = 'move'
+      event.dataTransfer.setData('application/x-workspace-ui-section', id)
+      event.dataTransfer.setData('text/plain', id)
+    }
+    setSectionDrag({ id, over: null })
+  }
+
+  const overSection = (
+    event: ReactDragEvent<HTMLDivElement>,
+    targetId: string,
+    order: readonly string[],
+  ): void => {
+    if (sectionDrag === null || sectionDrag.id === targetId) return
+    if (!order.includes(sectionDrag.id) || !order.includes(targetId)) return
+    event.preventDefault()
+    event.stopPropagation()
+    if (event.dataTransfer !== null) event.dataTransfer.dropEffect = 'move'
+    const rect = event.currentTarget.getBoundingClientRect()
+    const half = event.clientY < rect.top + rect.height / 2 ? 'before' : 'after'
+    setSectionDrag(previous => previous === null
+      || (previous.over?.id === targetId && previous.over.half === half)
+      ? previous
+      : { ...previous, over: { id: targetId, half } })
+  }
+
+  const dropSection = (
+    event: ReactDragEvent<HTMLDivElement>,
+    targetId: string,
+    order: readonly string[],
+    layoutOrder: readonly string[],
+  ): void => {
+    event.preventDefault()
+    event.stopPropagation()
+    const id = sectionDrag?.id
+      ?? event.dataTransfer?.getData('application/x-workspace-ui-section')
+      ?? ''
+    const half = sectionDrag?.over?.id === targetId ? sectionDrag.over.half : 'before'
+    sectionDropCommitted.current = true
+    setSectionDrag(null)
+    if (id === '' || id === targetId) return
+    applySectionDrop(id, targetId, half, order, layoutOrder)
+  }
+
+  const endSectionDrag = (): void => {
+    sectionDropCommitted.current = false
+    setSectionDrag(null)
+  }
+
+  const leaveSection = (event: ReactDragEvent<HTMLDivElement>): void => {
+    const related = event.relatedTarget
+    if (related instanceof Node && event.currentTarget.contains(related)) return
+    if (sectionDropCommitted.current) return
+    setSectionDrag(previous => previous === null ? previous : { ...previous, over: null })
+  }
+
   const sectionRows: ReactNode[] = []
   if (sectionsEnabled && sectionLayout !== undefined) {
-    const custom = sectionLayout
+    // Ordinary empty sections stay hidden; the built-in projects section remains
+    // visible even with no members so its position can still be adjusted.
+    const visibleSectionLayout = sectionLayout.filter(entry =>
+      isSectionVisible(entry.section.id, entry.members.length))
+    const movable = visibleSectionLayout
+      .map(entry => entry.section)
+      .filter(section => section.id !== PINNED_SECTION_ID)
+    const custom = visibleSectionLayout
       .map(entry => entry.section)
       .filter(section => !isBuiltinSection(section.id))
-    for (const entry of sectionLayout) {
+    const customIds = custom.map(section => section.id)
+    const visibleIds = visibleSectionLayout.map(entry => entry.section.id)
+    for (const entry of visibleSectionLayout) {
       const expanded = sectionExpansion[entry.section.id] ?? true
       rowKeys.push(`section:${entry.section.id}`)
+      const movableIndex = movable.findIndex(section => section.id === entry.section.id)
       const customIndex = custom.findIndex(section => section.id === entry.section.id)
       sectionRows.push(
         <SectionHeading
@@ -991,23 +1127,32 @@ function SessionTree({
           section={entry.section}
           count={entry.members.length}
           expanded={expanded}
-          canUp={customIndex > 0}
-          canDown={customIndex >= 0 && customIndex < custom.length - 1}
+          canUp={movableIndex > 0}
+          canDown={movableIndex >= 0 && movableIndex < movable.length - 1}
+          canAddWorkspace={directoryFlowAvailable}
+          canDrag={customIndex >= 0}
+          dragging={sectionDrag?.id === entry.section.id}
+          dropHalf={sectionDrag?.over?.id === entry.section.id ? sectionDrag.over.half : undefined}
           onToggle={() => { setSectionExpanded(entry.section.id, !expanded) }}
           onCreate={() => { createSection() }}
           onAddWorkspace={() => { addWorkspaceToSection(entry.section.id) }}
           onRename={() => { renameSection(entry.section.id) }}
           onDelete={() => { deleteSection(entry.section.id, entry.section.name) }}
           onMove={(direction) => {
-            if (customIndex < 0) return
+            if (movableIndex < 0) return
             if (direction === 'up') {
-              const before = custom[customIndex - 1]
+              const before = movable[movableIndex - 1]
               if (before !== undefined) moveSection(entry.section.id, before.id)
               return
             }
-            const after = custom[customIndex + 2]
+            const after = movable[movableIndex + 2]
             moveSection(entry.section.id, after === undefined ? null : after.id)
           }}
+          onDragStart={(event) => { beginSectionDrag(event, entry.section.id) }}
+          onDragOver={(event) => { overSection(event, entry.section.id, customIds) }}
+          onDrop={(event) => { dropSection(event, entry.section.id, customIds, visibleIds) }}
+          onDragEnd={endSectionDrag}
+          onDragLeave={leaveSection}
           t={t}
         />,
       )
@@ -2036,6 +2181,7 @@ export function WorkspaceUI({
                 pinnedWorkspaceIds={pinnedWorkspaceIds}
                 sectionsEnabled={sectionsEnabled}
                 sectionsState={sectionsState}
+                directoryFlowAvailable={directoryFlowAvailable}
                 sectionExpansion={sectionExpansion}
                 setSectionExpanded={actions.setSectionExpanded}
                 assignWorkspaceSection={actions.assignWorkspaceSection}
