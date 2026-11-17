@@ -1,6 +1,6 @@
-import type { WorkspaceBrowserProps } from './contract/slots.ts';
+import type { WorkspaceUIProps } from './contract/slots.ts';
 /** The standard locale seat, prop-passed from the browser root. */
-type EditTranslate = WorkspaceBrowserProps['t'];
+type EditTranslate = WorkspaceUIProps['t'];
 /** Last path segment for a host directory; the full path stays on the title. */
 export declare function folderLabel(path: string): string;
 /**

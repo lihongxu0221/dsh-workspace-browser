@@ -8,14 +8,14 @@ export function initializeComposerWidth(storage: Pick<Storage, 'getItem' | 'setI
     if (Number.isFinite(saved) && saved > 0) return
     storage.setItem(key, String(COMPOSER_MIN_WIDTH))
   } catch (error) {
-    console.warn('[codex-ui] 无法初始化输入区宽度，将使用宿主默认值。', error)
+    console.warn('[workspace-ui] 无法初始化输入区宽度，将使用宿主默认值。', error)
   }
 }
 /** 新建页没有宿主 WidthHandle，补充同一宽度偏好的拖拽入口。 */
 export function observeHeroWidthHandles(label: string): () => void {
   const mounted = new Map<HTMLElement, () => void>()
   const style = document.createElement('style')
-  style.textContent = `[data-phase=hero]:has([data-conversation-scroll]){position:relative}[data-dcu-width-handle]{position:absolute;top:0;bottom:0;width:32px;padding:0;border:0;background:transparent;cursor:col-resize;touch-action:none;z-index:100;outline-offset:-5px}[data-dcu-width-handle=left]{right:calc(50% + var(--dsh-chat-content-width, var(--dsh-chat-user-width, 640px)) / 2 + 16px)}[data-dcu-width-handle=right]{left:calc(50% + var(--dsh-chat-content-width, var(--dsh-chat-user-width, 640px)) / 2 + 16px)}[data-dcu-width-handle]::after{content:'';position:absolute;top:calc(var(--dcu-pointer-y,50%) - 50px);height:100px;width:3px;left:14px;border-radius:3px;background:linear-gradient(transparent,var(--dsw-alias-scrollbar-hover-l1,#888),transparent);opacity:0}[data-dcu-width-handle]:hover::after,[data-dcu-width-handle]:focus-visible::after,[data-dcu-width-handle][data-dragging]::after{opacity:1}[data-phase=hero]:has([data-conversation-composer-overlay]) [data-dcu-width-handle]{display:none}`
+  style.textContent = `[data-phase=hero]:has([data-conversation-scroll]){position:relative}[data-wui-width-handle]{position:absolute;top:0;bottom:0;width:32px;padding:0;border:0;background:transparent;cursor:col-resize;touch-action:none;z-index:100;outline-offset:-5px}[data-wui-width-handle=left]{right:calc(50% + var(--dsh-chat-content-width, var(--dsh-chat-user-width, 640px)) / 2 + 16px)}[data-wui-width-handle=right]{left:calc(50% + var(--dsh-chat-content-width, var(--dsh-chat-user-width, 640px)) / 2 + 16px)}[data-wui-width-handle]::after{content:'';position:absolute;top:calc(var(--wui-pointer-y,50%) - 50px);height:100px;width:3px;left:14px;border-radius:3px;background:linear-gradient(transparent,var(--dsw-alias-scrollbar-hover-l1,#888),transparent);opacity:0}[data-wui-width-handle]:hover::after,[data-wui-width-handle]:focus-visible::after,[data-wui-width-handle][data-dragging]::after{opacity:1}[data-phase=hero]:has([data-conversation-composer-overlay]) [data-wui-width-handle]{display:none}`
   document.head.append(style)
   const sync = () => {
     for (const [root, dispose] of mounted) {
@@ -34,7 +34,7 @@ export function observeHeroWidthHandles(label: string): () => void {
         root.style.setProperty('--dsh-chat-content-width', `${value}px`)
         if (save) {
           try { localStorage.setItem('dsh.conversation.contentWidth', String(value)) }
-          catch (error) { console.warn('[codex-ui] 无法保存输入区宽度。', error) }
+          catch (error) { console.warn('[workspace-ui] 无法保存输入区宽度。', error) }
         }
       }
       const initialWidth = current()
@@ -58,7 +58,7 @@ export function observeHeroWidthHandles(label: string): () => void {
           handle.setPointerCapture(event.pointerId)
         })
         handle.addEventListener('pointermove', event => {
-          handle.style.setProperty('--dcu-pointer-y', `${event.clientY - handle.getBoundingClientRect().top}px`)
+          handle.style.setProperty('--wui-pointer-y', `${event.clientY - handle.getBoundingClientRect().top}px`)
           if (dragging) publish(initial + (event.clientX - origin) * (side === 'right' ? 2 : -2), false)
         })
         handle.addEventListener('pointerup', event => {

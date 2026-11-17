@@ -1,4 +1,4 @@
-import { de, en, es, fr, ja, pt, ru, zh, type CodexUiKey } from './client/codex-locales.ts'
+import { de, en, es, fr, ja, pt, ru, zh, type WorkspaceUiKey } from './client/workspace-ui-locales.ts'
 
 const AUTOMATION_SESSION_PREFIX = 'dsh-automation-session-'
 const CHANNEL_SESSION_PREFIX = 'im:'
@@ -9,7 +9,7 @@ export type SessionTitleKind = (typeof SESSION_TITLE_KINDS)[number]
 export const SUPPORTED_SESSION_TITLE_LOCALES = ['zh', 'en', 'ja', 'es', 'fr', 'de', 'ru', 'pt'] as const
 export type SessionTitleLocale = (typeof SUPPORTED_SESSION_TITLE_LOCALES)[number]
 
-export const SESSION_TITLE_LOCALES: Record<SessionTitleLocale, Record<CodexUiKey, string>> = {
+export const SESSION_TITLE_LOCALES: Record<SessionTitleLocale, Record<WorkspaceUiKey, string>> = {
   zh,
   en,
   ja,
@@ -42,7 +42,7 @@ const TYPE_KEYS = {
   explore: 'sessionTitle.type.explore',
   docs: 'sessionTitle.type.docs',
   research: 'sessionTitle.type.research',
-} as const satisfies Record<SessionTitleKind, CodexUiKey>
+} as const satisfies Record<SessionTitleKind, WorkspaceUiKey>
 
 const GENERIC_THEME_SUFFIXES = [
   '类型', '分类', '相关', '需求', '问题', '会话', '标题', '主题', '内容',

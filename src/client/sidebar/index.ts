@@ -1,14 +1,14 @@
 import type { Context as ClientContext } from '@deepseek-ai/cordis'
 import React from 'react'
 import { render, unmountComponentAtNode } from 'react-dom'
-import { CODEX_UI_API_ENDPOINTS } from '../../business-api.ts'
+import { WORKSPACE_UI_API_ENDPOINTS } from '../../business-api.ts'
 import { SidebarNav } from './SidebarNav.tsx'
 import { injectSidebarStyles, SIDEBAR_ACTIVE_ATTR } from './styles.ts'
 
 export * from './layout.ts'
 export * from './SidebarNav.tsx'
 
-const CONTAINER_CLASS = 'dcu-sidebar-nav-root'
+const CONTAINER_CLASS = 'wui-sidebar-nav-root'
 
 /**
  * 校验侧栏子插件是否在 Host 侧启用。
@@ -18,9 +18,9 @@ export async function checkSidebarEnabled(): Promise<boolean> {
   try {
     const base = typeof document !== 'undefined' && document.baseURI ? document.baseURI : 'http://localhost'
     const normalizedBase = base.endsWith('/') ? base : `${base}/`
-    const path = CODEX_UI_API_ENDPOINTS.sidebar.startsWith('/')
-      ? CODEX_UI_API_ENDPOINTS.sidebar.slice(1)
-      : CODEX_UI_API_ENDPOINTS.sidebar
+    const path = WORKSPACE_UI_API_ENDPOINTS.sidebar.startsWith('/')
+      ? WORKSPACE_UI_API_ENDPOINTS.sidebar.slice(1)
+      : WORKSPACE_UI_API_ENDPOINTS.sidebar
     const url = new URL(path, normalizedBase).href
     const res = await fetch(url)
     if (!res.ok) return false
@@ -100,7 +100,7 @@ export function observeSidebarNav(ctx: ClientContext): () => void {
 
     const container = document.createElement('div')
     container.className = CONTAINER_CLASS
-    container.setAttribute('data-dcu-managed', 'true')
+    container.setAttribute('data-wui-managed', 'true')
 
     try {
       sidebarRoot.insertBefore(container, mountAnchor)

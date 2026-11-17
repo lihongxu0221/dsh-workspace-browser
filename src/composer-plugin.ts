@@ -1,10 +1,10 @@
 import type { Context } from '@deepseek-ai/cordis'
-import { CODEX_UI_API_ENDPOINTS } from './business-api.ts'
+import { WORKSPACE_UI_API_ENDPOINTS } from './business-api.ts'
 import { isSubPluginDisabledOnDisk as checkDisabledOnDisk } from './profile-resolver.ts'
 import { apply as applyPredictions } from './composer-prediction.ts'
 import { collectModelCatalog } from './composer-models.ts'
 
-export const name = 'workspace-browser-composer'
+export const name = 'workspace-ui-composer'
 export const inject = ['webServer', 'llm']
 
 export function isSubPluginDisabledOnDisk(id: string, homeDir?: string, ctx?: Context): boolean {
@@ -50,20 +50,20 @@ export function resolvePredictionAllowed(config: ComposerPluginConfig | undefine
 
 /**
  * Composer 输入框增强子组件 (Host 侧)
- * 1. 暴露 /api/michengai/dsh-codex-ui/composer (启停状态 + 预测开关状态)
+ * 1. 暴露 /api/michengai/dsh-workspace-ui/composer (启停状态 + 预测开关状态)
  * 2. 暴露 /composer/prediction 与 /composer/prediction/stream (流式预测)
  */
 export function apply(ctx: Context, config?: ComposerPluginConfig): void {
-  const statusEndpoint = CODEX_UI_API_ENDPOINTS.composer
+  const statusEndpoint = WORKSPACE_UI_API_ENDPOINTS.composer
   const predictionAllowed = resolvePredictionAllowed(config)
 
   // 1. 注册标准预测引擎（对齐成熟参考插件）；站点级关闭时完全不注册，也就不可能产生模型调用
   ctx.effect(() => {
-    const disabled = isSubPluginDisabledOnDisk('workspace-browser-composer', undefined, ctx)
+    const disabled = isSubPluginDisabledOnDisk('workspace-ui-composer', undefined, ctx)
     if (disabled || !predictionAllowed) return () => {}
     applyPredictions(ctx, config)
     return () => {}
-  }, 'michengai-codex-ui: composer predictions engine')
+  }, 'workspace-ui: composer predictions engine')
 
   // 2. 状态端点
   ctx.effect(() => {
@@ -74,7 +74,7 @@ export function apply(ctx: Context, config?: ComposerPluginConfig): void {
       kind: 'exact',
       path: statusEndpoint,
       handler: (_request: any, response: any) => {
-        const disabled = isSubPluginDisabledOnDisk('workspace-browser-composer', undefined, ctx)
+        const disabled = isSubPluginDisabledOnDisk('workspace-ui-composer', undefined, ctx)
         response.writeHead(200, {
           'content-type': 'application/json; charset=utf-8',
           'cache-control': 'no-store',
@@ -85,7 +85,7 @@ export function apply(ctx: Context, config?: ComposerPluginConfig): void {
 
     const disposeModels = webServer.register({
       kind: 'exact',
-      path: CODEX_UI_API_ENDPOINTS.composerModels,
+      path: WORKSPACE_UI_API_ENDPOINTS.composerModels,
       handler: async (_request: any, response: any) => {
         try {
           const providers = await collectModelCatalog(ctx)
@@ -108,5 +108,5 @@ export function apply(ctx: Context, config?: ComposerPluginConfig): void {
       disposeStatus?.()
       disposeModels?.()
     }
-  }, 'michengai-codex-ui: composer state')
+  }, 'workspace-ui: composer state')
 }

@@ -2,7 +2,7 @@
 import { mergeFolderLayer, parseFolderLayer, type FolderLayer } from '../folder-layer.ts'
 
 /** Authenticated route registered by the node half. */
-const ROUTE = '/api/workspace-browser/folders'
+const ROUTE = '/api/workspace-ui/folders'
 
 interface FolderStore {
   getSnapshot(): {

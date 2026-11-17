@@ -1,5 +1,5 @@
 import type { TranslateNS } from '@deepseek-ai/dsh-client-ui-slots';
-import { NS } from './codex-locales.ts';
+import { NS } from './workspace-ui-locales.ts';
 type Translator = TranslateNS<typeof NS>;
 /** 仅显式构造的本地化错误允许原样进入界面。 */
 export declare class UserFacingError extends Error {

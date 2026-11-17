@@ -161,7 +161,7 @@ export function buildPlan(app: AppTarget, options: {
  */
 export function helperSource(plan: RestartPlan): string {
   return `'use strict'
-// DeepSeek Harness 重启助手（由 codex-ui 生成，放在临时目录，可随时删除）
+// DeepSeek Harness 重启助手（由 workspace-ui 生成，放在临时目录，可随时删除）
 const { spawn, spawnSync } = require('node:child_process')
 const fs = require('node:fs')
 
@@ -173,7 +173,7 @@ function stamp() {
 }
 
 function log(message) {
-  try { fs.appendFileSync(plan.logPath, '[' + stamp() + '] codex-ui restart: ' + message + '\\n') } catch {}
+  try { fs.appendFileSync(plan.logPath, '[' + stamp() + '] workspace-ui restart: ' + message + '\\n') } catch {}
 }
 
 function writeState(phase, detail) {
@@ -377,7 +377,7 @@ try { main() } catch (error) {
 /** 把助手脚本写进临时目录并交给 Electron 的 Node 跑起来（脱离本进程）。 */
 export function spawnHelper(plan: RestartPlan): { ok: boolean; error?: string; scriptPath?: string } {
   try {
-    const scriptPath = join(tmpdir(), `dcu-restart-${Date.now().toString(36)}.cjs`)
+    const scriptPath = join(tmpdir(), `wui-restart-${Date.now().toString(36)}.cjs`)
     writeFileSync(scriptPath, helperSource(plan), 'utf8')
     const child = spawn(nodeProcess.execPath, [scriptPath], {
       detached: true,
@@ -396,6 +396,6 @@ export function spawnHelper(plan: RestartPlan): { ok: boolean; error?: string; s
 
 /** 默认日志与状态文件位置。 */
 export function defaultPaths(): { logPath: string; statePath: string } {
-  const base = join(tmpdir(), 'dsh-codex-ui-restart')
+  const base = join(tmpdir(), 'dsh-workspace-ui-restart')
   return { logPath: join(base, 'restart.log'), statePath: join(base, 'state.json') }
 }

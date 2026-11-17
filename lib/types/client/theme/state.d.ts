@@ -9,11 +9,11 @@ export interface ThemeSettingsState {
     readonly subPluginEnabled: boolean;
 }
 export declare const STORAGE_KEYS: Readonly<{
-    themeOption: "codex-ui.theme.option";
-    glassEnabled: "codex-ui.glass.enabled";
-    glassMode: "codex-ui.glass.mode";
-    glassPreset: "codex-ui.glass.preset";
-    glassGlow: "codex-ui.glass.glow";
+    themeOption: "workspace-ui.theme.option";
+    glassEnabled: "workspace-ui.glass.enabled";
+    glassMode: "workspace-ui.glass.mode";
+    glassPreset: "workspace-ui.glass.preset";
+    glassGlow: "workspace-ui.glass.glow";
 }>;
 /** 检查当前主题子插件是否在 Host 侧处于激活启用状态 */
 export declare function isThemeSubPluginEnabled(): boolean;

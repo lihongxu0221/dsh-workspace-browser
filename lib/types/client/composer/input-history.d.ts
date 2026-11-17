@@ -1,4 +1,4 @@
-export declare const HISTORY_KEY = "michengai.codex-ui.input-history.v1";
+export declare const HISTORY_KEY = "michengai.workspace-ui.input-history.v1";
 type StorageFace = Pick<Storage, 'getItem' | 'setItem'>;
 /** 只保存已发送文本；浏览器存储失败时仍保留本次内存历史。 */
 export declare class InputHistory {

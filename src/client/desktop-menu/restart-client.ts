@@ -7,7 +7,7 @@
  * 为什么不在这里直接 location.reload：重载只换页面，插件宿主进程还在，装了新插件
  * 也不生效；真重启必须让整个应用退出再起来。
  */
-import { CODEX_UI_API_ENDPOINTS, CODEX_UI_RESTART_HEADER } from '../../business-api.ts'
+import { WORKSPACE_UI_API_ENDPOINTS, WORKSPACE_UI_RESTART_HEADER } from '../../business-api.ts'
 
 /** Host 返回的状态文档。 */
 export interface RestartStatus {
@@ -34,9 +34,9 @@ export interface RestartOutcome {
 function endpointUrl(search: string): string {
   const base = typeof document !== 'undefined' && document.baseURI ? document.baseURI : 'http://localhost'
   const normalizedBase = base.endsWith('/') ? base : `${base}/`
-  const path = CODEX_UI_API_ENDPOINTS.desktopMenu.startsWith('/')
-    ? CODEX_UI_API_ENDPOINTS.desktopMenu.slice(1)
-    : CODEX_UI_API_ENDPOINTS.desktopMenu
+  const path = WORKSPACE_UI_API_ENDPOINTS.desktopMenu.startsWith('/')
+    ? WORKSPACE_UI_API_ENDPOINTS.desktopMenu.slice(1)
+    : WORKSPACE_UI_API_ENDPOINTS.desktopMenu
   return `${new URL(path, normalizedBase).href}${search}`
 }
 
@@ -63,7 +63,7 @@ export async function requestRestart(token: string): Promise<RestartOutcome> {
     const response = await fetch(endpointUrl('?action=restart'), {
       method: 'POST',
       cache: 'no-store',
-      headers: { accept: 'application/json', [CODEX_UI_RESTART_HEADER]: token },
+      headers: { accept: 'application/json', [WORKSPACE_UI_RESTART_HEADER]: token },
     })
     const payload = await response.json().catch(() => ({})) as RestartOutcome
     if (response.ok && payload.ok === true) return { ok: true }
@@ -90,10 +90,10 @@ export interface RestartCopy {
   readonly busy: string
 }
 
-const STYLE_ID = 'dcu-desktop-restart-style'
+const STYLE_ID = 'wui-desktop-restart-style'
 
 const STYLES = `
-.dcu-restart-toast {
+.wui-restart-toast {
   position: fixed;
   z-index: 10001;
   right: 20px;
@@ -113,28 +113,28 @@ const STYLES = `
   font-family: var(--dsw-font-family, sans-serif);
   font-size: 13px;
   line-height: 19px;
-  animation: dcu-restart-in 120ms ease-out;
+  animation: wui-restart-in 120ms ease-out;
 }
 
-@keyframes dcu-restart-in {
+@keyframes wui-restart-in {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
-.dcu-restart-toast[data-tone="error"] {
+.wui-restart-toast[data-tone="error"] {
   border-color: var(--dsw-alias-state-error-primary, #ff6b6b);
 }
 
-.dcu-restart-toast-title {
+.wui-restart-toast-title {
   font-weight: 600;
 }
 
-.dcu-restart-toast-body {
+.wui-restart-toast-body {
   color: var(--dsw-alias-label-secondary, #a1a1a6);
   overflow-wrap: anywhere;
 }
 
-.dcu-restart-toast-action {
+.wui-restart-toast-action {
   align-self: flex-end;
   height: 26px;
   padding: 0 10px;
@@ -147,7 +147,7 @@ const STYLES = `
   cursor: pointer;
 }
 
-.dcu-restart-toast-action:hover {
+.wui-restart-toast-action:hover {
   background: var(--dsw-alias-interactive-bg-hover, rgba(255, 255, 255, 0.08));
 }
 `
@@ -172,17 +172,17 @@ export interface RestartToast {
 export function showRestartToast(copy: RestartCopy): RestartToast {
   ensureStyles()
   const card = document.createElement('div')
-  card.className = 'dcu-restart-toast'
+  card.className = 'wui-restart-toast'
   card.setAttribute('role', 'status')
   card.setAttribute('aria-live', 'polite')
 
   const title = document.createElement('div')
-  title.className = 'dcu-restart-toast-title'
+  title.className = 'wui-restart-toast-title'
   const body = document.createElement('div')
-  body.className = 'dcu-restart-toast-body'
+  body.className = 'wui-restart-toast-body'
   const action = document.createElement('button')
   action.type = 'button'
-  action.className = 'dcu-restart-toast-action'
+  action.className = 'wui-restart-toast-action'
   action.textContent = copy.close
   action.hidden = true
   action.addEventListener('click', () => {

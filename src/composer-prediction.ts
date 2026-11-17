@@ -3,15 +3,15 @@
  * 包含完整的 27 个处理函数、SSE 流式引擎、超时双重信号控制器与边界防护
  */
 import type { Context } from '@deepseek-ai/cordis'
-import { CODEX_UI_API_ENDPOINTS } from './business-api.ts'
+import { WORKSPACE_UI_API_ENDPOINTS } from './business-api.ts'
 
 export const name = 'composer-predictions'
 
 export const inject = ['webServer']
 
 /** 使用自研专属命名空间端点，杜绝与社区插件全局路径冲突 */
-const ENDPOINT = CODEX_UI_API_ENDPOINTS.composerPrediction
-const STREAM_ENDPOINT = CODEX_UI_API_ENDPOINTS.composerPredictionStream
+const ENDPOINT = WORKSPACE_UI_API_ENDPOINTS.composerPrediction
+const STREAM_ENDPOINT = WORKSPACE_UI_API_ENDPOINTS.composerPredictionStream
 
 /** One request carries a session id, a mode, and a bounded draft. */
 const MAX_BODY_BYTES = 64 * 1024

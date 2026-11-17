@@ -14,7 +14,7 @@ import { randomBytes, timingSafeEqual } from 'node:crypto'
 import { mkdirSync, readFileSync } from 'node:fs'
 import process from 'node:process'
 import { dirname } from 'node:path'
-import { CODEX_UI_RESTART_HEADER } from './business-api.ts'
+import { WORKSPACE_UI_RESTART_HEADER } from './business-api.ts'
 import { detectApp, buildPlan, defaultPaths, spawnHelper, type RestartKind } from './restart.ts'
 
 /** The host's Node runtime; typed locally because the client face augments the global. */
@@ -178,7 +178,7 @@ export function createDesktopMenuHandler(deps: DesktopMenuRouteDeps): (request: 
         sendJson(response, 405, { ok: false, error: 'method' })
         return
       }
-      if (!tokenMatches(token, headerValue(request.headers, CODEX_UI_RESTART_HEADER))) {
+      if (!tokenMatches(token, headerValue(request.headers, WORKSPACE_UI_RESTART_HEADER))) {
         sendJson(response, 403, { ok: false, error: 'bad-token' })
         return
       }

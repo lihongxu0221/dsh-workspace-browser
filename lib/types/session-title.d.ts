@@ -1,9 +1,9 @@
-import { type CodexUiKey } from './client/codex-locales.ts';
+import { type WorkspaceUiKey } from './client/workspace-ui-locales.ts';
 export declare const SESSION_TITLE_KINDS: readonly ["feature", "design", "fix", "optimize", "release", "explore", "docs", "research"];
 export type SessionTitleKind = (typeof SESSION_TITLE_KINDS)[number];
 export declare const SUPPORTED_SESSION_TITLE_LOCALES: readonly ["zh", "en", "ja", "es", "fr", "de", "ru", "pt"];
 export type SessionTitleLocale = (typeof SUPPORTED_SESSION_TITLE_LOCALES)[number];
-export declare const SESSION_TITLE_LOCALES: Record<SessionTitleLocale, Record<CodexUiKey, string>>;
+export declare const SESSION_TITLE_LOCALES: Record<SessionTitleLocale, Record<WorkspaceUiKey, string>>;
 export declare const SESSION_TITLE_SEPARATOR = "\uFF5C";
 export declare const SESSION_TITLE_MAX_BYTES = 80;
 export declare const SESSION_TITLE_EMOJI: {

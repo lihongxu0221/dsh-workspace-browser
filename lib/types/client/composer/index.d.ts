@@ -1,6 +1,6 @@
 import type { Context } from '@deepseek-ai/cordis';
-export declare const COMPOSER_ENHANCEMENT_STYLE_ID = "dcu-composer-enhancements-style";
-/** 探测宿主 workspace-browser-composer 子组件是否处于激活状态（遵循 fail-closed 契约） */
+export declare const COMPOSER_ENHANCEMENT_STYLE_ID = "wui-composer-enhancements-style";
+/** 探测宿主 workspace-ui-composer 子组件是否处于激活状态（遵循 fail-closed 契约） */
 export declare function checkComposerEnabled(): Promise<boolean>;
 /**
  * 读取 Host 状态：子插件是否启用，以及站点级是否允许预测。

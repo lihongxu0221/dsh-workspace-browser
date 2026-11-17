@@ -1,4 +1,4 @@
-export const HISTORY_KEY = 'michengai.codex-ui.input-history.v1'
+export const HISTORY_KEY = 'michengai.workspace-ui.input-history.v1'
 const LEGACY_HISTORY_KEY = 'michengai.btw.history.v1'
 const MAX_STORAGE_LENGTH = 1_000_000
 /** 最多保留多少个作用域；会话级模式下即最近有输入的 100 个会话。 */

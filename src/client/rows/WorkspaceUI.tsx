@@ -30,7 +30,7 @@ import type { WorkspaceId, WorkspaceView } from '@deepseek-ai/dsh-api-workspace-
 import { workspaceDisplayTitle } from '@deepseek-ai/dsh-api-workspace-controller/default-workspace'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type { PropsRenderSlots } from '@deepseek-ai/dsh-client-ui-slots'
-import type { WorkspaceBrowserProps } from '../contract/slots.ts'
+import type { WorkspaceUIProps } from '../contract/slots.ts'
 import type { ArchivedFilter, GroupNode, SessionNode, SessionOrderBy, SessionRowState } from '../tree.ts'
 import {
   deriveFlat, deriveGroups, deriveSearchResults, mergePluginFolders, orderByRecency, owningGroupKey, owningParentFolder,
@@ -47,7 +47,7 @@ import { WorkspaceEditDialog, folderLabel } from '../WorkspaceEditDialog.tsx'
 import { directoryExists } from '../navigation.ts'
 import { nativeDirectoryPick, WorkspacePickFlow } from '../WorkspacePicker.tsx'
 import { PanelNav } from '../PanelNav.tsx'
-import css from './WorkspaceBrowser.module.css'
+import css from './WorkspaceUI.module.css'
 
 /** Extra folders the feed projects beside the published Workspace view. */
 function workspaceExtraFolders(workspace: WorkspaceView & { readonly folders?: readonly string[] }): readonly string[] {
@@ -180,7 +180,7 @@ function ViewOptionsMenu({ groupBy, orderBy, archivedFilter, sectionsEnabled, pa
   onGroupPick: (mode: SessionGroupBy) => void
   onOrderPick: (mode: SessionOrderBy) => void
   onArchivedFilterPick: (filter: ArchivedFilter) => void
-  t: WorkspaceBrowserProps['t']
+  t: WorkspaceUIProps['t']
 }) {
   const [open, setOpen] = useState(false)
   return (
@@ -300,7 +300,7 @@ function workspaceGroupHalf(e: { clientY: number; currentTarget: HTMLElement }):
 }
 
 type SessionTreeProps = Pick<
-  WorkspaceBrowserProps,
+  WorkspaceUIProps,
   'useSessionStatus' | 'startSession' | 'open'
   | 'insertWorkspaceBefore' | 't' | 'usePanelInfo'
 > & PropsRenderSlots<
@@ -384,7 +384,7 @@ function EmptySessions({ rowState, onLeaveArchivedOnly, t }: Pick<SessionTreePro
   )
 }
 
-type RecentSessionsSectionProps = Pick<WorkspaceBrowserProps, 'open' | 't'> & PropsRenderSlots<
+type RecentSessionsSectionProps = Pick<WorkspaceUIProps, 'open' | 't'> & PropsRenderSlots<
   | 'sidebar.workspaces.session.menu.item'
   | 'sidebar.workspaces.session.row.action'
   | 'sidebar.session.row.leading'
@@ -469,7 +469,7 @@ function SectionHeading({
   onRename: () => void
   onDelete: () => void
   onMove: (direction: 'up' | 'down') => void
-  t: WorkspaceBrowserProps['t']
+  t: WorkspaceUIProps['t']
 }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const builtin = isBuiltinSection(section.id)
@@ -788,7 +788,7 @@ function SessionTree({
     return (
     // Group section: header, descendant Workspaces, and own Session rows. The
     // inter-group breathing room is the section's own margin
-    // (WorkspaceBrowser.module.css).
+    // (WorkspaceUI.module.css).
       <div
         key={group.key}
         style={{ '--dsh-workspace-indent': `${depth * 12}px` } as CSSProperties}
@@ -1162,7 +1162,7 @@ function SearchResults({
   resultLimit,
   usePanelInfo,
   t,
-}: Pick<WorkspaceBrowserProps, 'useSessions' | 'useSessionStatus' | 'open' | 't' | 'usePanelInfo'> & {
+}: Pick<WorkspaceUIProps, 'useSessions' | 'useSessionStatus' | 'open' | 't' | 'usePanelInfo'> & {
   workspaces: readonly WorkspaceView[]
   archivedSessionIds: readonly SessionNode['id'][]
   /** Search matches follow the archived filter selected for the list. */
@@ -1245,7 +1245,7 @@ function SearchResults({
  * @param props - composed slot props (shell owner share + store + injected actions).
  * @returns the region element tree.
  */
-export function WorkspaceBrowser({
+export function WorkspaceUI({
   wide,
   usePanelInfo,
   expandSidebar,
@@ -1282,7 +1282,7 @@ export function WorkspaceBrowser({
   revealFolder,
   renderSlot,
   t,
-}: WorkspaceBrowserProps) {
+}: WorkspaceUIProps) {
   // The sidebar viewport hands wheel scrolling to the section scroller bound
   // below once the navigation is out of the way. The hook must run
   // unconditionally; the ref is only attached in the expanded section.

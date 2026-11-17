@@ -6,11 +6,11 @@
 import {
   Button, IconCloseOutlineRegular, IconFolderCloseRegular, IconProjectAddOutlineRegular, Input, Modal,
 } from '@deepseek-ai/dsh-client-ui-primitives'
-import type { WorkspaceBrowserProps } from './contract/slots.ts'
+import type { WorkspaceUIProps } from './contract/slots.ts'
 import css from './WorkspaceEditDialog.module.css'
 
 /** The standard locale seat, prop-passed from the browser root. */
-type EditTranslate = WorkspaceBrowserProps['t']
+type EditTranslate = WorkspaceUIProps['t']
 
 /** Last path segment for a host directory; the full path stays on the title. */
 export function folderLabel(path: string): string {

@@ -1,6 +1,6 @@
 import type { Context as ClientContext } from '@deepseek-ai/cordis'
 import type { ThemeRuntime } from '@deepseek-ai/dsh-client-ui-theme/client'
-import { CODEX_UI_API_ENDPOINTS } from '../../business-api.ts'
+import { WORKSPACE_UI_API_ENDPOINTS } from '../../business-api.ts'
 import { applyGlassSettings, disposeGlassMode, type GlassMode, type GlassPreset } from './glass.ts'
 import { ALL_BUILTIN_THEMES } from './palettes.ts'
 import {
@@ -31,9 +31,9 @@ export async function checkThemeEnabled(): Promise<boolean> {
   try {
     const base = typeof document !== 'undefined' && document.baseURI ? document.baseURI : 'http://localhost'
     const normalizedBase = base.endsWith('/') ? base : `${base}/`
-    const path = CODEX_UI_API_ENDPOINTS.theme.startsWith('/')
-      ? CODEX_UI_API_ENDPOINTS.theme.slice(1)
-      : CODEX_UI_API_ENDPOINTS.theme
+    const path = WORKSPACE_UI_API_ENDPOINTS.theme.startsWith('/')
+      ? WORKSPACE_UI_API_ENDPOINTS.theme.slice(1)
+      : WORKSPACE_UI_API_ENDPOINTS.theme
     const url = new URL(path, normalizedBase).href
     const res = await fetch(url)
     if (!res.ok) return false
@@ -50,7 +50,7 @@ function tolerantRegistration(run: () => (() => void) | void): () => void {
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     if (!/already registered/i.test(message)) {
-      console.warn('[codex-ui:theme] registration skipped:', message)
+      console.warn('[workspace-ui:theme] registration skipped:', message)
     }
     return () => {}
   }
@@ -59,7 +59,7 @@ function tolerantRegistration(run: () => (() => void) | void): () => void {
 let lastAppliedTokens: string[] = []
 let hasAppliedCustomTheme = false
 
-export const THEME_SURFACE_STYLE_ID = 'dsh-workspace-browser-theme-surface-style'
+export const THEME_SURFACE_STYLE_ID = 'dsh-workspace-ui-theme-surface-style'
 
 /**
  * 确保注入消除插件页等场景色差的全局表面样式
@@ -251,7 +251,7 @@ export function applyThemeToDocument(
  */
 export function changeTheme(themeOption: ThemeOption): void {
   if (!isThemeSubPluginEnabled()) {
-    console.warn('[codex-ui:theme] Theme sub-plugin is disabled on host, changeTheme skipped')
+    console.warn('[workspace-ui:theme] Theme sub-plugin is disabled on host, changeTheme skipped')
     return
   }
   setThemeOption(themeOption)
@@ -268,7 +268,7 @@ export function changeGlass(options: {
   glow?: boolean
 }): void {
   if (!isThemeSubPluginEnabled()) {
-    console.warn('[codex-ui:theme] Theme sub-plugin is disabled on host, changeGlass skipped')
+    console.warn('[workspace-ui:theme] Theme sub-plugin is disabled on host, changeGlass skipped')
     return
   }
   const state = getThemeSettingsState()
@@ -345,7 +345,7 @@ export function observeTheme(ctx: ClientContext): () => void {
         applyCurrentState(false)
       } else if (++retries >= 100) {
         clearInterval(timer)
-        console.warn('[codex-ui:theme] host theme service not ready after 5s polling, continuing with DOM-only fallback')
+        console.warn('[workspace-ui:theme] host theme service not ready after 5s polling, continuing with DOM-only fallback')
       }
     }, 50)
     disposers.push(() => clearInterval(timer))

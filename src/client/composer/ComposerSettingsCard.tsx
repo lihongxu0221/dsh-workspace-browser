@@ -40,21 +40,21 @@ export function ComposerSettingsCard({ t }: ComposerSettingsCardProps): React.JS
   const lockedByHost = !state.hostAllowed
 
   return (
-    <div className="dcu-section-card dcu-composer-settings" aria-label={t('composer.title')}>
+    <div className="wui-section-card wui-composer-settings" aria-label={t('composer.title')}>
       <style>{SECTION_CARD_CSS + SETTINGS_ROW_CSS}</style>
-      <div className="dcu-section-header">
-        <div className="dcu-section-title-wrap">
-          <h3 className="dcu-section-title">{t('composer.title')}</h3>
-          <p className="dcu-section-desc">{t('composer.desc')}</p>
+      <div className="wui-section-header">
+        <div className="wui-section-title-wrap">
+          <h3 className="wui-section-title">{t('composer.title')}</h3>
+          <p className="wui-section-desc">{t('composer.desc')}</p>
         </div>
       </div>
-      <div className="dcu-settings-row">
-        <div className="dcu-settings-row-label">
-          <span className="dcu-settings-row-title">{t('composer.prediction')}</span>
-          <span className="dcu-settings-row-hint">{lockedByHost ? t('composer.predictionLocked') : t('composer.predictionHint')}</span>
+      <div className="wui-settings-row">
+        <div className="wui-settings-row-label">
+          <span className="wui-settings-row-title">{t('composer.prediction')}</span>
+          <span className="wui-settings-row-hint">{lockedByHost ? t('composer.predictionLocked') : t('composer.predictionHint')}</span>
         </div>
         <SegmentedControl<PredictionMode>
-          id="workspace-browser-composer-prediction-mode"
+          id="workspace-ui-composer-prediction-mode"
           label={t('composer.prediction')}
           value={state.mode}
           disabled={lockedByHost}
@@ -69,20 +69,20 @@ export function ComposerSettingsCard({ t }: ComposerSettingsCardProps): React.JS
           }}
         />
       </div>
-      <div className="dcu-settings-row">
-        <div className="dcu-settings-row-label">
-          <span className="dcu-settings-row-title">{t('composer.predictionModel')}</span>
-          <span className="dcu-settings-row-hint">{t('composer.predictionModelHint')}</span>
+      <div className="wui-settings-row">
+        <div className="wui-settings-row-label">
+          <span className="wui-settings-row-title">{t('composer.predictionModel')}</span>
+          <span className="wui-settings-row-hint">{t('composer.predictionModelHint')}</span>
         </div>
         <PredictionModelPicker t={t} disabled={lockedByHost || state.mode === 'off'} />
       </div>
-      <div className="dcu-settings-row">
-        <div className="dcu-settings-row-label">
-          <span className="dcu-settings-row-title">{t('composer.historyScope')}</span>
-          <span className="dcu-settings-row-hint">{t('composer.historyScopeHint')}</span>
+      <div className="wui-settings-row">
+        <div className="wui-settings-row-label">
+          <span className="wui-settings-row-title">{t('composer.historyScope')}</span>
+          <span className="wui-settings-row-hint">{t('composer.historyScopeHint')}</span>
         </div>
         <SegmentedControl<HistoryScope>
-          id="workspace-browser-composer-history-scope"
+          id="workspace-ui-composer-history-scope"
           label={t('composer.historyScope')}
           value={historyScope}
           options={[

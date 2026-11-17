@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useSyncExternalStore } from 'react'
 import { Button, Menu, type MenuEntry } from '@deepseek-ai/dsh-client-ui-primitives'
-import { CODEX_UI_API_ENDPOINTS } from '../../business-api.ts'
+import { WORKSPACE_UI_API_ENDPOINTS } from '../../business-api.ts'
 import { IconChevronDownOutlineMedium } from '../host-icons.ts'
 import {
   getPredictionRoute,
@@ -58,7 +58,7 @@ export function PredictionModelPicker({ t, disabled = false }: PredictionModelPi
       return
     }
     let cancelled = false
-    fetch(CODEX_UI_API_ENDPOINTS.composerModels)
+    fetch(WORKSPACE_UI_API_ENDPOINTS.composerModels)
       .then(res => (res.ok ? res.json() : null))
       .then(data => {
         if (cancelled || !data?.ok || !Array.isArray(data.providers)) return
@@ -190,30 +190,30 @@ export function PredictionModelPicker({ t, disabled = false }: PredictionModelPi
       disabled={disabled}
       aria-expanded={open}
       aria-haspopup="menu"
-      className={`dcu-prediction-model-trigger ${open ? 'is-open' : ''}`}
+      className={`wui-prediction-model-trigger ${open ? 'is-open' : ''}`}
       onClick={() => {
         if (!disabled) setOpen(prev => !prev)
       }}
     >
-      <span className="dcu-prediction-model-label" title={triggerText}>
+      <span className="wui-prediction-model-label" title={triggerText}>
         {triggerText}
       </span>
       <IconChevronDownOutlineMedium
         size={12}
-        className={`dcu-prediction-model-arrow ${open ? 'is-rotated' : ''}`}
+        className={`wui-prediction-model-arrow ${open ? 'is-rotated' : ''}`}
       />
     </Button>
   )
 
   return (
-    <div className="dcu-prediction-model-picker-root">
+    <div className="wui-prediction-model-picker-root">
       <style>{`
-        .dcu-prediction-model-picker-root {
+        .wui-prediction-model-picker-root {
           display: inline-flex;
           align-items: center;
           position: relative;
         }
-        .dcu-prediction-model-trigger {
+        .wui-prediction-model-trigger {
           display: inline-flex;
           align-items: center;
           justify-content: space-between;
@@ -225,19 +225,19 @@ export function PredictionModelPicker({ t, disabled = false }: PredictionModelPi
           font-size: 13px;
           border-radius: 6px;
         }
-        .dcu-prediction-model-label {
+        .wui-prediction-model-label {
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
           flex: 1 1 auto;
           text-align: left;
         }
-        .dcu-prediction-model-arrow {
+        .wui-prediction-model-arrow {
           flex: 0 0 auto;
           transition: transform 150ms ease;
           opacity: 0.7;
         }
-        .dcu-prediction-model-arrow.is-rotated {
+        .wui-prediction-model-arrow.is-rotated {
           transform: rotate(180deg);
         }
       `}</style>

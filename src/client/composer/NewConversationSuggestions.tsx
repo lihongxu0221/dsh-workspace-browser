@@ -2,7 +2,7 @@ import { useEffect, useState, useSyncExternalStore, type CSSProperties } from 'r
 import { createPortal } from 'react-dom'
 import { Telescope, Hammer, ScanLine, Bug } from 'lucide-react'
 import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots'
-import { NS } from '../codex-locales.ts'
+import { NS } from '../workspace-ui-locales.ts'
 import type { PrefillResult, DraftPresenceSource } from './new-conversation-draft.ts'
 export type { PrefillResult } from './new-conversation-draft.ts'
 
@@ -65,14 +65,14 @@ export function SuggestionCards({ t, prefill, hasDraft = false }: PropsLocale<ty
     if (result === 'ready') document.querySelector<HTMLElement>('[data-phase=hero] [data-lexical-editor=true]')?.focus()
     if (result === 'workspace') document.querySelector<HTMLButtonElement>('[data-phase=hero] [class*="_heroWorkspaceRow"]>button')?.click()
   }
-  return <section className="dcu-home-suggestions" data-has-draft={hasDraft} aria-hidden={hasDraft} aria-label={t('home.suggestions')}>
-    <div className="dcu-home-cards">{categories.map(({ id, label, Icon, color }) => <button type="button" key={id} disabled={hasDraft} className="dcu-home-card" style={{ '--dcu-home-icon': color } as CSSProperties} aria-pressed={selected === id} onClick={() => { setSelected(selected === id ? undefined : id); setHint('ready') }}>
+  return <section className="wui-home-suggestions" data-has-draft={hasDraft} aria-hidden={hasDraft} aria-label={t('home.suggestions')}>
+    <div className="wui-home-cards">{categories.map(({ id, label, Icon, color }) => <button type="button" key={id} disabled={hasDraft} className="wui-home-card" style={{ '--wui-home-icon': color } as CSSProperties} aria-pressed={selected === id} onClick={() => { setSelected(selected === id ? undefined : id); setHint('ready') }}>
       <Icon aria-hidden="true" /><span>{t(label)}</span>
     </button>)}</div>
     {/* 所有分区共用同一网格单元，按最长内容预留高度，展开和切换不重新撑高居中区域。 */}
-    <div className="dcu-home-details">{categories.map(category => <div key={category.id} className="dcu-home-tasks" data-active={selected === category.id} aria-hidden={selected !== category.id}>
-      {category.tasks.map(task => <button type="button" key={task.label} className="dcu-home-task" disabled={hasDraft || selected !== category.id} onClick={() => fill(t(task.prompt))}>{t(task.label)}</button>)}
+    <div className="wui-home-details">{categories.map(category => <div key={category.id} className="wui-home-tasks" data-active={selected === category.id} aria-hidden={selected !== category.id}>
+      {category.tasks.map(task => <button type="button" key={task.label} className="wui-home-task" disabled={hasDraft || selected !== category.id} onClick={() => fill(t(task.prompt))}>{t(task.label)}</button>)}
     </div>)}</div>
-    <div className="dcu-home-status">{(Object.keys(hints) as Array<keyof typeof hints>).map(key => <p key={key} className="dcu-home-hint" data-active={hint === key} aria-hidden={hint !== key} role={hint === key ? 'status' : undefined}>{t(hints[key])}</p>)}</div>
+    <div className="wui-home-status">{(Object.keys(hints) as Array<keyof typeof hints>).map(key => <p key={key} className="wui-home-hint" data-active={hint === key} aria-hidden={hint !== key} role={hint === key ? 'status' : undefined}>{t(hints[key])}</p>)}</div>
   </section>
 }

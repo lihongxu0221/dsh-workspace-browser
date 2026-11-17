@@ -4,7 +4,7 @@ export interface PredictionRouteChoice {
   reasoningEffort?: string
 }
 
-export const PREDICTION_ROUTE_STORAGE_KEY = 'codex-ui.composer.prediction-route'
+export const PREDICTION_ROUTE_STORAGE_KEY = 'workspace-ui.composer.prediction-route'
 
 let currentRouteChoice: PredictionRouteChoice | null = (() => {
   if (typeof window === 'undefined') return null

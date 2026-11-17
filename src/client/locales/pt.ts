@@ -1,6 +1,6 @@
-import type { CodexUiKey } from '../codex-locales.ts'
+import type { WorkspaceUiKey } from '../workspace-ui-locales.ts'
 
-export const pt: Record<CodexUiKey, string> = {
+export const pt: Record<WorkspaceUiKey, string> = {
   'about.dependencies': 'Plugins de gerenciamento complementares',
   'about.dependenciesDescription': 'Cada plugin complementar suporta instalação sob demanda e atualizações sincronizadas em lote.',
   'about.dependency.archive': 'Conversas arquivadas',
@@ -16,7 +16,7 @@ export const pt: Record<CodexUiKey, string> = {
   'about.dependency.simplify': 'Simplify',
   'about.dependency.skills': 'Gestão de habilidades',
   'about.dependency.suite': 'Pacote Codex',
-  'about.dependency.ui': 'Codex UI',
+  'about.dependency.ui': 'Workspace UI',
   'about.description': 'Aprimoramentos de entrada, interface de configurações em tela cheia, menu de janela da área de trabalho e gerenciamento do ecossistema.',
   'about.downloadsSource': 'Estatísticas oficiais do npm: downloads acumulados desde a criação do pacote até ontem. Clique para ver o pacote no npm',
   'about.downloadsUnavailable': 'Indisponível',
@@ -54,7 +54,7 @@ export const pt: Record<CodexUiKey, string> = {
   'about.installing': 'Instalando',
   'about.loading': 'Carregando status das dependências…',
   'about.missing': 'Não instalado',
-  'about.nav': 'Workspace Browser',
+  'about.nav': 'Workspace UI',
   'about.packagesDone': '{0} pacotes concluídos',
   'about.progress.building': 'Compilando',
   'about.progress.downloading': 'Baixando',
@@ -66,7 +66,7 @@ export const pt: Record<CodexUiKey, string> = {
   'about.applied': 'Dependências instaladas ou atualizadas e aplicadas.',
   'about.restartRequired': 'Dependências instaladas ou atualizadas. Reinicie o host DSH para aplicar as alterações.',
   'about.statusFailed': 'Não foi possível ler o status das dependências.',
-  'about.title': 'Workspace Browser',
+  'about.title': 'Workspace UI',
   'about.totalDownloads': 'Total de downloads no npm',
   'about.upToDate': 'Todos os plugins complementares estão instalados e atualizados.',
   'about.update': 'Atualizar',
@@ -77,7 +77,7 @@ export const pt: Record<CodexUiKey, string> = {
   'composer.desc': 'Configure a previsão em linha e o escopo do histórico (↑/↓); outros recursos como o ajuste de largura continuam ativos.',
   'composer.prediction': 'Previsão de entrada em linha',
   'composer.predictionHint': 'Desativado, apenas continuação ao pausar, ou ambos; pressione Tab para aceitar.',
-  'composer.predictionLocked': 'Desativado pela configuração do perfil (cordis.patch.yml → workspace-browser-composer prediction); não pode ser ativado aqui.',
+  'composer.predictionLocked': 'Desativado pela configuração do perfil (cordis.patch.yml → workspace-ui-composer prediction); não pode ser ativado aqui.',
   'composer.modeOff': 'Desativado',
   'composer.modeContinue': 'Apenas continuação',
   'composer.modeAll': 'Previsão e continuação',

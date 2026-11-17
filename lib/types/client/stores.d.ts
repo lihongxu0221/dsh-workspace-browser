@@ -16,7 +16,7 @@ export declare const FLAT_SESSION_ORDER_KEY = "__flat_session_order__";
 export type SessionGroupBy = 'workspace' | 'workspace-tree' | 'flat';
 /** Session order: saved manual positions or current recency. */
 export type SessionOrderBy = 'manual' | 'updated';
-/** Workspace browser viewing state persisted across surface remounts and reloads. */
+/** Workspace UI viewing state persisted across surface remounts and reloads. */
 type WorkspaceViewState = {
     groupBy: SessionGroupBy;
     orderBy: SessionOrderBy;

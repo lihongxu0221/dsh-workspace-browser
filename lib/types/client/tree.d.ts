@@ -9,7 +9,7 @@ import type { SessionId } from '@deepseek-ai/dsh-session/types';
 /** Group key for Sessions outside every Workspace. */
 export declare const UNGROUPED_KEY = "";
 /**
- * Resolve the Workspace browser group that owns one Session.
+ * Resolve the Workspace UI group that owns one Session.
  * @param workspaces - authoritative Workspace membership.
  * @param sessionId - Session whose browser group is required.
  * @returns owning Workspace id, or {@link UNGROUPED_KEY} when no Workspace accounts for it.
@@ -130,7 +130,7 @@ export interface SessionNode {
     archived: boolean;
     updatedAt: number;
 }
-/** Session order selected by the Workspace browser. */
+/** Session order selected by the Workspace UI. */
 export type SessionOrderBy = 'manual' | 'updated';
 /** One workspace group section: header row facts + visible top-level session rows. */
 export interface GroupNode {

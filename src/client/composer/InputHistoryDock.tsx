@@ -13,19 +13,19 @@ import {
 } from './history-scope.ts'
 import { hasDraftAttachments } from './draft-attachments.ts'
 import { bindHistoryKeys, findComposer } from './input-history-keyboard.ts'
-import { NS } from '../codex-locales.ts'
+import { NS } from '../workspace-ui-locales.ts'
 
 export function InputHistoryHint({ t }: PropsLocale<typeof NS>) {
   // 跟随宿主占位元素的显隐和位置，避免占用工具栏或覆盖实际输入。
   return <style>{`
-    [data-composer-card] [data-input-scroll]{container:dcu-composer-input / inline-size}
+    [data-composer-card] [data-input-scroll]{container:wui-composer-input / inline-size}
     [data-composer-card] [data-composer-placeholder]{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
     [data-composer-card] [data-composer-placeholder]::after{
       content:${JSON.stringify(t('input.historyHint'))};
       color:var(--dsw-alias-label-caption);font-size:12px;line-height:18px;
       white-space:nowrap;flex:0 0 auto;margin-right:8px;
     }
-    @container dcu-composer-input (max-width:560px){
+    @container wui-composer-input (max-width:560px){
       [data-composer-card] [data-composer-placeholder]::after{display:none}
     }
     @media(max-width:640px){
@@ -113,7 +113,7 @@ export function InputHistoryDock({ ctx, sessionId, history, seen }: HistoryDockP
 
 export function registerInputHistory(ctx: Context): () => void {
   let storage: Storage | undefined
-  try { storage = window.localStorage } catch { console.warn('[michengai-codex-ui] 浏览器存储不可用，使用内存输入历史。') }
+  try { storage = window.localStorage } catch { console.warn('[workspace-ui] 浏览器存储不可用，使用内存输入历史。') }
   const history = new InputHistory(storage)
   const seen = new WeakMap<object, number>()
   const stopScope = observeHistoryScope()
@@ -121,10 +121,10 @@ export function registerInputHistory(ctx: Context): () => void {
     return <InputHistoryDock ctx={ctx} sessionId={props.session.sessionId} history={history} seen={seen} />
   }
   const unregisterDock = ctx.slots.inject('conversation.input.dock', () => ctx.slots.register({
-    name: 'conversation.input.dock', id: 'workspace-browser-input-history', order: 0,
+    name: 'conversation.input.dock', id: 'workspace-ui-input-history', order: 0,
   }, Dock))
   const unregisterHint = ctx.slots.inject('conversation.input.dock', () => ctx.slots.register({
-    name: 'conversation.input.dock', id: 'workspace-browser-input-history-hint', order: 1, locale: NS,
+    name: 'conversation.input.dock', id: 'workspace-ui-input-history-hint', order: 1, locale: NS,
   }, InputHistoryHint))
   return () => {
     stopScope()

@@ -26,10 +26,10 @@ import { conversationId, missingRoot, rerootAction, samePath, sessionRoot, type 
 import type { WorkspaceViewStoreActions } from './stores.ts'
 
 /** Authenticated route reporting whether a directory still exists. */
-const DIRECTORY_ROUTE = '/api/workspace-browser/directory'
+const DIRECTORY_ROUTE = '/api/workspace-ui/directory'
 
 /** Authenticated route moving one conversation off a folder that is gone. */
-const REROOT_ROUTE = '/api/workspace-browser/reroot'
+const REROOT_ROUTE = '/api/workspace-ui/reroot'
 
 /**
  * Whether `path` is still an existing directory. A missing path is the only

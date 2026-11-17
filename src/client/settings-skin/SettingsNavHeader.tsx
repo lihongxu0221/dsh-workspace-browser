@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { ArrowLeft, Search } from 'lucide-react'
 import { Input } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
-import { zh, en, NS } from '../codex-locales.ts'
+import { zh, en, NS } from '../workspace-ui-locales.ts'
 
 export type SettingsSearchListener = (query: string) => void
 
@@ -79,24 +79,24 @@ export function SettingsNavHeader(props: SettingsNavHeaderProps = {}) {
   }
 
   return (
-    <div className="dcu-settings-nav-header-root">
-      <div className="dcu-settings-nav-header-top">
+    <div className="wui-settings-nav-header-root">
+      <div className="wui-settings-nav-header-top">
         <button
           type="button"
-          className="dcu-settings-back-btn"
+          className="wui-settings-back-btn"
           onClick={handleClose}
           aria-label={t('settings.back')}
           title={t('settings.back')}
         >
           <ArrowLeft size={16} aria-hidden="true" />
         </button>
-        <span className="dcu-settings-nav-header-title">{t('settings.title')}</span>
+        <span className="wui-settings-nav-header-title">{t('settings.title')}</span>
       </div>
-      <div className="dcu-settings-search-wrapper">
+      <div className="wui-settings-search-wrapper">
         <Input
           type="search"
-          className="dcu-settings-search-input"
-          icon={<Search size={14} className="dcu-settings-search-icon" aria-hidden="true" />}
+          className="wui-settings-search-input"
+          icon={<Search size={14} className="wui-settings-search-icon" aria-hidden="true" />}
           placeholder={t('settings.search')}
           aria-label={t('settings.search')}
           value={query}

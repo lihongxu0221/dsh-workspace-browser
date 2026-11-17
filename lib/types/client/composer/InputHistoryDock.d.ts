@@ -2,7 +2,7 @@ import type { Context } from '@deepseek-ai/cordis';
 import type { SessionId } from '@deepseek-ai/dsh-session/types';
 import type { PropsLocale } from '@deepseek-ai/dsh-client-ui-slots';
 import { InputHistory } from './input-history.ts';
-import { NS } from '../codex-locales.ts';
+import { NS } from '../workspace-ui-locales.ts';
 export declare function InputHistoryHint({ t }: PropsLocale<typeof NS>): import("react").JSX.Element;
 type HistoryDockProps = {
     ctx: Context;

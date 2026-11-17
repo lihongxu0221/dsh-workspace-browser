@@ -5,7 +5,7 @@ import { de } from './locales/de.ts';
 import { ru } from './locales/ru.ts';
 import { pt } from './locales/pt.ts';
 /** 本插件独占的界面文案命名空间。 */
-export declare const NS = "michengai.codexUi";
+export declare const NS = "michengai.workspaceUi";
 export { ja, es, fr, de, ru, pt };
 export declare const zh: {
     readonly 'home.resizeInput': "拖动调整输入区宽度";
@@ -44,7 +44,7 @@ export declare const zh: {
     readonly 'input.prediction.tab': "Tab 采纳";
     readonly 'input.prediction.more': "Alt+↓ 切换";
     readonly 'input.prediction.dismiss': "Esc 忽略";
-    readonly 'about.nav': "Workspace Browser";
+    readonly 'about.nav': "Workspace UI";
     readonly 'sections.pinned': "置顶";
     readonly 'sections.default': "项目";
     readonly 'sections.menu': "分区";
@@ -62,7 +62,7 @@ export declare const zh: {
     readonly 'sections.settings': "分区设置";
     readonly 'session.markUnread': "标记为未读";
     readonly 'session.markRead': "标记为已读";
-    readonly 'about.title': "Workspace Browser";
+    readonly 'about.title': "Workspace UI";
     readonly 'about.viewProject': "GitHub";
     readonly 'about.feedback': "问题反馈";
     readonly 'about.description': "工作区与会话浏览、Recents、分区、输入增强、主题、设置工作台、桌面菜单与生态插件管理。";
@@ -133,7 +133,7 @@ export declare const zh: {
     readonly 'about.progress.building': "构建中";
     readonly 'about.dependency.dsh': "DeepSeek Harness";
     readonly 'about.dependency.suite': "Codex 套件";
-    readonly 'about.dependency.ui': "Codex UI";
+    readonly 'about.dependency.ui': "Workspace UI";
     readonly 'about.dependency.experts': "专家管理";
     readonly 'about.dependency.skills': "技能管理";
     readonly 'about.dependency.archive': "归档会话";
@@ -173,7 +173,7 @@ export declare const zh: {
     readonly 'composer.desc': "智能输入预测与 ↑/↓ 历史召回范围设置；输入框宽度手柄等能力保持常驻。";
     readonly 'composer.prediction': "智能输入预测";
     readonly 'composer.predictionHint': "关闭、仅打字停顿续写、或同时启用空框推测与续写；按 Tab 采纳。";
-    readonly 'composer.predictionLocked': "已在当前 Profile 的插件配置中关闭（cordis.patch.yml → workspace-browser-composer 的 prediction），此处不可开启。";
+    readonly 'composer.predictionLocked': "已在当前 Profile 的插件配置中关闭（cordis.patch.yml → workspace-ui-composer 的 prediction），此处不可开启。";
     readonly 'composer.modeOff': "关闭";
     readonly 'composer.modeContinue': "仅续写";
     readonly 'composer.modeAll': "推测+续写";
@@ -235,10 +235,10 @@ export declare const zh: {
     readonly 'theme.glassGlowHint': "在渐变地面上叠加两枚柔光反射斑。开启后主页与背景会有漫反射光晕";
 };
 export declare const en: Record<keyof typeof zh, string>;
-export type CodexUiKey = keyof typeof zh;
+export type WorkspaceUiKey = keyof typeof zh;
 declare module '@deepseek-ai/dsh-client-ui-slots' {
     interface LocaleNamespaceMap {
-        'michengai.codexUi': CodexUiKey;
+        'michengai.workspaceUi': WorkspaceUiKey;
     }
 }
-//# sourceMappingURL=codex-locales.d.ts.map
+//# sourceMappingURL=workspace-ui-locales.d.ts.map

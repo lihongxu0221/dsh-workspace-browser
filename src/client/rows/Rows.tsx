@@ -1,5 +1,5 @@
 /**
- * Workspace browser tree row components (figma Cell set 14:3080): pure presentational —
+ * Workspace UI tree row components (figma Cell set 14:3080): pure presentational —
  * all data and callbacks arrive via props. Hover swaps (folder->chevron,
  * time->ellipsis, action buttons) are CSS-only, and a session row's clipped
  * title marquees programmatically while the row is hovered. The workspace
@@ -24,12 +24,12 @@ import type { ShortcutCatalogEntry } from '@deepseek-ai/dsh-client-shortcuts/cli
 import type { StateDotState } from '@deepseek-ai/dsh-client-ui-primitives'
 import { abbreviateHomePath } from '@deepseek-ai/dsh-util-workspace-path'
 import { workspaceSourcePaths } from '../tree.ts'
-import type { MenuOpenState, WorkspaceBrowserProps } from '../contract/slots.ts'
+import type { MenuOpenState, WorkspaceUIProps } from '../contract/slots.ts'
 import type { GroupNode, SearchResultNode, SessionNode } from '../tree.ts'
 import css from './Rows.module.css'
 
 /** The standard locale seat, prop-passed from the browser root. */
-type RowTranslate = WorkspaceBrowserProps['t']
+type RowTranslate = WorkspaceUIProps['t']
 
 /**
  * Child-seat renderer threaded from the browser root: the row's action lists,

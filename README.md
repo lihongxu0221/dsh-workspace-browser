@@ -1,11 +1,11 @@
-# dsh-workspace-browser
+# Workspace UI
 
-Standalone Cordis client plugin that keeps the workspace-browser feature set and integrates
-`@michengai/dsh-codex-ui`: composer prediction and input history, themes and glass, the native
-settings workbench, sidebar panel navigation, workspace sections, unread sessions, generated
+Standalone Cordis client plugin for the DeepSeek Harness workspace: a workspace and session
+browser with Recents, project folders, sections, composer prediction and history, themes and
+glass, the native settings workbench, sidebar panel navigation, unread sessions, generated
 session titles, the desktop titlebar menu, mobile layout, and ecosystem dependency management.
 
-The original workspace-browser feature set remains: the sidebar **Recents** section,
+The core workspace UI feature set: the sidebar **Recents** section,
 collapsible section headers, the **project editor** with extra source folders,
 pin/rename/fork/archive row actions, search, shortcuts, and the conversation-hero
 **workspace picker**. In the project editor a folder's own name opens that folder in the OS
@@ -14,12 +14,12 @@ Workspace's primary folder when it is opened.
 
 ## Integrated features
 
-Workspace browser:
+Workspace UI:
 
 - Workspace tree, flat list, Recents, search, archive filter, manual/updated ordering.
 - Pin, rename, fork, archive, unarchive, and copy Session ID.
 - Project editor with title, primary folder, extra source folders, set-as-primary, and reveal.
-- Plugin-owned source-folder persistence and the `workspace-browser:folders` prompt context.
+- Plugin-owned source-folder persistence and the `workspace-ui:folders` prompt context.
 - Directory probe, reroot before opening, workspace picker, shortcuts, toasts.
 
 Optional workspace sections (off by default):
@@ -28,7 +28,7 @@ Optional workspace sections (off by default):
 - Move a workspace from its row menu, drag across sections, and auto-place unassigned ones.
 - Add a workspace directly from a section header and route it to that section.
 - Section data lives in `dsh.workspace.view.v5` and is mirrored through the existing folder
-  layer into `.dsh/storages/workspace-browser-folders.json`.
+  layer into `.dsh/storages/workspace-ui-folders.json`.
 
 Panel navigation (off by default):
 
@@ -50,7 +50,7 @@ Themes and settings:
   explicit choice.
 - Native settings skin: full-screen twin islands, grouped navigation, native-input search,
   Ambient Ground.
-- A Workspace Browser settings section with theme, Composer, ecosystem plugins, and About.
+- A Workspace UI settings section with theme, Composer, ecosystem plugins, and About.
 
 Other sub-plugins:
 
@@ -63,9 +63,9 @@ Other sub-plugins:
   updates.
 
 `cordis.patch.yml` keeps `ui-workspace` disabled and the root plugin inserted, then adds six
-sub-plugins: `workspace-browser-session-title`, `workspace-browser-theme`,
-`workspace-browser-settings-skin`, `workspace-browser-composer`,
-`workspace-browser-sidebar`, and `workspace-browser-desktop-menu`. Each can be disabled
+sub-plugins: `workspace-ui-session-title`, `workspace-ui-theme`,
+`workspace-ui-settings-skin`, `workspace-ui-composer`,
+`workspace-ui-sidebar`, and `workspace-ui-desktop-menu`. Each can be disabled
 independently; the root still requires only `connection`.
 
 See [INTEGRATION.md](INTEGRATION.md) for the item-by-item comparison, conflict decisions,
@@ -75,17 +75,17 @@ batch order, and verification record.
 
 The 2026-09-29 Desktop build (**0.2.0-rc.2**) shipped a workspace browser with no Recents, no collapsible sections and no project editor. By **0.2.1-rc.2** the in-tree `ui-workspace` is that browser (toast factory, inline session-id copy, shared hover dwell, session watermarks, remote-access hooks) but still has no Recents section, no project editor and no folder API. This plugin still replaces that row: the rc.2 contracts come from the in-tree snapshot, and the plugin layer on top is Recents, the project editor, and the plugin-owned source-folder list.
 
-`cordis.patch.yml` disables the in-tree `ui-workspace` row and inserts this package as `ui-workspace-browser`. A `name` override cannot do that swap: the include loader treats `name` as an identity check and skips the patch when it does not match, so the stock browser would keep running and this plugin's Recents, project editor, and source folders would never mount. Both claim the same slots, locale namespace (`workspace`) and `ctx.uiWorkspace` service, so only one may be enabled. While this bundle is selected, `ui-workspace-browser` must stay enabled — disabling only that row leaves nobody providing the service and web boot times out. A bundle whose slots never register therefore leaves the workspace region **empty**, which is why the client-half surface is checked against the host before any install (see Verification).
+`cordis.patch.yml` disables the in-tree `ui-workspace` row and inserts this package as `ui-workspace-ui`. A `name` override cannot do that swap: the include loader treats `name` as an identity check and skips the patch when it does not match, so the stock browser would keep running and this plugin's Recents, project editor, and source folders would never mount. Both claim the same slots, locale namespace (`workspace`) and `ctx.uiWorkspace` service, so only one may be enabled. While this bundle is selected, `ui-workspace-ui` must stay enabled — disabling only that row leaves nobody providing the service and web boot times out. A bundle whose slots never register therefore leaves the workspace region **empty**, which is why the client-half surface is checked against the host before any install (see Verification).
 
 ## Source folders on a host without the folder API
 
 `addFolder` / `removeFolder` / `setPrimaryFolder` and the `folders` projection on a workspace view exist only on the newer workspace controller; the shipped host has none of them. The plugin owns the first two there:
 
-- the folder list lives in the plugin's own persisted viewing store (`persist: 'dsh.workspace.view.v5'`) and is also written to `.dsh/storages/workspace-browser-folders.json`. A copied `.dsh` home carries that file; browser localStorage is outside `.dsh` and does not;
+- the folder list lives in the plugin's own persisted viewing store (`persist: 'dsh.workspace.view.v5'`) and is also written to `.dsh/storages/workspace-ui-folders.json`. A copied `.dsh` home carries that file; browser localStorage is outside `.dsh` and does not;
 - the browser merges those folders into the Workspace list it derives from (`mergePluginFolders` in [src/client/tree.ts](src/client/tree.ts)) and attributes Sessions to a Workspace by matching their `cwd` against the list — the host leaves such Sessions ungrouped, so only unclaimed ones are borrowed;
 - adding and removing folders works from the project editor exactly as it does on a newer host. Clicking a folder's own name opens that folder in the OS file manager — the *Set as primary* and remove buttons inside the row keep their own actions; a folder that has since disappeared says so inline in the dialog instead of only logging it.
 
-The node half also tells the model about them. It registers a prompt context (`workspace-browser:folders`, order `SANDBOX_POLICY + 1`) that resolves the Session's Workspace from `ctx.workspaceRegistry` — membership first, then an exact `cwd` match, then the deepest folder containing the `cwd`, which is what finds a Session started in a promoted folder — and renders:
+The node half also tells the model about them. It registers a prompt context (`workspace-ui:folders`, order `SANDBOX_POLICY + 1`) that resolves the Session's Workspace from `ctx.workspaceRegistry` — membership first, then an exact `cwd` match, then the deepest folder containing the `cwd`, which is what finds a Session started in a promoted folder — and renders:
 
 ```
 The session workspace "E:\proj" also includes these source folders: "D:\shared", "D:\other". Reads may use all of them; writes stay inside the primary folder unless the file policy above allows more.
@@ -93,7 +93,7 @@ The session workspace "E:\proj" also includes these source folders: "D:\shared",
 
 That sentence is the whole mechanism: the host's `workspace-write` policy still resolves a single root (`session.header.cwd`), so the plugin can widen what the model *knows*, never what it may *write*. Under `danger-full-access` the write caveat is moot. Nothing is injected when the Workspace has no extra folder, when the Session is unknown to the registry, or when the host has no `systemPrompt` service.
 
-*Set as primary* asks the node half to move the host record itself. The host exposes no remote repath API to call, so the node half drives the workspace registry's own write path in process (`POST /api/workspace-browser/primary`, [src/index.ts](src/index.ts)): it canonicalizes the directory with `realpath`, refuses a path that is missing, is not a directory, or that another Workspace already owns, and rewrites the record's `path` through `mutate`, so the host itself later treats the promoted folder as the Workspace path. The viewing store still records the promotion and keeps the previous directory as an extra folder, which is the fallback for a host that cannot be repathed; a refusal only warns, so the editor still switches. Later New Session creates with that `cwd` alone (the shipped host accepts a create that sends `cwd` and no `workspaceId`), and the browser borrows the Session back by `cwd`. The route also re-roots the Workspace's live Sessions whose own directory has disappeared, through the host's published `ctx.workingDirectory.set`; each Session keeps its own root, so one still rooted in an existing source folder is left alone, and a Session stranded on a deleted folder can be used again instead of failing every turn. The browser also asks for that move itself: before it makes a conversation current — at startup restore and on a row click — it posts that conversation to `POST /api/workspace-browser/reroot`, which resolves it through the host's session controller (resuming it when the host has not loaded it yet) and moves its root to the effective primary, so the next turn no longer assembles on the deleted folder. The primary route's own rescue is narrower: it only re-roots Sessions the host already has open. A new Session is only ever started in the effective primary folder: when that folder is missing or is no longer a directory the plugin refuses to create the Session and names the path, asking for the folder back or for an existing one to be set as primary, because the host's own Session creation would recreate the deleted directory as an empty one. The *New Session* action reports that refusal; a startup restore only logs it. A folder that is neither the primary nor listed among the Workspace's source folders was deliberately removed, and is never used as a root.
+*Set as primary* asks the node half to move the host record itself. The host exposes no remote repath API to call, so the node half drives the workspace registry's own write path in process (`POST /api/workspace-ui/primary`, [src/index.ts](src/index.ts)): it canonicalizes the directory with `realpath`, refuses a path that is missing, is not a directory, or that another Workspace already owns, and rewrites the record's `path` through `mutate`, so the host itself later treats the promoted folder as the Workspace path. The viewing store still records the promotion and keeps the previous directory as an extra folder, which is the fallback for a host that cannot be repathed; a refusal only warns, so the editor still switches. Later New Session creates with that `cwd` alone (the shipped host accepts a create that sends `cwd` and no `workspaceId`), and the browser borrows the Session back by `cwd`. The route also re-roots the Workspace's live Sessions whose own directory has disappeared, through the host's published `ctx.workingDirectory.set`; each Session keeps its own root, so one still rooted in an existing source folder is left alone, and a Session stranded on a deleted folder can be used again instead of failing every turn. The browser also asks for that move itself: before it makes a conversation current — at startup restore and on a row click — it posts that conversation to `POST /api/workspace-ui/reroot`, which resolves it through the host's session controller (resuming it when the host has not loaded it yet) and moves its root to the effective primary, so the next turn no longer assembles on the deleted folder. The primary route's own rescue is narrower: it only re-roots Sessions the host already has open. A new Session is only ever started in the effective primary folder: when that folder is missing or is no longer a directory the plugin refuses to create the Session and names the path, asking for the folder back or for an existing one to be set as primary, because the host's own Session creation would recreate the deleted directory as an empty one. The *New Session* action reports that refusal; a startup restore only logs it. A folder that is neither the primary nor listed among the Workspace's source folders was deliberately removed, and is never used as a root.
 
 Where the host *does* expose the folder API ([src/client/host-capabilities.d.ts](src/client/host-capabilities.d.ts) declares the three methods optional), all three editor actions route to it instead.
 
@@ -116,7 +116,7 @@ src/client/sidebar/session-unread/  unread session menu
 src/client/desktop-menu/            Electron titlebar help menu
 src/client/AboutSection.tsx         theme, Composer, ecosystem plugins, About
 src/client/mobile-web.ts            mobile layout
-src/client/codex-locales.ts         eight-locale dictionary for integrated features
+src/client/workspace-ui-locales.ts         eight-locale dictionary for integrated features
 src/composer-plugin.ts              composer host entry
 src/settings-skin-plugin.ts         settings skin host entry
 src/sidebar-plugin.ts               sidebar host entry
@@ -126,13 +126,12 @@ src/session-title-plugin.ts         session title host entry
 src/client/host-capabilities.d.ts   the optional host folder APIs and why they are optional
 src/client/folder-transition.ts     the pure add/remove/promote folder-layer math the store actions apply
 src/client/contract/slots.ts        slot owner/occupant contracts
-src/client/rows/…                   WorkspaceBrowser, SessionTree, Rows, AnimatedRows
+src/client/rows/…                   WorkspaceUI, SessionTree, Rows, AnimatedRows
 src/client/session-actions/…        pin / rename / fork / archive / copy-id rows
 src/client/toast/…                  rc.2 keyed toast registrations
 src/client/WorkspaceEditDialog.tsx  project editor: title, source folders, primary folder
 src/client/{tree,stores,pin-order,shortcuts,navigation,locales}.ts
 cordis.patch.yml                    bundle patch: disable ui-workspace, insert this plugin
-cordis.patch.dev.yml                the same swap with an absolute path, for `--patch` runs
 scripts/build-client.mjs            emits lib/client.js through the harness client preset
 scripts/bundle-node.mjs             esbuild multi-entry: root plus six sub-plugin entries
 ```
@@ -140,12 +139,20 @@ scripts/bundle-node.mjs             esbuild multi-entry: root plus six sub-plugi
 ## Install
 
 ```powershell
-dsh plugin --profile desktop add @lihongxu0221/dsh-ui-codex
+dsh plugin --profile desktop add @lihongxu0221/dsh-workspace-ui
 ```
 
 The GUI plugin manager does the same. `cordis.patch.yml` is declared by `dsh.bundle.patch`, so it must stay in `files`: a packed package (git or npm install) that lacks it is rejected with `failed to read overlay`.
 
+## Marketplace
+
+The `awesome-dsh-plugin` submission entry is `marketplace/awesome-dsh-plugin.yml`. It uses the single category `ui`. To publish the listing, open a PR to `awesome-dsh-plugin/awesome-dsh-plugin` adding `data/plugins/lihongxu0221__dsh-workspace-ui.yml` with the same content, and make sure the GitHub repository has the `dsh-plugin` topic. The official DSH Plugin Manager reads the title and description from `locale/en.json` and `locale/zh.json`.
+
 The host composes plugin node halves at startup, so a change to `lib/index.js` shows up only after the app restarts — including the prompt context below, whose text is resolved at every Session prompt assembly. The client half is unaffected by that restart rule.
+
+## Release
+
+`.github/workflows/release.yml` runs on every push to `master` (and manual dispatch). It typechecks, tests, builds the client bundle, bumps the patch version, publishes `@lihongxu0221/dsh-workspace-ui` to npm, and creates a GitHub Release. Add an `NPM_TOKEN` repository secret first. The workflow checks out the DSH harness at `dsh-v0.2.2-rc.3` for the client preset.
 
 ## Build
 
@@ -176,7 +183,7 @@ Current status:
 - `node scripts/build-client.mjs 'E:\AI\Agents\Deepseek Harness\Code'` produces `lib/client.js` (1.34 MB), its source map, and `lib/index.js`.
 - `npm pack --dry-run` lists 118 files: every entry, type declaration, icon, `INTEGRATION.md`, `cordis.patch.yml`, and the license/notice files.
 - A throwaway profile boots successfully; with the sub-plugins enabled, composer/theme/settings-skin/sidebar/desktop-menu return `enabled:true`, while the dependencies endpoint returns 401 because its route is registered behind the host auth fence.
-- A headless Chrome run rendered the real UI: the settings workbench and Workspace Browser section, theme switching and the glass toggle, workspace sections with move/fold/add, the PanelNav accordion, Composer suggestion cards, width handles, and ArrowUp input-history recall. The console had no boot errors. The desktop menu is a no-op on Web because there is no `[data-windows-menu]`.
+- A headless Chrome run rendered the real UI: the settings workbench and Workspace UI section, theme switching and the glass toggle, workspace sections with move/fold/add, the PanelNav accordion, Composer suggestion cards, width handles, and ArrowUp input-history recall. The console had no boot errors. The desktop menu is a no-op on Web because there is no `[data-windows-menu]`.
 - The composer disable path was spot-checked: its endpoint returns 401 and neither the width handles nor the new-conversation cards render. The other sub-plugins and the full rc.3 host combination are still pending; see [INTEGRATION.md](INTEGRATION.md).
 
 ### Historical host-surface checks
@@ -188,7 +195,7 @@ Current status:
 ## Known gaps
 
 - **A repath the host refuses leaves the registry path alone.** The shipped host publishes no remote repath API, so the node half moves the record through the registry's own write path. A host with no `workspaceRegistry` service — or one whose registry exposes neither `get` nor a movable entity — is refused with a message, and the viewing-store layer stays the fallback: the plugin remembers the promoted directory, starts new Sessions there while it still exists, and borrows them back by cwd. The browser warns instead of failing, and the editor still switches.
-- **A Session whose folder was deleted is never restored into it.** Startup and New Session probe the directory over `GET /api/workspace-browser/directory` before reusing a blank Session or restoring the last one; a deleted `cwd` stays reachable under Recents, and the replacement Session starts at the Workspace's effective primary folder instead. When that primary folder has itself disappeared the plugin refuses the New Session with a message naming the path, so the host never recreates the deleted folder. Only a missing path (`ENOENT`/`ENOTDIR`) counts as gone — any other probe failure reads as present, so an unreadable directory keeps behaving as it did before.
+- **A Session whose folder was deleted is never restored into it.** Startup and New Session probe the directory over `GET /api/workspace-ui/directory` before reusing a blank Session or restoring the last one; a deleted `cwd` stays reachable under Recents, and the replacement Session starts at the Workspace's effective primary folder instead. When that primary folder has itself disappeared the plugin refuses the New Session with a message naming the path, so the host never recreates the deleted folder. Only a missing path (`ENOENT`/`ENOTDIR`) counts as gone — any other probe failure reads as present, so an unreadable directory keeps behaving as it did before.
 - **An ambiguous folder names nothing.** Two Workspaces may list the same directory; a Session started there is then attributed to neither, and the prompt stays silent rather than guess (the host's own extra-root resolution bails the same way).
 - **A re-root cannot move a conversation's recorded `cwd`.** The host's published write path is `ctx.workingDirectory.set`, which appends a `working-directory/change` event and never rewrites `session.header.cwd`. After a successful re-root the prompt, the tool working directory and the `@file` index follow the new root, but the host's workspace-files roots and the sidebar file tree still derive from the original deleted folder. That is a host limitation, not a plugin one; the Model can still be pointed at the real folder by naming it in the prompt.
 - **A conversation that cannot be re-rooted keeps the old behaviour.** When the host has no session controller or working-directory service, the conversation cannot be resolved, it belongs to no known Workspace, or the host refuses the write, the browser warns and opens the conversation exactly as before — the first turn then fails the way it already did. Only a missing primary folder is reported to the user, with the same message the New Session refusal uses.

@@ -21,7 +21,7 @@ import type {
   SessionMenuItemProps, SessionRowActionProps,
 } from '../contract/slots.ts'
 import css from '../rows/Rows.module.css'
-import browserCss from '../rows/WorkspaceBrowser.module.css'
+import browserCss from '../rows/WorkspaceUI.module.css'
 
 /**
  * Menu row (order 400): archive, or restore an archived row.

@@ -1,12 +1,12 @@
 import type { Context } from '@deepseek-ai/cordis'
-import { CODEX_UI_API_ENDPOINTS } from './business-api.ts'
+import { WORKSPACE_UI_API_ENDPOINTS } from './business-api.ts'
 import { isSubPluginDisabledOnDisk as checkDisabledOnDisk } from './profile-resolver.ts'
 
-export const name = 'workspace-browser-theme'
+export const name = 'workspace-ui-theme'
 export const inject = ['webServer']
 
 /** 子组件自身在 profile 配置里的 id。 */
-const SUB_PLUGIN_ID = 'workspace-browser-theme'
+const SUB_PLUGIN_ID = 'workspace-ui-theme'
 
 /**
  * 检查 profile 的 cordis.patch.yml 中是否显式配置了 disabled: true。
@@ -18,11 +18,11 @@ export function isSubPluginDisabledOnDisk(id: string, homeDir?: string, ctx?: Co
 
 /**
  * 主题与外观子组件 (Host 侧)
- * 挂载时通过 webServer 暴露 /api/michengai/dsh-codex-ui/theme；
+ * 挂载时通过 webServer 暴露 /api/michengai/dsh-workspace-ui/theme；
  * 停用此子组件或端点不可达时，客户端回退官方主题并关闭云母质感。
  */
 export function apply(ctx: Context): void {
-  const endpoint = CODEX_UI_API_ENDPOINTS.theme
+  const endpoint = WORKSPACE_UI_API_ENDPOINTS.theme
   ctx.effect(() => {
     const webServer = ctx.get('webServer') as {
       register: (options: {
@@ -47,5 +47,5 @@ export function apply(ctx: Context): void {
     return () => {
       dispose?.()
     }
-  }, 'michengai-codex-ui: theme state')
+  }, 'workspace-ui: theme state')
 }

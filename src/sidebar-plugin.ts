@@ -1,12 +1,12 @@
 import type { Context } from '@deepseek-ai/cordis'
-import { CODEX_UI_API_ENDPOINTS } from './business-api.ts'
+import { WORKSPACE_UI_API_ENDPOINTS } from './business-api.ts'
 import { isSubPluginDisabledOnDisk as checkDisabledOnDisk } from './profile-resolver.ts'
 
-export const name = 'workspace-browser-sidebar'
+export const name = 'workspace-ui-sidebar'
 export const inject = ['webServer']
 
 /** 子组件自身在 profile 配置里的 id。 */
-const SUB_PLUGIN_ID = 'workspace-browser-sidebar'
+const SUB_PLUGIN_ID = 'workspace-ui-sidebar'
 
 /**
  * 检查 profile 的 cordis.patch.yml 中是否显式配置了 disabled: true。
@@ -18,11 +18,11 @@ export function isSubPluginDisabledOnDisk(id: string, homeDir?: string, ctx?: Co
 
 /**
  * 侧栏导航子组件 (Host 侧)
- * 挂载时通过 webServer 暴露 /api/michengai/dsh-codex-ui/sidebar；
+ * 挂载时通过 webServer 暴露 /api/michengai/dsh-workspace-ui/sidebar；
  * 停用此子组件或端点不可达时，客户端关闭增强并回退 DSH 官方侧栏。
  */
 export function apply(ctx: Context): void {
-  const endpoint = CODEX_UI_API_ENDPOINTS.sidebar
+  const endpoint = WORKSPACE_UI_API_ENDPOINTS.sidebar
   ctx.effect(() => {
     const webServer = ctx.get('webServer') as {
       register: (options: {
@@ -47,5 +47,5 @@ export function apply(ctx: Context): void {
     return () => {
       dispose?.()
     }
-  }, 'michengai-codex-ui: sidebar state')
+  }, 'workspace-ui: sidebar state')
 }

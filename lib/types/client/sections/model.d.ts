@@ -15,7 +15,7 @@ export declare const PINNED_SECTION_ID = "pinned";
 /** 兜底「项目」分区 id：固定最后，成员是尚未归类的工作区。 */
 export declare const DEFAULT_SECTION_ID = "default";
 /** 持久化键；与侧栏导航布局分键，互不影响。 */
-export declare const SECTIONS_STORAGE_KEY = "michengai.codex-ui.workspace-sections.v1";
+export declare const SECTIONS_STORAGE_KEY = "michengai.workspace-ui.workspace-sections.v1";
 /** 一个分区的持久化形态。 */
 export interface WorkspaceSection {
     /** 稳定标识；内置分区固定为 `pinned` / `default`。 */

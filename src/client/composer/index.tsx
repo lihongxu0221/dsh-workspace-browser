@@ -5,8 +5,8 @@ import type {} from '@deepseek-ai/dsh-client-ui-input-trigger/client'
 import type {} from '@deepseek-ai/dsh-client-ui-session/client'
 import type { PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import { useMemo, useSyncExternalStore } from 'react'
-import { CODEX_UI_API_ENDPOINTS } from '../../business-api.ts'
-import { NS } from '../codex-locales.ts'
+import { WORKSPACE_UI_API_ENDPOINTS } from '../../business-api.ts'
+import { NS } from '../workspace-ui-locales.ts'
 import { registerInputHistory } from './InputHistoryDock.tsx'
 
 function currentSessionId(state?: { current?: string; byId?: Record<string, { id?: string; retainedBy?: { mainView?: number } }> }): string | undefined {
@@ -31,14 +31,14 @@ import {
 import { NEW_CONVERSATION_STYLE } from './new-conversation-style.ts'
 import { prefillNewConversation } from './new-conversation-draft.ts'
 
-export const COMPOSER_ENHANCEMENT_STYLE_ID = 'dcu-composer-enhancements-style'
+export const COMPOSER_ENHANCEMENT_STYLE_ID = 'wui-composer-enhancements-style'
 
 function browserStorage(): Storage | undefined {
   try { return window.localStorage }
   catch { return undefined }
 }
 
-/** 探测宿主 workspace-browser-composer 子组件是否处于激活状态（遵循 fail-closed 契约） */
+/** 探测宿主 workspace-ui-composer 子组件是否处于激活状态（遵循 fail-closed 契约） */
 export async function checkComposerEnabled(): Promise<boolean> {
   const status = await fetchComposerStatus()
   return status.enabled
@@ -50,7 +50,7 @@ export async function checkComposerEnabled(): Promise<boolean> {
  */
 export async function fetchComposerStatus(): Promise<{ enabled: boolean; prediction: boolean }> {
   try {
-    const response = await fetch(CODEX_UI_API_ENDPOINTS.composer, {
+    const response = await fetch(WORKSPACE_UI_API_ENDPOINTS.composer, {
       headers: { Accept: 'application/json' },
       cache: 'no-store',
     })
@@ -140,7 +140,7 @@ export function observeComposerEnhancements(ctx: Context): () => void {
 
     cleaners.push(ctx.slots.inject('conversation.input.dock', () => ctx.slots.register({
       name: 'conversation.input.dock',
-      id: 'workspace-browser-home-suggestions',
+      id: 'workspace-ui-home-suggestions',
       order: -100,
       locale: NS,
     }, SuggestionsDock)))
@@ -164,7 +164,7 @@ export function observeComposerEnhancements(ctx: Context): () => void {
     }
     const unregisterPrediction = ctx.slots.inject('conversation.input.overlay', () => ctx.slots.register({
       name: 'conversation.input.overlay',
-      id: 'workspace-browser-composer-prediction',
+      id: 'workspace-ui-composer-prediction',
       order: 50,
       locale: NS,
     }, PredictionSlot))
@@ -176,11 +176,11 @@ export function observeComposerEnhancements(ctx: Context): () => void {
         try { clean() } catch { /* ignore */ }
       }
       // 深度清理 DOM 中自建的原生手柄，确保彻底回退
-      // 注意：.dcu-home-suggestions 是 React Portal 挂载的节点，其生命周期由 React 完全托管。
+      // 注意：.wui-home-suggestions 是 React Portal 挂载的节点，其生命周期由 React 完全托管。
       // unregisterSuggestions() 会触发 React 卸载 portal，严禁在此手动 el.remove()，
       // 否则会导致 React 在提交卸载阶段因 parentNode 为空而抛出 NotFoundError (Issue #74)。
       if (typeof document !== 'undefined') {
-        document.querySelectorAll('[data-dcu-width-handle]').forEach(el => el.remove())
+        document.querySelectorAll('[data-wui-width-handle]').forEach(el => el.remove())
       }
     }
   }

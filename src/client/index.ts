@@ -1,11 +1,11 @@
 /**
- * Workspace plugin, browser half. Two registrations: WorkspaceBrowser fills
+ * Workspace plugin, browser half. Two registrations: WorkspaceUI fills
  * the sidebar shell's `sidebar.workspaces` hole (the whole browsing region),
  * and WorkspacePicker fills the conversation hero's picker hole
  * (`conversation.hero.workspace` — both hero forms). Both read real Host
  * Workspaces through the global useWorkspaces hook, and each declares its
  * own `single` directory-flow child hole for the composed picker package's
- * client half. WorkspaceBrowser additionally declares the two Session row
+ * client half. WorkspaceUI additionally declares the two Session row
  * action lists, and this apply registers the shipped actions — pin, rename,
  * fork, archive, copy ID — into them the way any client plugin would, each
  * with its own behavior, plus the dialogs and the row-action notice into
@@ -44,14 +44,14 @@ import {
   type ArchiveSessionInjected, type ForkSessionInjected, menuOpenStateFactory, type PinSessionInjected,
   type SessionArchiveConfirmInjected, type SessionArchiveConfirmRequest,
   type RenameSessionInjected, type RowToast, type RowToastInjected, type RowToastState, type SessionRenameDialogInjected,
-  type SessionIdInjected, type WorkspaceBrowserInjected, type WorkspacePickerInjected,
+  type SessionIdInjected, type WorkspaceUIInjected, type WorkspacePickerInjected,
 } from './contract/slots.ts'
 import { createWorkspaceShortcutControls, installWorkspaceShortcuts } from './shortcuts.ts'
 import { UiWorkspaceService } from './navigation.ts'
 import { syncFolderLayer } from './folder-sync.ts'
 import { createWorkspaceViewStore } from './stores.ts'
 import { samePath } from './tree.ts'
-import { WorkspaceBrowser } from './rows/WorkspaceBrowser.tsx'
+import { WorkspaceUI } from './rows/WorkspaceUI.tsx'
 import { ArchiveSessionMenuItem, ArchiveSessionRowButton, SessionArchiveConfirmDialog } from './session-actions/ArchiveSession.tsx'
 import { derive } from './session-actions/derived.ts'
 import { ForkSessionMenuItem } from './session-actions/ForkSession.tsx'
@@ -64,10 +64,10 @@ import { WorkspacePicker } from './WorkspacePicker.tsx'
 import { en, zh, type WorkspaceKey } from './locales.ts'
 import { AboutSection } from './AboutSection.tsx'
 import { observeComposerEnhancements } from './composer/index.tsx'
-import { de as codexDe, en as codexEn, es as codexEs, fr as codexFr, ja as codexJa, NS as codexNS, pt as codexPt, ru as codexRu, zh as codexZh } from './codex-locales.ts'
+import { de as workspaceUiDe, en as workspaceUiEn, es as workspaceUiEs, fr as workspaceUiFr, ja as workspaceUiJa, NS as workspaceUiNS, pt as workspaceUiPt, ru as workspaceUiRu, zh as workspaceUiZh } from './workspace-ui-locales.ts'
 import { observeDesktopTitlebarMenus, checkDesktopMenuEnabled } from './desktop-menu/index.ts'
 import { observeMobileWeb } from './mobile-web.ts'
-import { observeSettingsNavIcon, CodexUiNavIcon } from './settings-nav-icon.ts'
+import { observeSettingsNavIcon, WorkspaceUiNavIcon } from './settings-nav-icon.ts'
 import { observeSettingsSkin } from './settings-skin/index.ts'
 import { observeSessionUnread } from './sidebar/session-unread/index.tsx'
 import { observeTheme } from './theme/index.ts'
@@ -76,9 +76,9 @@ import { setClientContext } from './runtime.ts'
 export type { StartSessionOptions, UiWorkspace } from './navigation.ts'
 export type {
   DirectoryFlowOwnerProps, DirectoryFlowSlotName, DirectoryPickingHooks, DirectoryPickingInjected,
-  MenuOpenState, RowToast, SessionRenameTarget, SessionRowOwnerProps, UseMenuOpenState, WorkspaceBrowserInjected,
+  MenuOpenState, RowToast, SessionRenameTarget, SessionRowOwnerProps, UseMenuOpenState, WorkspaceUIInjected,
   SessionRowScheduleOwnerProps,
-  WorkspaceBrowserProps,
+  WorkspaceUIProps,
   WorkspacePickerInjected, WorkspacePickerProps,
 } from './contract/slots.ts'
 export type { WorkspaceKey } from './locales.ts'
@@ -152,7 +152,7 @@ export function apply(ctx: Context): void {
   ctx.effect(() => ctx.locale.register(NS, { zh, en }), 'ui-workspace: dictionaries')
   const shortcutControls = createWorkspaceShortcutControls()
 
-  const searchSessions: WorkspaceBrowserInjected['searchSessions'] = async (query, signal) => {
+  const searchSessions: WorkspaceUIInjected['searchSessions'] = async (query, signal) => {
     const result = await sessions.search(query, signal)
     if (!result.ok) throw new Error(result.error.message)
     return result.value
@@ -170,7 +170,7 @@ export function apply(ctx: Context): void {
     subscribe: listener => ctx.on('connection/reset', listener),
   }
   const pickerFlowSource = flowSource('conversation.hero.workspace.directoryFlow')
-  const openSession: WorkspaceBrowserInjected['open'] = (sessionId) => {
+  const openSession: WorkspaceUIInjected['open'] = (sessionId) => {
     uiWorkspace.openSession(sessionId)
   }
   // Registry-global sets as Sets, rebuilt only when the Workspace snapshot changes.
@@ -303,7 +303,7 @@ export function apply(ctx: Context): void {
   const moveHostPrimary = (workspaceId: WorkspaceId, path: string): void => {
     void (async () => {
       try {
-        const response = await fetch('/api/workspace-browser/primary', {
+        const response = await fetch('/api/workspace-ui/primary', {
           method: 'POST',
           credentials: 'same-origin',
           cache: 'no-store',
@@ -351,7 +351,7 @@ export function apply(ctx: Context): void {
         setPrimaryFolder: (workspaceId: WorkspaceId, path: string) => workspaces.setPrimaryFolder!(workspaceId, path),
       }
     : pluginFolders
-  const browserInjected = (): WorkspaceBrowserInjected => ({
+  const browserInjected = (): WorkspaceUIInjected => ({
     // Explicit group actions keep their target; unscoped New Session inherits
     // the current Session Workspace before the recent-Workspace fallback.
     startSession: (workspaceId, options) => { uiWorkspace.startSession(workspaceId, options) },
@@ -421,7 +421,7 @@ export function apply(ctx: Context): void {
       inject: browserInjected,
       locale: NS,
     },
-    WorkspaceBrowser,
+    WorkspaceUI,
   ))
   // The shipped row actions take the same route as a plugin's: `slots.inject`
   // waits for the browser registration above to declare each list, and the
@@ -461,23 +461,23 @@ export function apply(ctx: Context): void {
     WorkspacePicker,
   ))
 
-  // ── Integrated extension surface (formerly Codex UI) ─────────────────────
+  // ── Integrated extension surface  ─────────────────────
   // The workspace browser above stays the only owner of sidebar.workspaces and
   // ctx.uiWorkspace. The modules below add independent capabilities only: none
   // hides or clones host DOM, and every mount is fail-closed through its own
   // host endpoint.
   setClientContext(ctx)
-  ctx.effect(() => ctx.locale.register(codexNS, {
-    zh: codexZh, en: codexEn, ja: codexJa, es: codexEs, fr: codexFr, de: codexDe, ru: codexRu, pt: codexPt,
-  }), 'workspace-browser: extension dictionaries')
-  const tCodex = ctx.locale.bind(codexNS)
+  ctx.effect(() => ctx.locale.register(workspaceUiNS, {
+    zh: workspaceUiZh, en: workspaceUiEn, ja: workspaceUiJa, es: workspaceUiEs, fr: workspaceUiFr, de: workspaceUiDe, ru: workspaceUiRu, pt: workspaceUiPt,
+  }), 'workspace-ui: extension dictionaries')
+  const tWorkspaceUi = ctx.locale.bind(workspaceUiNS)
 
-  ctx.effect(() => observeMobileWeb(), 'workspace-browser: mobile web layout')
-  ctx.effect(() => observeTheme(ctx), 'workspace-browser: theme & appearance')
-  ctx.effect(() => observeComposerEnhancements(ctx), 'workspace-browser: composer enhancements')
-  ctx.effect(() => observeSettingsSkin(), 'workspace-browser: official settings skin')
-  ctx.effect(() => observeSettingsNavIcon(() => tCodex('about.nav')), 'workspace-browser: settings nav icon')
-  ctx.effect(() => observeSessionUnread(ctx), 'workspace-browser: session unread')
+  ctx.effect(() => observeMobileWeb(), 'workspace-ui: mobile web layout')
+  ctx.effect(() => observeTheme(ctx), 'workspace-ui: theme & appearance')
+  ctx.effect(() => observeComposerEnhancements(ctx), 'workspace-ui: composer enhancements')
+  ctx.effect(() => observeSettingsSkin(), 'workspace-ui: official settings skin')
+  ctx.effect(() => observeSettingsNavIcon(() => tWorkspaceUi('about.nav')), 'workspace-ui: settings nav icon')
+  ctx.effect(() => observeSessionUnread(ctx), 'workspace-ui: session unread')
 
   ctx.effect(() => {
     let stop: (() => void) | undefined
@@ -486,7 +486,7 @@ export function apply(ctx: Context): void {
       if (cancelled || !enabled) return
       const translate = (key: string, fallback?: string): string => {
         try {
-          const value = (tCodex as unknown as (name: string) => string)(key)
+          const value = (tWorkspaceUi as unknown as (name: string) => string)(key)
           return typeof value === 'string' && value !== '' && value !== key ? value : (fallback ?? key)
         } catch {
           return fallback ?? key
@@ -498,22 +498,22 @@ export function apply(ctx: Context): void {
       cancelled = true
       stop?.()
     }
-  }, 'workspace-browser: desktop titlebar menus')
+  }, 'workspace-ui: desktop titlebar menus')
 
   // A missing settings.section.icon on older hosts is safe: inject waits for a
   // declaration and never calls back, so the official icon remains in place.
   ;(ctx.slots.inject as any)('settings.section.icon', () => (ctx.slots.register as any)({
     name: 'settings.section.icon',
-    id: 'workspace-browser',
-    locale: codexNS,
-  }, CodexUiNavIcon))
+    id: 'workspace-ui',
+    locale: workspaceUiNS,
+  }, WorkspaceUiNavIcon))
 
   ctx.slots.inject('settings.section', () => ctx.slots.register({
     name: 'settings.section',
-    id: 'workspace-browser',
+    id: 'workspace-ui',
     order: Number.MAX_SAFE_INTEGER,
-    label: tCodex('about.nav'),
-    locale: codexNS,
+    label: tWorkspaceUi('about.nav'),
+    locale: workspaceUiNS,
   }, AboutSection))
 }
 

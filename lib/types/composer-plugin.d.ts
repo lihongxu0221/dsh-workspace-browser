@@ -1,5 +1,5 @@
 import type { Context } from '@deepseek-ai/cordis';
-export declare const name = "workspace-browser-composer";
+export declare const name = "workspace-ui-composer";
 export declare const inject: string[];
 export declare function isSubPluginDisabledOnDisk(id: string, homeDir?: string, ctx?: Context): boolean;
 export type ComposerPluginConfig = {
@@ -36,7 +36,7 @@ export type ComposerPluginConfig = {
 export declare function resolvePredictionAllowed(config: ComposerPluginConfig | undefined): boolean;
 /**
  * Composer 输入框增强子组件 (Host 侧)
- * 1. 暴露 /api/michengai/dsh-codex-ui/composer (启停状态 + 预测开关状态)
+ * 1. 暴露 /api/michengai/dsh-workspace-ui/composer (启停状态 + 预测开关状态)
  * 2. 暴露 /composer/prediction 与 /composer/prediction/stream (流式预测)
  */
 export declare function apply(ctx: Context, config?: ComposerPluginConfig): void;

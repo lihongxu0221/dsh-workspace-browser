@@ -1,5 +1,5 @@
 import type { PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots';
-import { NS } from '../codex-locales.ts';
+import { NS } from '../workspace-ui-locales.ts';
 export type SettingsSearchListener = (query: string) => void;
 export declare function setSkinEnabledState(enabled: boolean): void;
 export declare function subscribeSkinEnabledState(fn: (enabled: boolean) => void): () => void;

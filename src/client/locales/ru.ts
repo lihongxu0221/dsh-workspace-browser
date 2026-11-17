@@ -1,6 +1,6 @@
-import type { CodexUiKey } from '../codex-locales.ts'
+import type { WorkspaceUiKey } from '../workspace-ui-locales.ts'
 
-export const ru: Record<CodexUiKey, string> = {
+export const ru: Record<WorkspaceUiKey, string> = {
   'about.dependencies': 'Сопутствующие плагины управления',
   'about.dependenciesDescription': 'Каждый плагин поддерживает установку по требованию и синхронное пакетное обновление в один клик.',
   'about.dependency.archive': 'Архив сессий',
@@ -16,7 +16,7 @@ export const ru: Record<CodexUiKey, string> = {
   'about.dependency.simplify': 'Simplify',
   'about.dependency.skills': 'Управление навыками',
   'about.dependency.suite': 'Пакет Codex',
-  'about.dependency.ui': 'Codex UI',
+  'about.dependency.ui': 'Workspace UI',
   'about.description': 'Улучшения поля ввода, полноэкранная панель настроек, меню окна рабочего стола и управление плагинами экосистемы.',
   'about.downloadsSource': 'Официальная статистика npm: суммарные загрузки со дня создания пакета по вчерашний день. Нажмите, чтобы открыть пакет на npm',
   'about.downloadsUnavailable': 'Недоступно',
@@ -54,7 +54,7 @@ export const ru: Record<CodexUiKey, string> = {
   'about.installing': 'Установка',
   'about.loading': 'Загрузка статуса зависимостей…',
   'about.missing': 'Не установлено',
-  'about.nav': 'Workspace Browser',
+  'about.nav': 'Workspace UI',
   'about.packagesDone': 'Завершено пакетов: {0}',
   'about.progress.building': 'Сборка',
   'about.progress.downloading': 'Загрузка',
@@ -66,7 +66,7 @@ export const ru: Record<CodexUiKey, string> = {
   'about.applied': 'Зависимости установлены или обновлены и применены.',
   'about.restartRequired': 'Зависимости установлены или обновлены. Перезапустите хост DSH, чтобы применить изменения.',
   'about.statusFailed': 'Не удалось прочитать статус зависимостей.',
-  'about.title': 'Workspace Browser',
+  'about.title': 'Workspace UI',
   'about.totalDownloads': 'Всего загрузок на npm',
   'about.upToDate': 'Все сопутствующие плагины установлены и обновлены до последней версии.',
   'about.update': 'Обновить',
@@ -77,7 +77,7 @@ export const ru: Record<CodexUiKey, string> = {
   'composer.desc': 'Настройте умное предсказание ввода и область истории (↑/↓); остальные функции, включая изменение ширины, остаются активными.',
   'composer.prediction': 'Интеллектуальное предсказание ввода',
   'composer.predictionHint': 'Отключено, только автодополнение при паузе, или оба варианта; Tab для принятия.',
-  'composer.predictionLocked': 'Отключено в настройках профиля (cordis.patch.yml → workspace-browser-composer prediction); здесь включить невозможно.',
+  'composer.predictionLocked': 'Отключено в настройках профиля (cordis.patch.yml → workspace-ui-composer prediction); здесь включить невозможно.',
   'composer.modeOff': 'Выкл',
   'composer.modeContinue': 'Только продолжение',
   'composer.modeAll': 'Предсказание и продолжение',

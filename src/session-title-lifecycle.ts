@@ -122,10 +122,10 @@ export function startSessionTitleLifecycle(host: SessionTitleHost) {
           return
         }
       } else if (matches.length > 0 && enabledMatches.length === 0) {
-        console.warn('[michengai-codex-ui] all official session title targets are already disabled; skipping takeover.')
+        console.warn('[workspace-ui] all official session title targets are already disabled; skipping takeover.')
         return
       } else if (matches.length > 1) {
-        console.warn('[michengai-codex-ui] multiple official session title targets found; skipping takeover.')
+        console.warn('[workspace-ui] multiple official session title targets found; skipping takeover.')
         return
       }
     }

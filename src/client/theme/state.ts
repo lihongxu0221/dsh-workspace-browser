@@ -27,11 +27,11 @@ export interface ThemeSettingsState {
 }
 
 export const STORAGE_KEYS = Object.freeze({
-  themeOption: 'codex-ui.theme.option',
-  glassEnabled: 'codex-ui.glass.enabled',
-  glassMode: 'codex-ui.glass.mode',
-  glassPreset: 'codex-ui.glass.preset',
-  glassGlow: 'codex-ui.glass.glow',
+  themeOption: 'workspace-ui.theme.option',
+  glassEnabled: 'workspace-ui.glass.enabled',
+  glassMode: 'workspace-ui.glass.mode',
+  glassPreset: 'workspace-ui.glass.preset',
+  glassGlow: 'workspace-ui.glass.glow',
 })
 
 const listeners = new Set<() => void>()
@@ -141,7 +141,7 @@ function notify(): void {
     try {
       listener()
     } catch (e) {
-      console.warn('[codex-ui:theme] listener error:', e)
+      console.warn('[workspace-ui:theme] listener error:', e)
     }
   }
 }

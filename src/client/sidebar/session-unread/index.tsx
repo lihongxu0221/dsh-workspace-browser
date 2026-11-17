@@ -18,7 +18,7 @@ import {
   StateDot,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import React from 'react'
-import { NS } from '../../codex-locales.ts'
+import { NS } from '../../workspace-ui-locales.ts'
 import {
   canMarkSession,
   findSessionMenuButton,
@@ -35,13 +35,13 @@ import {
 /** 宿主会话行菜单槽位（行操作列表）。 */
 const MENU_SLOT = 'sidebar.workspaces.session.menu.item'
 /** 槽位内本子插件的行 id：命名空间化，避免与宿主行冲突。 */
-const MENU_ITEM_ID = 'workspace-browser:session-unread'
+const MENU_ITEM_ID = 'workspace-ui:session-unread'
 /** 排在置顶（100）之后、重命名（200）之前。 */
 const MENU_ORDER = 150
 
 /** 图标插槽 entryKey。 */
-const ICON_UNREAD_KEY = 'workspace-browser:icon-session-unread'
-const ICON_READ_KEY = 'workspace-browser:icon-session-read'
+const ICON_UNREAD_KEY = 'workspace-ui:icon-session-unread'
+const ICON_READ_KEY = 'workspace-ui:icon-session-read'
 
 /** 会话 UI 状态里本能力用到的字段。 */
 interface SessionStatusLike {
@@ -330,7 +330,7 @@ export function observeSessionUnread(ctx: ClientContext): () => void {
         },
       })
     } catch (error) {
-      console.warn('[codex-ui:session-unread] 注册原生 contextMenus 失败，跳过。', error)
+      console.warn('[workspace-ui:session-unread] 注册原生 contextMenus 失败，跳过。', error)
     }
 
     return () => {
@@ -378,7 +378,7 @@ export function observeSessionUnread(ctx: ClientContext): () => void {
       ),
     )
   } catch (error) {
-    console.warn('[codex-ui:session-unread] 会话菜单项注册失败，已跳过。', error)
+    console.warn('[workspace-ui:session-unread] 会话菜单项注册失败，已跳过。', error)
     return () => {}
   }
 

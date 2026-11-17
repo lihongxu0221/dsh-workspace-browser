@@ -2,7 +2,7 @@ import type { Context as ClientContext } from '@deepseek-ai/cordis'
 import * as primitives from '@deepseek-ai/dsh-client-ui-primitives'
 import { ChevronDown, MoreHorizontal, MessageSquarePlus, Blocks, Plus } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState, type FC, type DragEvent as ReactDragEvent } from 'react'
-import { NS } from '../codex-locales.ts'
+import { NS } from '../workspace-ui-locales.ts'
 import {
   FIXED_PANEL_IDS,
   moveEntry,
@@ -101,11 +101,11 @@ interface DragOverState {
   target: string
 }
 
-/** 跨平台拖拽预览镜像，对齐 CodexUI 会话树与 DSH 原生风格。 */
+/** 跨平台拖拽预览镜像，对齐 Workspace UI 会话树与 DSH 原生风格。 */
 function setDragPreview(dataTransfer: DataTransfer, title: string): void {
   try {
     const preview = document.createElement('div')
-    preview.className = 'dcu-sb-drag-ghost'
+    preview.className = 'wui-sb-drag-ghost'
     preview.textContent = title
     document.body.appendChild(preview)
     void preview.offsetWidth
@@ -323,7 +323,7 @@ export const SidebarNav: FC<SidebarNavProps> = ({ ctx, onLayoutChange, initialLa
         } else {
           // 回退触发对应原生 row
           const nativeRow = document.querySelector(
-            `button[class*="panelRow"][data-dcu-panel-id="${id}"]`,
+            `button[class*="panelRow"][data-wui-panel-id="${id}"]`,
           ) as HTMLButtonElement | null
           nativeRow?.click()
         }
@@ -584,7 +584,7 @@ export const SidebarNav: FC<SidebarNavProps> = ({ ctx, onLayoutChange, initialLa
   const newSessionButton = (
     <button
       type="button"
-      className="dcu-sb-row dcu-sb-new-session-row"
+      className="wui-sb-row wui-sb-new-session-row"
       aria-label={t('sidebar.newSession', '新会话')}
       aria-keyshortcuts={newSessionShortcut.aria}
       aria-disabled={startingSession}
@@ -596,12 +596,12 @@ export const SidebarNav: FC<SidebarNavProps> = ({ ctx, onLayoutChange, initialLa
         }
       }}
     >
-      <span className="dcu-sb-glyph" aria-hidden="true">
+      <span className="wui-sb-glyph" aria-hidden="true">
         <IconNewChat size={16} />
       </span>
-      <span className="dcu-sb-title">{t('sidebar.newSession', '新会话')}</span>
+      <span className="wui-sb-title">{t('sidebar.newSession', '新会话')}</span>
       {ShortcutKeys && newSessionShortcut.keys && newSessionShortcut.keys.length > 0 && (
-        <span className="dcu-sb-shortcut" aria-hidden="true">
+        <span className="wui-sb-shortcut" aria-hidden="true">
           <ShortcutKeys keys={newSessionShortcut.keys} />
         </span>
       )}
@@ -609,10 +609,10 @@ export const SidebarNav: FC<SidebarNavProps> = ({ ctx, onLayoutChange, initialLa
   )
 
   return (
-    <nav className="dcu-sb-root" data-dcu-sb-root="true">
+    <nav className="wui-sb-root" data-wui-sb-root="true">
       {/* 新会话普通行（支持作为置顶放置落点） */}
       <div
-        className="dcu-sb-section dcu-sb-new-session-section"
+        className="wui-sb-section wui-sb-new-session-section"
         onDragOver={e => {
           const currentDragged = isDraggingRef.current ?? draggingId
           if (!currentDragged) return
@@ -651,7 +651,7 @@ export const SidebarNav: FC<SidebarNavProps> = ({ ctx, onLayoutChange, initialLa
 
       {/* 常驻入口区 */}
       <div
-        className="dcu-sb-section dcu-sb-pinned-section"
+        className="wui-sb-section wui-sb-pinned-section"
         data-zone="pinned"
         onDragOver={e => handleDragOverZone(e, 'pinned')}
         onDrop={e => handleDropZone(e, 'pinned')}
@@ -667,11 +667,11 @@ export const SidebarNav: FC<SidebarNavProps> = ({ ctx, onLayoutChange, initialLa
             <button
               type="button"
               key={panel.id}
-              className={`dcu-sb-row ${active ? 'dcu-sb-row-active' : ''}`}
+              className={`wui-sb-row ${active ? 'wui-sb-row-active' : ''}`}
               aria-label={panel.label}
               title={t('sidebar.fixed', '始终常驻')}
               aria-current={active ? 'page' : undefined}
-              data-dcu-panel-id={panel.id}
+              data-wui-panel-id={panel.id}
               data-drag-over={isPluginsOverAfter ? 'after' : undefined}
               draggable={false}
               onClick={() => handleSelectPanel(panel.id)}
@@ -685,10 +685,10 @@ export const SidebarNav: FC<SidebarNavProps> = ({ ctx, onLayoutChange, initialLa
               onDragLeave={e => handleDragLeaveRow(e, panel.id)}
               onDrop={e => handleDropRow(e, panel.id, 'pinned')}
             >
-              <span className="dcu-sb-glyph" aria-hidden="true">
+              <span className="wui-sb-glyph" aria-hidden="true">
                 <PanelIcon component={panel.component} active={active} />
               </span>
-              <span className="dcu-sb-title">{panel.label}</span>
+              <span className="wui-sb-title">{panel.label}</span>
             </button>
           )
         })}
@@ -706,10 +706,10 @@ export const SidebarNav: FC<SidebarNavProps> = ({ ctx, onLayoutChange, initialLa
             <button
               type="button"
               key={panel.id}
-              className={`dcu-sb-row ${active ? 'dcu-sb-row-active' : ''}`}
+              className={`wui-sb-row ${active ? 'wui-sb-row-active' : ''}`}
               aria-label={panel.label}
               aria-current={active ? 'page' : undefined}
-              data-dcu-panel-id={panel.id}
+              data-wui-panel-id={panel.id}
               data-dragging={isDragging ? 'true' : undefined}
               data-drag-over={overPos}
               draggable={true}
@@ -726,21 +726,21 @@ export const SidebarNav: FC<SidebarNavProps> = ({ ctx, onLayoutChange, initialLa
               onDragLeave={e => handleDragLeaveRow(e, panel.id)}
               onDrop={e => handleDropRow(e, panel.id, 'pinned')}
             >
-              <span className="dcu-sb-glyph" aria-hidden="true">
+              <span className="wui-sb-glyph" aria-hidden="true">
                 <PanelIcon component={panel.component} active={active} />
               </span>
-              <span className="dcu-sb-title">{panel.label}</span>
+              <span className="wui-sb-title">{panel.label}</span>
             </button>
           )
         })}
       </div>
 
       {/* 更多（原位折叠手风琴，恒定保留，无论收纳多少项都永不消失） */}
-      <div className="dcu-sb-section dcu-sb-more-section">
+      <div className="wui-sb-section wui-sb-more-section">
         {/* 更多触发器：本身也是一个直接投放目标！ */}
         <button
           type="button"
-          className={`dcu-sb-row dcu-sb-more-trigger ${dragOver?.target === '__more_trigger__' ? 'dcu-sb-row-active' : ''}`}
+          className={`wui-sb-row wui-sb-more-trigger ${dragOver?.target === '__more_trigger__' ? 'wui-sb-row-active' : ''}`}
           aria-expanded={moreOpen}
           aria-label={t('sidebar.more', '更多')}
           data-drag-over={dragOver?.target === '__more_trigger__' ? 'onto' : undefined}
@@ -782,27 +782,27 @@ export const SidebarNav: FC<SidebarNavProps> = ({ ctx, onLayoutChange, initialLa
             handleDragEnd()
           }}
         >
-          <span className="dcu-sb-glyph" aria-hidden="true">
+          <span className="wui-sb-glyph" aria-hidden="true">
             <MoreHorizontal size={16} />
           </span>
-          <span className="dcu-sb-title">
+          <span className="wui-sb-title">
             {t('sidebar.more', '更多')}
             {morePanels.length > 0 ? ` (${morePanels.length})` : ''}
           </span>
-          <span className={`dcu-sb-chevron ${moreOpen ? 'dcu-sb-chevron-open' : ''}`} aria-hidden="true">
+          <span className={`wui-sb-chevron ${moreOpen ? 'wui-sb-chevron-open' : ''}`} aria-hidden="true">
             <ChevronDown size={14} />
           </span>
         </button>
 
         {/* 手风琴展开列表 */}
         <div
-          className={`dcu-sb-accordion ${moreOpen ? 'dcu-sb-accordion-open' : ''}`}
+          className={`wui-sb-accordion ${moreOpen ? 'wui-sb-accordion-open' : ''}`}
           data-zone="more"
           aria-hidden={!moreOpen}
           onDragOver={e => handleDragOverZone(e, 'more')}
           onDrop={e => handleDropZone(e, 'more')}
         >
-          <div className="dcu-sb-accordion-content">
+          <div className="wui-sb-accordion-content">
             {morePanels.map((panel, index) => {
               const active = activePanelId === panel.id
               const isDragging = draggingId === panel.id
@@ -816,10 +816,10 @@ export const SidebarNav: FC<SidebarNavProps> = ({ ctx, onLayoutChange, initialLa
                   type="button"
                   key={panel.id}
                   tabIndex={moreOpen ? undefined : -1}
-                  className={`dcu-sb-row ${active ? 'dcu-sb-row-active' : ''}`}
+                  className={`wui-sb-row ${active ? 'wui-sb-row-active' : ''}`}
                   aria-label={panel.label}
                   aria-current={active ? 'page' : undefined}
-                  data-dcu-panel-id={panel.id}
+                  data-wui-panel-id={panel.id}
                   data-dragging={isDragging ? 'true' : undefined}
                   data-drag-over={overPos}
                   draggable={true}
@@ -836,10 +836,10 @@ export const SidebarNav: FC<SidebarNavProps> = ({ ctx, onLayoutChange, initialLa
                   onDragLeave={e => handleDragLeaveRow(e, panel.id)}
                   onDrop={e => handleDropRow(e, panel.id, 'more')}
                 >
-                  <span className="dcu-sb-glyph" aria-hidden="true">
+                  <span className="wui-sb-glyph" aria-hidden="true">
                     <PanelIcon component={panel.component} active={active} />
                   </span>
-                  <span className="dcu-sb-title">{panel.label}</span>
+                  <span className="wui-sb-title">{panel.label}</span>
                 </button>
               )
             })}
@@ -847,7 +847,7 @@ export const SidebarNav: FC<SidebarNavProps> = ({ ctx, onLayoutChange, initialLa
             {/* 当更多为空时，显示收纳引导与投放槽 */}
             {morePanels.length === 0 && (
               <div
-                className="dcu-sb-empty-drop-hint"
+                className="wui-sb-empty-drop-hint"
                 data-drag-over={dragOver?.zone === 'more' ? 'after' : undefined}
                 onDragOver={e => handleDragOverZone(e, 'more')}
                 onDrop={e => handleDropZone(e, 'more')}
@@ -857,13 +857,13 @@ export const SidebarNav: FC<SidebarNavProps> = ({ ctx, onLayoutChange, initialLa
             )}
 
             {/* 官方常驻底部操作菜单 */}
-            <div className="dcu-sb-divider" />
+            <div className="wui-sb-divider" />
 
             {/* 浏览更多插件 */}
             <button
               type="button"
               tabIndex={moreOpen ? undefined : -1}
-              className="dcu-sb-row dcu-sb-footer-row"
+              className="wui-sb-row wui-sb-footer-row"
               aria-label={t('sidebar.browsePlugins', '浏览更多插件')}
               draggable={false}
               onClick={handleBrowsePlugins}
@@ -874,17 +874,17 @@ export const SidebarNav: FC<SidebarNavProps> = ({ ctx, onLayoutChange, initialLa
                 }
               }}
             >
-              <span className="dcu-sb-glyph" aria-hidden="true">
+              <span className="wui-sb-glyph" aria-hidden="true">
                 <IconBrowse size={16} />
               </span>
-              <span className="dcu-sb-title">{t('sidebar.browsePlugins', '浏览更多插件')}</span>
+              <span className="wui-sb-title">{t('sidebar.browsePlugins', '浏览更多插件')}</span>
             </button>
 
             {/* 创建你的插件 */}
             <button
               type="button"
               tabIndex={moreOpen ? undefined : -1}
-              className="dcu-sb-row dcu-sb-footer-row"
+              className="wui-sb-row wui-sb-footer-row"
               aria-label={t('sidebar.createPlugin', '创建你的插件')}
               draggable={false}
               onClick={handleCreatePlugin}
@@ -895,10 +895,10 @@ export const SidebarNav: FC<SidebarNavProps> = ({ ctx, onLayoutChange, initialLa
                 }
               }}
             >
-              <span className="dcu-sb-glyph" aria-hidden="true">
+              <span className="wui-sb-glyph" aria-hidden="true">
                 <IconCreate size={16} />
               </span>
-              <span className="dcu-sb-title">{t('sidebar.createPlugin', '创建你的插件')}</span>
+              <span className="wui-sb-title">{t('sidebar.createPlugin', '创建你的插件')}</span>
             </button>
           </div>
         </div>

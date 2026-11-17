@@ -3,12 +3,12 @@
  * 具备经真机验证的局部坐标测量、ResizeObserver / selectionchange 监听、流式 SSE 消费器与 Tab/Alt 按键拦截
  */
 import React from 'react'
-import { CODEX_UI_API_ENDPOINTS } from '../../business-api.ts'
+import { WORKSPACE_UI_API_ENDPOINTS } from '../../business-api.ts'
 import { getPredictionRoute } from './prediction-route-state.ts'
 
 const h = React.createElement
 
-const ENDPOINT = CODEX_UI_API_ENDPOINTS.composerPredictionStream
+const ENDPOINT = WORKSPACE_UI_API_ENDPOINTS.composerPredictionStream
 
 /** Wait for the settled UI before asking, so a fresh turn is fully committed. */
 const SETTLE_MS = 600

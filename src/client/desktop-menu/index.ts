@@ -1,4 +1,4 @@
-import { CODEX_UI_API_ENDPOINTS } from '../../business-api.ts'
+import { WORKSPACE_UI_API_ENDPOINTS } from '../../business-api.ts'
 import {
   fetchRestartStatus,
   requestRestart,
@@ -34,8 +34,8 @@ export interface MenuItemDefinition {
   readonly action?: () => void | Promise<void>
 }
 
-const MENU_HOST_CLASS = 'dcu-desktop-menu-popover'
-const STYLE_ID = 'dcu-desktop-menu-style'
+const MENU_HOST_CLASS = 'wui-desktop-menu-popover'
+const STYLE_ID = 'wui-desktop-menu-style'
 
 const STYLES = `
 .${MENU_HOST_CLASS} {
@@ -55,23 +55,23 @@ const STYLES = `
   border: 1px solid var(--dsw-alias-border-l1, rgba(255, 255, 255, 0.08));
   color: var(--dsw-alias-label-primary, #ffffff);
   font-family: var(--dsw-font-family, sans-serif);
-  animation: dcu-menu-fade-in 100ms ease-out;
+  animation: wui-menu-fade-in 100ms ease-out;
   outline: none;
   -webkit-app-region: no-drag;
 }
 
-@keyframes dcu-menu-fade-in {
+@keyframes wui-menu-fade-in {
   from { opacity: 0; transform: translateY(-4px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
-.${MENU_HOST_CLASS} .dcu-menu-separator {
+.${MENU_HOST_CLASS} .wui-menu-separator {
   height: 1px;
   margin: 4px 6px;
   background: var(--dsw-alias-border-l1, rgba(255, 255, 255, 0.08));
 }
 
-.${MENU_HOST_CLASS} button.dcu-menu-item {
+.${MENU_HOST_CLASS} button.wui-menu-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -95,12 +95,12 @@ const STYLES = `
   -webkit-app-region: no-drag;
 }
 
-.${MENU_HOST_CLASS} button.dcu-menu-item:hover,
-.${MENU_HOST_CLASS} button.dcu-menu-item:focus-visible {
+.${MENU_HOST_CLASS} button.wui-menu-item:hover,
+.${MENU_HOST_CLASS} button.wui-menu-item:focus-visible {
   background: var(--dsw-alias-interactive-bg-hover, rgba(255, 255, 255, 0.08));
 }
 
-.${MENU_HOST_CLASS} .dcu-menu-label {
+.${MENU_HOST_CLASS} .wui-menu-label {
   flex: 1 1 auto;
   white-space: nowrap;
   overflow: hidden;
@@ -156,18 +156,18 @@ export function openDropdown(
   for (const item of items) {
     if (item.separatorBefore) {
       const sep = document.createElement('div')
-      sep.className = 'dcu-menu-separator'
+      sep.className = 'wui-menu-separator'
       sep.setAttribute('role', 'separator')
       popover.append(sep)
     }
 
     const btn = document.createElement('button')
     btn.type = 'button'
-    btn.className = 'dcu-menu-item'
+    btn.className = 'wui-menu-item'
     btn.setAttribute('role', 'menuitem')
 
     const labelSpan = document.createElement('span')
-    labelSpan.className = 'dcu-menu-label'
+    labelSpan.className = 'wui-menu-label'
     labelSpan.textContent = item.label
     btn.append(labelSpan)
 
@@ -221,7 +221,7 @@ export function openDropdown(
   activeAnchor = anchor
 
   // 键盘导航：上下键在条目间移动，Home/End 跳首尾（Esc 由全局监听关闭）。
-  const menuItems = Array.from(popover.querySelectorAll<HTMLButtonElement>('button.dcu-menu-item'))
+  const menuItems = Array.from(popover.querySelectorAll<HTMLButtonElement>('button.wui-menu-item'))
   const focusAt = (index: number): void => {
     if (menuItems.length === 0) return
     const clamped = Math.max(0, Math.min(index, menuItems.length - 1))
@@ -285,9 +285,9 @@ export async function checkDesktopMenuEnabled(): Promise<boolean> {
   try {
     const base = typeof document !== 'undefined' && document.baseURI ? document.baseURI : 'http://localhost'
     const normalizedBase = base.endsWith('/') ? base : `${base}/`
-    const path = CODEX_UI_API_ENDPOINTS.desktopMenu.startsWith('/')
-      ? CODEX_UI_API_ENDPOINTS.desktopMenu.slice(1)
-      : CODEX_UI_API_ENDPOINTS.desktopMenu
+    const path = WORKSPACE_UI_API_ENDPOINTS.desktopMenu.startsWith('/')
+      ? WORKSPACE_UI_API_ENDPOINTS.desktopMenu.slice(1)
+      : WORKSPACE_UI_API_ENDPOINTS.desktopMenu
     const url = new URL(path, normalizedBase).href
     const res = await fetch(url, { method: 'GET' })
     if (!res.ok) return true
@@ -376,10 +376,10 @@ export function observeDesktopTitlebarMenus(
     if (officialButtons.length === 0) return
 
     // 注入【帮助 ▾】（追加在官方最后一个按钮【编辑】之后）
-    if (!shadow.getElementById('dcu-desktop-menu-help')) {
+    if (!shadow.getElementById('wui-desktop-menu-help')) {
       const helpBtn = document.createElement('button')
       helpBtn.type = 'button'
-      helpBtn.id = 'dcu-desktop-menu-help'
+      helpBtn.id = 'wui-desktop-menu-help'
       helpBtn.setAttribute('role', 'menuitem')
       helpBtn.setAttribute('aria-haspopup', 'menu')
       helpBtn.setAttribute('aria-expanded', 'false')
@@ -414,7 +414,7 @@ export function observeDesktopTitlebarMenus(
           // 交回官方按钮：向左移到前一个（编辑），向右循环到第一个（应用）。
           e.preventDefault()
           e.stopPropagation()
-          const official = Array.from(bar.querySelectorAll<HTMLButtonElement>('button:not(#dcu-desktop-menu-help)'))
+          const official = Array.from(bar.querySelectorAll<HTMLButtonElement>('button:not(#wui-desktop-menu-help)'))
           const target = e.key === 'ArrowLeft'
             ? official[official.length - 1] ?? official[0]
             : official[0]
@@ -430,7 +430,7 @@ export function observeDesktopTitlebarMenus(
       bar.addEventListener('keydown', (e) => {
         const target = e.target as HTMLElement | null
         if (!target || target === helpBtn) return
-        const official = Array.from(bar.querySelectorAll<HTMLButtonElement>('button:not(#dcu-desktop-menu-help)'))
+        const official = Array.from(bar.querySelectorAll<HTMLButtonElement>('button:not(#wui-desktop-menu-help)'))
         if (official.length === 0) return
         if (e.key === 'ArrowRight' && target === official[official.length - 1]) {
           e.preventDefault()

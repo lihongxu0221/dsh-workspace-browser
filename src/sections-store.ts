@@ -33,12 +33,12 @@ export class SectionsDocumentError extends Error {}
  * 解析分区文档的落盘路径。
  *
  * @param ctx - 宿主 Context，可从中读到当前 profile。
- * @returns 绝对路径：`<profileDir>/plugin-data/michengai.dsh-codex-ui/workspace-sections.json`。
+ * @returns 绝对路径：`<profileDir>/plugin-data/lihongxu0221.dsh-workspace-ui/workspace-sections.json`。
  */
 export function resolveSectionsStorePath(ctx?: Context): string {
   const { profileDir, homeDir } = resolveCurrentProfile(ctx)
   const base = profileDir !== '' ? profileDir : homeDir
-  return join(base, 'plugin-data', 'michengai.dsh-codex-ui', 'workspace-sections.json')
+  return join(base, 'plugin-data', 'lihongxu0221.dsh-workspace-ui', 'workspace-sections.json')
 }
 
 /** 校验并规范化分区文档；不合法时抛 {@link SectionsDocumentError}。 */

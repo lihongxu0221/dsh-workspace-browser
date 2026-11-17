@@ -1,5 +1,5 @@
 import { type SessionTitleLocale, type SessionTitleTarget } from './session-title.ts';
-export declare const SESSION_TITLE_PROVIDER_ID = "workspace-browser-session-title";
+export declare const SESSION_TITLE_PROVIDER_ID = "workspace-ui-session-title";
 export type SessionTitleHost = {
     get: (name: string) => unknown;
     loader?: unknown;

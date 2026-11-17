@@ -18,7 +18,7 @@ export const PINNED_SECTION_ID = 'pinned'
 export const DEFAULT_SECTION_ID = 'default'
 
 /** 持久化键；与侧栏导航布局分键，互不影响。 */
-export const SECTIONS_STORAGE_KEY = 'michengai.codex-ui.workspace-sections.v1'
+export const SECTIONS_STORAGE_KEY = 'michengai.workspace-ui.workspace-sections.v1'
 
 /** 一个分区的持久化形态。 */
 export interface WorkspaceSection {

@@ -26,19 +26,19 @@ import { sourceFoldersContext, effectivePrimary, selectWorkspace, type SessionLi
 import { registerDependencyRoutes } from './dependencies-route.ts'
 
 /** Authenticated route the browser half reads and writes. */
-const ROUTE = '/api/workspace-browser/folders'
+const ROUTE = '/api/workspace-ui/folders'
 
 /** Authenticated route that moves one host Workspace record onto a promoted folder. */
-const PRIMARY_ROUTE = '/api/workspace-browser/primary'
+const PRIMARY_ROUTE = '/api/workspace-ui/primary'
 
 /** Authenticated route reporting whether a directory still exists. */
-const DIRECTORY_ROUTE = '/api/workspace-browser/directory'
+const DIRECTORY_ROUTE = '/api/workspace-ui/directory'
 
 /** Authenticated route moving one conversation off a folder that is gone. */
-const REROOT_ROUTE = '/api/workspace-browser/reroot'
+const REROOT_ROUTE = '/api/workspace-ui/reroot'
 
 /** Prompt context naming the Session workspace's source folders. */
-const CONTEXT_NAME = 'workspace-browser:folders'
+const CONTEXT_NAME = 'workspace-ui:folders'
 
 /** Required host service: the authenticated Fetch registry. */
 export const inject = ['connection']
@@ -172,7 +172,7 @@ function dshHome(): string {
 }
 
 function layerPath(): string {
-  return join(dshHome(), 'storages', 'workspace-browser-folders.json')
+  return join(dshHome(), 'storages', 'workspace-ui-folders.json')
 }
 
 async function readLayer(): Promise<FolderLayer> {

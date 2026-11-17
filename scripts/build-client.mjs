@@ -60,7 +60,7 @@ const normalizeClientArtifacts = (files) => {
       .replace(/^(\s*\/\/#region )(?:\.\.\/)+[^\n]*?node_modules\//gm, '$1node_modules/')
       .replace(/"(?:\.\.\/)+[^"\n]*?node_modules\//g, '"node_modules/')
       // CSS virtual-module banners embed the staging directory as an absolute path.
-      .replace(/\\0dsh-css:[^\n]*?dsh-ui-codex[/\\]/g, '\\0dsh-css:')
+      .replace(/\\0dsh-css:[^\n]*?dsh-workspace-ui[/\\]/g, '\\0dsh-css:')
     if (after !== before) {
       writeFileSync(path, after)
       console.log(`build-client: normalized checkout paths in lib/${file}`)

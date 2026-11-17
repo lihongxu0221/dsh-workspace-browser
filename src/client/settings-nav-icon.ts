@@ -1,16 +1,16 @@
 import React from 'react'
 
 /**
- * 为工作区浏览器在 DSH 原生设置导航中补上专属的 16x16 矢量图标。
+ * 为工作区 UI在 DSH 原生设置导航中补上专属的 16x16 矢量图标。
  * 遵循与 dshmarket / dsh-automation 一致的非侵入式属性标记与 CSS mask 伪元素标准。
  */
 
-export const CODEX_UI_NAV_MARKER = 'data-dcu-nav-icon'
+export const WORKSPACE_UI_NAV_MARKER = 'data-wui-nav-icon'
 const NAV_ROW_SELECTOR = '[role="dialog"] > nav button, [data-shortcut-modal="settings"] > nav button'
-const STYLE_ID = 'dcu-settings-nav-icon-style'
+const STYLE_ID = 'wui-settings-nav-icon-style'
 
 /** 原生 settings.section.icon 插槽图标组件 */
-export function CodexUiNavIcon({ size = 16 }: { size?: number }): React.ReactElement {
+export function WorkspaceUiNavIcon({ size = 16 }: { size?: number }): React.ReactElement {
   return React.createElement(
     'svg',
     {
@@ -31,13 +31,13 @@ export function CodexUiNavIcon({ size = 16 }: { size?: number }): React.ReactEle
 }
 
 /** 16x16 窗口+侧边栏布局矢量图标（黑底用于 mask alpha 裁剪） */
-const CODEX_UI_ICON_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect x="1.5" y="2" width="13" height="12" rx="2" stroke="black" stroke-width="1.3" fill="none"/><line x1="5.5" y1="2" x2="5.5" y2="14" stroke="black" stroke-width="1.3"/><line x1="5.5" y1="5.5" x2="14.5" y2="5.5" stroke="black" stroke-width="1.3"/></svg>'
+const WORKSPACE_UI_ICON_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect x="1.5" y="2" width="13" height="12" rx="2" stroke="black" stroke-width="1.3" fill="none"/><line x1="5.5" y1="2" x2="5.5" y2="14" stroke="black" stroke-width="1.3"/><line x1="5.5" y1="5.5" x2="14.5" y2="5.5" stroke="black" stroke-width="1.3"/></svg>'
 
-const ICON_MASK_URL = `url("data:image/svg+xml,${encodeURIComponent(CODEX_UI_ICON_SVG)}")`
+const ICON_MASK_URL = `url("data:image/svg+xml,${encodeURIComponent(WORKSPACE_UI_ICON_SVG)}")`
 
 const NAV_ICON_CSS = `
-[${CODEX_UI_NAV_MARKER}="workspace-browser"] > svg { display: none !important; }
-[${CODEX_UI_NAV_MARKER}="workspace-browser"]::before {
+[${WORKSPACE_UI_NAV_MARKER}="workspace-ui"] > svg { display: none !important; }
+[${WORKSPACE_UI_NAV_MARKER}="workspace-ui"]::before {
   content: '';
   flex: none;
   width: 16px;
@@ -68,7 +68,7 @@ function matchesLabel(text: string, getLabel: () => string): boolean {
   return normalized === expected || normalized === 'workspace browser'
 }
 
-/** 把「Workspace Browser」设置项按钮切到原生插槽图标之外的自绘 icon（属性标记 + CSS mask）。
+/** 把「Workspace UI」设置项按钮切到原生插槽图标之外的自绘 icon（属性标记 + CSS mask）。
  *  返回值表示「本次调用改动了该按钮的状态」（打上或移除了标记），供调用方做变更统计。 */
 export function applyNavIcon(button: HTMLButtonElement, getLabel: () => string): boolean {
   const text = button.textContent ?? ''
@@ -77,20 +77,20 @@ export function applyNavIcon(button: HTMLButtonElement, getLabel: () => string):
     // 注意必须限定 span：老宿主把它画成 <svg class="xxx_navIcon">，那是宿主自己的图标，不是插槽。
     const hasSlotIcon = Boolean(button.querySelector?.('span[class*="navIcon"]'))
     if (hasSlotIcon) {
-      if (button.getAttribute(CODEX_UI_NAV_MARKER) === 'workspace-browser') {
-        button.removeAttribute(CODEX_UI_NAV_MARKER)
+      if (button.getAttribute(WORKSPACE_UI_NAV_MARKER) === 'workspace-ui') {
+        button.removeAttribute(WORKSPACE_UI_NAV_MARKER)
         return true
       }
       return false
     }
-    if (button.getAttribute(CODEX_UI_NAV_MARKER) === 'workspace-browser') return false
+    if (button.getAttribute(WORKSPACE_UI_NAV_MARKER) === 'workspace-ui') return false
     const doc = button.ownerDocument ?? document
     ensureStyle(doc)
-    button.setAttribute(CODEX_UI_NAV_MARKER, 'workspace-browser')
+    button.setAttribute(WORKSPACE_UI_NAV_MARKER, 'workspace-ui')
     return true
   }
-  if (button.getAttribute(CODEX_UI_NAV_MARKER) === 'workspace-browser') {
-    button.removeAttribute(CODEX_UI_NAV_MARKER)
+  if (button.getAttribute(WORKSPACE_UI_NAV_MARKER) === 'workspace-ui') {
+    button.removeAttribute(WORKSPACE_UI_NAV_MARKER)
     return true
   }
   return false
@@ -125,8 +125,8 @@ export function observeSettingsNavIcon(getLabel: () => string, doc: Document = d
 
   return () => {
     observer.disconnect()
-    doc.querySelectorAll<HTMLButtonElement>(`[${CODEX_UI_NAV_MARKER}="workspace-browser"]`).forEach(btn => {
-      btn.removeAttribute(CODEX_UI_NAV_MARKER)
+    doc.querySelectorAll<HTMLButtonElement>(`[${WORKSPACE_UI_NAV_MARKER}="workspace-ui"]`).forEach(btn => {
+      btn.removeAttribute(WORKSPACE_UI_NAV_MARKER)
     })
     doc.getElementById(STYLE_ID)?.remove()
   }

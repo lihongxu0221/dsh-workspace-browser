@@ -1,5 +1,5 @@
 /**
- * Codex UI 侧栏导航专属样式：
+ * Workspace UI 侧栏导航专属样式：
  * - 对齐宿主 panelRow 指标：36px 高度、0px 圆角、7px 8px 内边距、8px 间距；
  * - 使用 grid-template-rows 实现原位折叠动画；
  * - 原生减弱动画感知支持；
@@ -7,9 +7,9 @@
  * - 宿主原生 newSession 与 panelList 靶向隐藏。
  */
 
-export const SIDEBAR_STYLES_ID = 'michengai-workspace-browser-sidebar-styles'
+export const SIDEBAR_STYLES_ID = 'lihongxu0221-workspace-ui-sidebar-styles'
 
-export const SIDEBAR_ACTIVE_ATTR = 'data-dcu-sidebar-active'
+export const SIDEBAR_ACTIVE_ATTR = 'data-wui-sidebar-active'
 
 export const SIDEBAR_CSS = `
 /* 仅在展开态隐藏宿主原生 newSession/newSessionRow 和 panelList；折叠收缩态 100% 对齐宿主官方 56px 原生导轨 */
@@ -20,8 +20,8 @@ export const SIDEBAR_CSS = `
 }
 
 /* 折叠收缩态下隐藏自研导航，完全回退展示宿主原生折叠导轨（自带全部图标与完整生态） */
-[${SIDEBAR_ACTIVE_ATTR}][class*="collapsed"] .dcu-sb-root,
-[data-sidebar-collapsed="true"] .dcu-sb-root {
+[${SIDEBAR_ACTIVE_ATTR}][class*="collapsed"] .wui-sb-root,
+[data-sidebar-collapsed="true"] .wui-sb-root {
   display: none !important;
 }
 
@@ -33,7 +33,7 @@ export const SIDEBAR_CSS = `
   opacity: 1 !important;
 }
 
-.dcu-sb-root {
+.wui-sb-root {
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -47,7 +47,7 @@ export const SIDEBAR_CSS = `
   -webkit-app-region: no-drag !important;
 }
 
-.dcu-sb-section {
+.wui-sb-section {
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -55,7 +55,7 @@ export const SIDEBAR_CSS = `
   -webkit-app-region: no-drag !important;
 }
 
-.dcu-sb-row {
+.wui-sb-row {
   appearance: none;
   -webkit-appearance: none;
   height: 36px;
@@ -87,24 +87,24 @@ export const SIDEBAR_CSS = `
 }
 
 /* 鼠标悬停胶囊态：对齐宿主交互 hover 底色 */
-.dcu-sb-row:hover {
+.wui-sb-row:hover {
   background: var(--dsw-alias-interactive-bg-hover, rgba(255, 255, 255, 0.08));
   color: var(--dsw-alias-label-primary, inherit);
 }
 
-.dcu-sb-row:focus-visible {
+.wui-sb-row:focus-visible {
   outline: 1.5px solid var(--dsw-alias-brand-primary, #4176e6);
   outline-offset: -1px;
 }
 
 /* 选中项胶囊高亮态 */
-.dcu-sb-row.dcu-sb-row-active {
+.wui-sb-row.wui-sb-row-active {
   background: var(--dsw-alias-interactive-bg-hover, rgba(255, 255, 255, 0.12));
   color: var(--dsw-alias-label-primary, inherit);
   font-weight: 500;
 }
 
-.dcu-sb-row[data-dragging="true"] {
+.wui-sb-row[data-dragging="true"] {
   opacity: 0.35;
   cursor: grabbing !important;
 }
@@ -114,8 +114,8 @@ export const SIDEBAR_CSS = `
  * （12px 高的带子里，左端一个 5x7 的箭头 + 从 x=4 起、高 2px 的横线，颜色用宿主 business 状态色）。
  * 这样侧栏导航和工作区树的落点线是同一个视觉语言，不再是两种粗细/两种颜色。
  */
-.dcu-sb-row[data-drag-over="before"]::before,
-.dcu-sb-row[data-drag-over="after"]::after {
+.wui-sb-row[data-drag-over="before"]::before,
+.wui-sb-row[data-drag-over="after"]::after {
   content: "";
   position: absolute;
   left: 0;
@@ -143,21 +143,21 @@ export const SIDEBAR_CSS = `
 }
 
 /* 12px 的带子里，横线落在第 5~7px，所以上移 6px 让横线正好压在行边界上。 */
-.dcu-sb-row[data-drag-over="before"]::before {
+.wui-sb-row[data-drag-over="before"]::before {
   top: -6px;
 }
 
-.dcu-sb-row[data-drag-over="after"]::after {
+.wui-sb-row[data-drag-over="after"]::after {
   bottom: -6px;
 }
 
-.dcu-sb-row[data-drag-over="onto"] {
+.wui-sb-row[data-drag-over="onto"] {
   background: color-mix(in srgb, var(--dsw-alias-brand-primary, #4176e6) 16%, transparent) !important;
   outline: 1.5px dashed var(--dsw-alias-brand-primary, #4176e6) !important;
   outline-offset: -1px;
 }
 
-.dcu-sb-drag-ghost {
+.wui-sb-drag-ghost {
   position: fixed;
   top: 8px;
   left: -9999px;
@@ -178,7 +178,7 @@ export const SIDEBAR_CSS = `
   pointer-events: none;
 }
 
-.dcu-sb-glyph {
+.wui-sb-glyph {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -189,14 +189,14 @@ export const SIDEBAR_CSS = `
   pointer-events: none;
 }
 
-.dcu-sb-glyph svg {
+.wui-sb-glyph svg {
   width: 16px;
   height: 16px;
   display: block;
   pointer-events: none;
 }
 
-.dcu-sb-title {
+.wui-sb-title {
   flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
@@ -205,7 +205,7 @@ export const SIDEBAR_CSS = `
   pointer-events: none;
 }
 
-.dcu-sb-shortcut {
+.wui-sb-shortcut {
   margin-left: auto;
   opacity: 0.65;
   display: inline-flex;
@@ -214,7 +214,7 @@ export const SIDEBAR_CSS = `
   pointer-events: none;
 }
 
-.dcu-sb-chevron {
+.wui-sb-chevron {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -227,11 +227,11 @@ export const SIDEBAR_CSS = `
   pointer-events: none;
 }
 
-.dcu-sb-chevron-open {
+.wui-sb-chevron-open {
   transform: rotate(180deg);
 }
 
-.dcu-sb-accordion {
+.wui-sb-accordion {
   display: grid;
   grid-template-rows: 0fr;
   opacity: 0;
@@ -240,7 +240,7 @@ export const SIDEBAR_CSS = `
   -webkit-app-region: no-drag !important;
 }
 
-.dcu-sb-accordion.dcu-sb-accordion-open {
+.wui-sb-accordion.wui-sb-accordion-open {
   grid-template-rows: 1fr;
   opacity: 1;
   /* 保持 hidden：1fr 已经是内容自然高度，切成 visible 会让内容在动画第一帧就整块露出来，
@@ -248,11 +248,11 @@ export const SIDEBAR_CSS = `
   overflow: hidden;
 }
 
-.dcu-sb-accordion[aria-hidden="true"] {
+.wui-sb-accordion[aria-hidden="true"] {
   pointer-events: none;
 }
 
-.dcu-sb-accordion-content {
+.wui-sb-accordion-content {
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -260,11 +260,11 @@ export const SIDEBAR_CSS = `
   -webkit-app-region: no-drag !important;
 }
 
-.dcu-sb-accordion.dcu-sb-accordion-open .dcu-sb-accordion-content {
+.wui-sb-accordion.wui-sb-accordion-open .wui-sb-accordion-content {
   overflow: hidden;
 }
 
-.dcu-sb-empty-drop-hint {
+.wui-sb-empty-drop-hint {
   height: 34px;
   border: 1.5px dashed var(--dsw-alias-brand-primary, #4176e6);
   border-radius: var(--dsw-radius-md, 8px);
@@ -280,26 +280,26 @@ export const SIDEBAR_CSS = `
   box-sizing: border-box;
 }
 
-.dcu-sb-divider {
+.wui-sb-divider {
   height: 0.5px;
   background: var(--dsw-alias-border-l1, rgba(255, 255, 255, 0.08));
   margin: 4px 6px;
   box-sizing: border-box;
 }
 
-.dcu-sb-footer-row {
+.wui-sb-footer-row {
   color: var(--dsw-alias-label-secondary, #a1a1aa);
 }
 
-.dcu-sb-footer-row:hover {
+.wui-sb-footer-row:hover {
   color: var(--dsw-alias-label-primary, inherit);
   background: var(--dsw-alias-interactive-bg-hover, rgba(255, 255, 255, 0.08));
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .dcu-sb-accordion,
-  .dcu-sb-chevron,
-  .dcu-sb-row {
+  .wui-sb-accordion,
+  .wui-sb-chevron,
+  .wui-sb-row {
     transition: none !important;
   }
 }

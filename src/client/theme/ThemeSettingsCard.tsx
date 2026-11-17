@@ -41,22 +41,22 @@ const THEME_BUTTONS: readonly {
 
 const stylesheet = `
 ${SECTION_CARD_CSS}
-.dcu-theme-settings {
+.wui-theme-settings {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
-.dcu-theme-section {
+.wui-theme-section {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
-.dcu-theme-palette-grid {
+.wui-theme-palette-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(136px, 1fr));
   gap: 8px;
 }
-.dcu-theme-cube {
+.wui-theme-cube {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -74,27 +74,27 @@ ${SECTION_CARD_CSS}
   transition: all 0.15s ease;
   width: 100%;
 }
-.dcu-theme-cube:hover:not(.selected) {
+.wui-theme-cube:hover:not(.selected) {
   background: var(--dsw-alias-interactive-bg-hover, rgba(255, 255, 255, 0.06));
   border-color: var(--dsw-alias-border-l3, rgba(255, 255, 255, 0.16));
 }
-.dcu-theme-cube:focus-visible {
+.wui-theme-cube:focus-visible {
   outline: 2px solid var(--dsw-alias-state-business-primary);
   outline-offset: 2px;
 }
 /* 选中态：深度融入主题专属强调色与同色发光边框 */
-.dcu-theme-cube.selected {
+.wui-theme-cube.selected {
   background: color-mix(in srgb, var(--cube-accent) 14%, var(--dsw-alias-bg-layer-2, #18181b)) !important;
   border-color: var(--cube-accent) !important;
   box-shadow: 0 0 0 1px var(--cube-accent), 0 2px 10px color-mix(in srgb, var(--cube-accent) 25%, transparent) !important;
 }
-.dcu-theme-cube-head {
+.wui-theme-cube-head {
   display: inline-flex;
   align-items: center;
   gap: 7px;
   width: 100%;
 }
-.dcu-theme-swatch {
+.wui-theme-swatch {
   flex: none;
   width: 12px;
   height: 12px;
@@ -102,7 +102,7 @@ ${SECTION_CARD_CSS}
   background-color: var(--cube-accent);
   box-shadow: 0 0 6px color-mix(in srgb, var(--cube-accent) 45%, transparent);
 }
-.dcu-theme-cube-title {
+.wui-theme-cube-title {
   font-size: 13px;
   font-weight: 500;
   line-height: 18px;
@@ -111,10 +111,10 @@ ${SECTION_CARD_CSS}
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.dcu-theme-cube.selected .dcu-theme-cube-title {
+.wui-theme-cube.selected .wui-theme-cube-title {
   font-weight: 600;
 }
-.dcu-theme-cube-sub {
+.wui-theme-cube-sub {
   font-size: 11px;
   line-height: 15px;
   color: var(--dsw-alias-label-tertiary);
@@ -123,26 +123,26 @@ ${SECTION_CARD_CSS}
   white-space: nowrap;
   width: 100%;
 }
-.dcu-theme-cube.selected .dcu-theme-cube-sub {
+.wui-theme-cube.selected .wui-theme-cube-sub {
   color: var(--dsw-alias-label-secondary);
 }
-.dcu-theme-row-label {
+.wui-theme-row-label {
   display: flex;
   flex-direction: column;
   gap: 2px;
   min-width: 140px;
   flex: 1;
 }
-.dcu-theme-row-title {
+.wui-theme-row-title {
   font-size: 13px;
   font-weight: 500;
   color: var(--dsw-alias-label-primary);
 }
-.dcu-theme-row-hint {
+.wui-theme-row-hint {
   font-size: 12px;
   color: var(--dsw-alias-label-tertiary);
 }
-.dcu-theme-sub-group {
+.wui-theme-sub-group {
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -151,40 +151,40 @@ ${SECTION_CARD_CSS}
   border: 1px solid var(--dsw-alias-border-l1, rgba(255, 255, 255, 0.06));
   border-radius: 8px;
 }
-.dcu-theme-row,
-.dcu-theme-sub-row {
+.wui-theme-row,
+.wui-theme-sub-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
 }
-.dcu-theme-sub-row [role="tablist"],
-.dcu-theme-sub-row [data-slot="segmented-control"] {
+.wui-theme-sub-row [role="tablist"],
+.wui-theme-sub-row [data-slot="segmented-control"] {
   min-width: 240px;
 }
-.dcu-theme-code-preview {
+.wui-theme-code-preview {
   display: flex;
   flex-direction: column;
   gap: 6px;
   margin-top: 6px;
 }
-.dcu-theme-code-header {
+.wui-theme-code-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
-.dcu-theme-code-label {
+.wui-theme-code-label {
   font-size: 12px;
   font-weight: 500;
   color: var(--dsw-alias-label-secondary);
 }
-.dcu-theme-code-lang {
+.wui-theme-code-lang {
   font-size: 11px;
   color: var(--dsw-alias-label-tertiary);
   font-family: var(--dsw-font-markdown-code-block-font-family, var(--ds-font-family-code, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace));
 }
-.dcu-theme-code-sample {
+.wui-theme-code-sample {
   margin: 0;
   padding: 10px 14px;
   border: 1px solid var(--dsw-alias-border-l1, rgba(255, 255, 255, 0.08));
@@ -197,22 +197,22 @@ ${SECTION_CARD_CSS}
   white-space: pre;
   overflow-x: auto;
 }
-.dcu-tok-keyword {
+.wui-tok-keyword {
   color: var(--shiki-token-keyword, var(--dsw-static-blue-500));
 }
-.dcu-tok-function {
+.wui-tok-function {
   color: var(--shiki-token-function, var(--dsw-static-amber-500));
 }
-.dcu-tok-parameter {
+.wui-tok-parameter {
   color: var(--shiki-token-parameter, var(--dsw-alias-label-primary));
 }
-.dcu-tok-string {
+.wui-tok-string {
   color: var(--shiki-token-string, var(--dsw-static-green-500));
 }
-.dcu-tok-punct {
+.wui-tok-punct {
   color: var(--shiki-token-punctuation, var(--dsw-alias-label-secondary));
 }
-.dcu-tok-comment {
+.wui-tok-comment {
   color: var(--shiki-token-comment, var(--dsw-alias-label-tertiary));
   font-style: italic;
 }
@@ -227,81 +227,81 @@ export function ThemeSettingsCard({ t }: ThemeSettingsCardProps): React.JSX.Elem
   }
 
   return (
-    <div className="dcu-section-card dcu-theme-settings" aria-label={t('theme.title')}>
+    <div className="wui-section-card wui-theme-settings" aria-label={t('theme.title')}>
       <style>{stylesheet}</style>
-      <div className="dcu-section-header">
-        <div className="dcu-section-title-wrap">
-          <h3 className="dcu-section-title">{t('theme.title')}</h3>
-          <p className="dcu-section-desc">{t('theme.desc')}</p>
+      <div className="wui-section-header">
+        <div className="wui-section-title-wrap">
+          <h3 className="wui-section-title">{t('theme.title')}</h3>
+          <p className="wui-section-desc">{t('theme.desc')}</p>
         </div>
       </div>
 
       {/* 主题配色切换：官方默认 + Codex 2套 + Catppuccin 4套 */}
-      <div className="dcu-theme-section">
-        <div className="dcu-theme-row-label">
-          <span className="dcu-theme-row-title">{t('theme.palette')}</span>
-          <span className="dcu-theme-row-hint">{t('theme.paletteHint')}</span>
+      <div className="wui-theme-section">
+        <div className="wui-theme-row-label">
+          <span className="wui-theme-row-title">{t('theme.palette')}</span>
+          <span className="wui-theme-row-hint">{t('theme.paletteHint')}</span>
         </div>
-        <div className="dcu-theme-palette-grid" role="group" aria-label={t('theme.palette')}>
+        <div className="wui-theme-palette-grid" role="group" aria-label={t('theme.palette')}>
           {THEME_BUTTONS.map((item) => {
             const isActive = state.themeOption === item.id
             return (
               <button
                 key={item.id}
                 type="button"
-                className={`dcu-theme-cube${isActive ? ' selected' : ''}`}
+                className={`wui-theme-cube${isActive ? ' selected' : ''}`}
                 style={{ '--cube-accent': item.accent } as React.CSSProperties}
                 aria-pressed={isActive}
                 onClick={() => {
                   changeTheme(item.id)
                 }}
               >
-                <div className="dcu-theme-cube-head">
-                  <span className="dcu-theme-swatch" aria-hidden="true" />
-                  <span className="dcu-theme-cube-title">{t(item.labelKey)}</span>
+                <div className="wui-theme-cube-head">
+                  <span className="wui-theme-swatch" aria-hidden="true" />
+                  <span className="wui-theme-cube-title">{t(item.labelKey)}</span>
                 </div>
-                <span className="dcu-theme-cube-sub">{t(item.subKey)}</span>
+                <span className="wui-theme-cube-sub">{t(item.subKey)}</span>
               </button>
             )
           })}
         </div>
 
         {/* 代码高亮实时预览 */}
-        <div className="dcu-theme-code-preview">
-          <div className="dcu-theme-code-header">
-            <span className="dcu-theme-code-label">{t('theme.codeHighlight')}</span>
-            <span className="dcu-theme-code-lang">JavaScript</span>
+        <div className="wui-theme-code-preview">
+          <div className="wui-theme-code-header">
+            <span className="wui-theme-code-label">{t('theme.codeHighlight')}</span>
+            <span className="wui-theme-code-lang">JavaScript</span>
           </div>
-          <pre className="dcu-theme-code-sample" tabIndex={0} aria-label={t('theme.codeHighlight')}>
+          <pre className="wui-theme-code-sample" tabIndex={0} aria-label={t('theme.codeHighlight')}>
             <code>
-              <span className="dcu-tok-comment">// A sample JavaScript code</span>
+              <span className="wui-tok-comment">// A sample JavaScript code</span>
               {'\n'}
-              <span className="dcu-tok-keyword">const</span>{' '}
-              <span className="dcu-tok-function">greet</span>
-              <span className="dcu-tok-punct">{' = ('}</span>
-              <span className="dcu-tok-parameter">name</span>
-              <span className="dcu-tok-punct">{') => '}</span>
-              <span className="dcu-tok-string">{'`hi ${name}`'}</span>
-              <span className="dcu-tok-punct">;</span>
+              <span className="wui-tok-keyword">const</span>{' '}
+              <span className="wui-tok-function">greet</span>
+              <span className="wui-tok-punct">{' = ('}</span>
+              <span className="wui-tok-parameter">name</span>
+              <span className="wui-tok-punct">{') => '}</span>
+              <span className="wui-tok-string">{'`hi ${name}`'}</span>
+              <span className="wui-tok-punct">;</span>
               {'\n'}
-              <span className="dcu-tok-keyword">console</span>
-              <span className="dcu-tok-punct">.</span>
-              <span className="dcu-tok-function">log</span>
-              <span className="dcu-tok-punct">(</span>
-              <span className="dcu-tok-function">greet</span>
-              <span className="dcu-tok-punct">(</span>
-              <span className="dcu-tok-string">'world'</span>
-              <span className="dcu-tok-punct">));</span>
+              <span className="wui-tok-keyword">console</span>
+              <span className="wui-tok-punct">.</span>
+              <span className="wui-tok-function">log</span>
+              <span className="wui-tok-punct">(</span>
+              <span className="wui-tok-function">greet</span>
+              <span className="wui-tok-punct">(</span>
+              <span className="wui-tok-string">'world'</span>
+              <span className="wui-tok-punct">));</span>
             </code>
           </pre>
         </div>
       </div>
 
       {/* 玻璃质感主开关 */}
-      <div className="dcu-theme-row">
-        <div className="dcu-theme-row-label">
-          <span className="dcu-theme-row-title">{t('theme.glassEnable')}</span>
-          <span className="dcu-theme-row-hint">{t('theme.glassHint')}</span>
+      <div className="wui-theme-row">
+        <div className="wui-theme-row-label">
+          <span className="wui-theme-row-title">{t('theme.glassEnable')}</span>
+          <span className="wui-theme-row-hint">{t('theme.glassHint')}</span>
         </div>
         <Switch
           label={t('theme.glassEnable')}
@@ -314,15 +314,15 @@ export function ThemeSettingsCard({ t }: ThemeSettingsCardProps): React.JSX.Elem
 
       {/* 排版模式与材质预设：玻璃质感开启时展示 */}
       {state.glassEnabled && (
-        <div className="dcu-theme-sub-group">
+        <div className="wui-theme-sub-group">
           {/* 排版模式：原版排版在前，云母效果在后 */}
-          <div className="dcu-theme-sub-row">
-            <div className="dcu-theme-row-label">
-              <span className="dcu-theme-row-title">{t('theme.mode')}</span>
-              <span className="dcu-theme-row-hint">{t('theme.modeHint')}</span>
+          <div className="wui-theme-sub-row">
+            <div className="wui-theme-row-label">
+              <span className="wui-theme-row-title">{t('theme.mode')}</span>
+              <span className="wui-theme-row-hint">{t('theme.modeHint')}</span>
             </div>
             <SegmentedControl<GlassMode>
-              id="codex-ui-glass-mode"
+              id="workspace-ui-glass-mode"
               label={t('theme.mode')}
               value={state.glassMode}
               options={[
@@ -336,13 +336,13 @@ export function ThemeSettingsCard({ t }: ThemeSettingsCardProps): React.JSX.Elem
           </div>
 
           {/* 材质预设 */}
-          <div className="dcu-theme-sub-row">
-            <div className="dcu-theme-row-label">
-              <span className="dcu-theme-row-title">{t('theme.glassPreset')}</span>
-              <span className="dcu-theme-row-hint">{t('theme.glassPresetHint')}</span>
+          <div className="wui-theme-sub-row">
+            <div className="wui-theme-row-label">
+              <span className="wui-theme-row-title">{t('theme.glassPreset')}</span>
+              <span className="wui-theme-row-hint">{t('theme.glassPresetHint')}</span>
             </div>
             <SegmentedControl<GlassPreset>
-              id="codex-ui-glass-preset"
+              id="workspace-ui-glass-preset"
               label={t('theme.glassPreset')}
               value={state.glassPreset}
               options={[
@@ -357,10 +357,10 @@ export function ThemeSettingsCard({ t }: ThemeSettingsCardProps): React.JSX.Elem
           </div>
 
           {/* 地面光斑（反射光晕）：在渐变地面上叠加柔光反射斑 */}
-          <div className="dcu-theme-sub-row">
-            <div className="dcu-theme-row-label">
-              <span className="dcu-theme-row-title">{t('theme.glassGlow')}</span>
-              <span className="dcu-theme-row-hint">{t('theme.glassGlowHint')}</span>
+          <div className="wui-theme-sub-row">
+            <div className="wui-theme-row-label">
+              <span className="wui-theme-row-title">{t('theme.glassGlow')}</span>
+              <span className="wui-theme-row-hint">{t('theme.glassGlowHint')}</span>
             </div>
             <Switch
               label={t('theme.glassGlow')}

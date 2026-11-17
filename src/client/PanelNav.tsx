@@ -13,7 +13,7 @@ import { useEffect, useMemo, useReducer, useState } from 'react'
 import { resolveSlotLabel } from '@deepseek-ai/dsh-client-ui-slots'
 import type { MainPanelId } from '@deepseek-ai/dsh-client-ui-layout/client'
 import clsx from 'clsx'
-import css from './rows/WorkspaceBrowser.module.css'
+import css from './rows/WorkspaceUI.module.css'
 import { getClientContext } from './runtime.ts'
 
 interface PanelNavProps {
@@ -54,7 +54,7 @@ function readPanels(order: readonly string[]): PanelItem[] {
   })
 }
 
-const PANEL_MIME = 'text/workspace-browser-panel'
+const PANEL_MIME = 'text/workspace-ui-panel'
 
 export function PanelNav({ order, pinned, onOrder, onPinned, t }: PanelNavProps) {
   const [version, bump] = useReducer((value: number) => value + 1, 0)

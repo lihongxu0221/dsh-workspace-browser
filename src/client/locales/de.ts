@@ -1,6 +1,6 @@
-import type { CodexUiKey } from '../codex-locales.ts'
+import type { WorkspaceUiKey } from '../workspace-ui-locales.ts'
 
-export const de: Record<CodexUiKey, string> = {
+export const de: Record<WorkspaceUiKey, string> = {
   'about.dependencies': 'Begleitende Verwaltungs-Plugins',
   'about.dependenciesDescription': 'Jedes Plugin unterstützt bedarfsweise Installation und synchronisierte Batch-Updates mit einem Klick.',
   'about.dependency.archive': 'Archivierte Sitzungen',
@@ -16,7 +16,7 @@ export const de: Record<CodexUiKey, string> = {
   'about.dependency.simplify': 'Simplify',
   'about.dependency.skills': 'Skill-Verwaltung',
   'about.dependency.suite': 'Codex Suite',
-  'about.dependency.ui': 'Codex UI',
+  'about.dependency.ui': 'Workspace UI',
   'about.description': 'Eingabeoptimierung, Vollbild-Einstellungs-Workbench, Desktop-Fenstermenü und Ökosystem-Plugin-Verwaltung.',
   'about.downloadsSource': 'Offizielle npm-Statistik: Kumulierte Downloads seit Paketerstellung bis gestern. Klicken, um Paket auf npm anzuzeigen',
   'about.downloadsUnavailable': 'Nicht verfügbar',
@@ -54,7 +54,7 @@ export const de: Record<CodexUiKey, string> = {
   'about.installing': 'Wird installiert',
   'about.loading': 'Abhängigkeitsstatus wird geladen…',
   'about.missing': 'Nicht installiert',
-  'about.nav': 'Workspace Browser',
+  'about.nav': 'Workspace UI',
   'about.packagesDone': '{0} Pakete fertiggestellt',
   'about.progress.building': 'Erstellen',
   'about.progress.downloading': 'Herunterladen',
@@ -66,7 +66,7 @@ export const de: Record<CodexUiKey, string> = {
   'about.applied': 'Abhängigkeiten installiert oder aktualisiert und angewendet.',
   'about.restartRequired': 'Abhängigkeiten installiert oder aktualisiert. Starten Sie den DSH-Host neu, um Änderungen anzuwenden.',
   'about.statusFailed': 'Abhängigkeitsstatus kann nicht gelesen werden.',
-  'about.title': 'Workspace Browser',
+  'about.title': 'Workspace UI',
   'about.totalDownloads': 'npm Gesamtdownloads',
   'about.upToDate': 'Alle Begleit-Plugins sind installiert und auf dem neuesten Stand.',
   'about.update': 'Aktualisieren',
@@ -77,7 +77,7 @@ export const de: Record<CodexUiKey, string> = {
   'composer.desc': 'Inline-Vorhersage und Verlaufsbereich (↑/↓) konfigurieren; weitere Funktionen wie die Breitenanpassung bleiben aktiv.',
   'composer.prediction': 'Intelligente Eingabevorhersage',
   'composer.predictionHint': 'Aus, nur Fortsetzung bei Tipppausen oder beides; mit Tab übernehmen.',
-  'composer.predictionLocked': 'In der Profilkonfiguration deaktiviert (cordis.patch.yml → workspace-browser-composer prediction); kann hier nicht aktiviert werden.',
+  'composer.predictionLocked': 'In der Profilkonfiguration deaktiviert (cordis.patch.yml → workspace-ui-composer prediction); kann hier nicht aktiviert werden.',
   'composer.modeOff': 'Aus',
   'composer.modeContinue': 'Nur Fortsetzung',
   'composer.modeAll': 'Vorhersage & Fortsetzung',

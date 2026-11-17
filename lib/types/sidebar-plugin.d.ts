@@ -1,5 +1,5 @@
 import type { Context } from '@deepseek-ai/cordis';
-export declare const name = "workspace-browser-sidebar";
+export declare const name = "workspace-ui-sidebar";
 export declare const inject: string[];
 /**
  * 检查 profile 的 cordis.patch.yml 中是否显式配置了 disabled: true。
@@ -8,7 +8,7 @@ export declare const inject: string[];
 export declare function isSubPluginDisabledOnDisk(id: string, homeDir?: string, ctx?: Context): boolean;
 /**
  * 侧栏导航子组件 (Host 侧)
- * 挂载时通过 webServer 暴露 /api/michengai/dsh-codex-ui/sidebar；
+ * 挂载时通过 webServer 暴露 /api/michengai/dsh-workspace-ui/sidebar；
  * 停用此子组件或端点不可达时，客户端关闭增强并回退 DSH 官方侧栏。
  */
 export declare function apply(ctx: Context): void;

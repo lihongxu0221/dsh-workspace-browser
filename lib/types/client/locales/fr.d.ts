@@ -1,3 +1,3 @@
-import type { CodexUiKey } from '../codex-locales.ts';
-export declare const fr: Record<CodexUiKey, string>;
+import type { WorkspaceUiKey } from '../workspace-ui-locales.ts';
+export declare const fr: Record<WorkspaceUiKey, string>;
 //# sourceMappingURL=fr.d.ts.map

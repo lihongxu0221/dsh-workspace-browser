@@ -11,7 +11,7 @@ export * from './state.ts';
  * 遵循统一的 fail-closed 契约：当端点 404 或网络不可达时视为停用并回退官方。
  */
 export declare function checkThemeEnabled(): Promise<boolean>;
-export declare const THEME_SURFACE_STYLE_ID = "dsh-workspace-browser-theme-surface-style";
+export declare const THEME_SURFACE_STYLE_ID = "dsh-workspace-ui-theme-surface-style";
 /**
  * 确保注入消除插件页等场景色差的全局表面样式
  */

@@ -1,7 +1,7 @@
-# dsh-codex-ui 集成说明与执行计划
+# 工作区 UI 集成说明与执行计划
 
 本文记录把 `@michengai/dsh-codex-ui` 2.2.5 并入
-`@lihongxu0221/dsh-ui-codex` 的完整对照、冲突处理、
+`@lihongxu0221/dsh-workspace-ui` 的完整对照、冲突处理、
 实施顺序、验证结果与已知限制。当前仓库已经按本文第 0 至第 3 批完成实现，
 后续维护可以按同一顺序重放。
 
@@ -10,8 +10,8 @@
 参考仓库：https://github.com/MichengAI/dsh-codex-ui，审计时 main 为
 `828a096`，版本 2.2.5。
 
-当前仓库：`@lihongxu0221/dsh-ui-codex` 0.7.1，
-工作区为 `E:\AI\Agents\Deepseek Harness\DSH\dsh-workspace-browser`。
+当前仓库：`@lihongxu0221/dsh-workspace-ui` 0.8.0，
+工作区为 `E:\AI\Agents\Deepseek Harness\DSH\dsh-workspace-ui`。
 
 硬约束：
 
@@ -33,16 +33,16 @@
 ## 1. 当前插件功能清单（C1 至 C16）
 
 C1 工作区浏览主区。入口 `src/client/index.ts` 注册
-`sidebar.workspaces`；实现 `src/client/rows/WorkspaceBrowser.tsx`、
+`sidebar.workspaces`；实现 `src/client/rows/WorkspaceUI.tsx`、
 `src/client/rows/Rows.tsx`、`src/client/rows/AnimatedRows.tsx`。对外行为：
 按工作区分组或平铺显示会话，支持折叠、搜索命中定位、会话水位线、
 悬停卡、行菜单、行按钮。
 
-C2 Recents 分区。入口在 `WorkspaceBrowser.tsx`，状态键 `recentsOpen`。
+C2 Recents 分区。入口在 `WorkspaceUI.tsx`，状态键 `recentsOpen`。
 对外行为：默认展示最近 5 个会话，可折叠，可展开其余会话；与 Workspaces
 分区并列。
 
-C3 会话搜索。入口 `WorkspaceBrowser.tsx` 的搜索框和
+C3 会话搜索。入口 `WorkspaceUI.tsx` 的搜索框和
 `ctx.sessions.search`。对外行为：250ms 防抖、最多 500 个 UTF-16 单元、
 结果可点击打开、关闭后恢复树。
 
@@ -69,13 +69,13 @@ C7 添加工作区与目录选择。入口 `src/client/WorkspacePicker.tsx` 和
 C8 源文件夹与主要文件夹。入口 `src/client/folder-sync.ts`、
 `src/client/stores.ts`、`src/folder-layer.ts`、`src/index.ts`。对外行为：
 宿主没有文件夹 API 时，把额外文件夹写入
-`dsh.workspace.view.v5` 与 `.dsh/storages/workspace-browser-folders.json`；
-node 半边注册 `workspace-browser:folders` prompt 上下文；设为主要时把
+`dsh.workspace.view.v5` 与 `.dsh/storages/workspace-ui-folders.json`；
+node 半边注册 `workspace-ui:folders` prompt 上下文；设为主要时把
 宿主 Workspace 记录移动到规范化路径。
 
 C9 目录存在性与 reroot。入口 `src/index.ts` 的
-`GET /api/workspace-browser/directory` 与
-`POST /api/workspace-browser/reroot`。对外行为：打开会话前探测原目录；
+`GET /api/workspace-ui/directory` 与
+`POST /api/workspace-ui/reroot`。对外行为：打开会话前探测原目录；
 目录已删除时把会话工作目录移到有效主文件夹；失败返回可读原因，不抛异常。
 
 C10 快捷键。入口 `src/client/shortcuts.ts`。对外行为：新建会话、搜索、
@@ -160,12 +160,12 @@ R13 生态依赖管理。模块 `src/dependency-manager.ts`、
 R14 移动端布局。模块 `src/client/mobile-web.ts`。功能：窄屏撑满视口、
 安全区、44px 触控、16px 输入、短视口压缩、浮层夹入 visualViewport。
 
-R15 八语言。模块 `src/client/codex-locales.ts`、`src/client/locales/*.ts`。
+R15 八语言。模块 `src/client/workspace-ui-locales.ts`、`src/client/locales/*.ts`。
 功能：中、英、日、西、法、德、俄、葡。
 
 R16 设置分区与图标。模块 `src/client/index.ts`、
 `src/client/AboutSection.tsx`、`settings-nav-icon.ts`。功能：设置里新增
-Workspace Browser 分区与图标。
+Workspace UI 分区与图标。
 
 R17 子插件状态端点。模块 `src/*-plugin.ts`。功能：每个子插件独立
 `enabled` 探测，客户端 fail-closed 或 fail-open 按功能选择。
@@ -244,7 +244,7 @@ R8 面板导航和 R11 智能标题按“冲突项”处理，见 3.3。
 参考会临时停用官方 `session-title-llm` 或
 `optional-session-title-all-prompts`，再注册自己的提供方；失败恢复。
 处理：保留该生命周期，但 provider id、日志前缀、插件来源改为
-`workspace-browser-*`；只在官方恰好单条启用时接管，多条或不存在时
+`workspace-ui-*`；只在官方恰好单条启用时接管，多条或不存在时
 跳过；失败 throw 让宿主保留默认标题。
 
 冲突六：主题全局 Token。
@@ -271,10 +271,10 @@ R8 面板导航和 R11 智能标题按“冲突项”处理，见 3.3。
 冲突九：会话未读与现有菜单槽。
 
 参考注册 `sidebar.workspaces.session.menu.item`，id
-`codex-ui:session-unread`，order 150。当前同一槽已有 pin 100、
+`workspace-ui:session-unread`，order 150。当前同一槽已有 pin 100、
 rename 200、fork 300、archive 400、session-id 450。处理：保留当前
 五项，未读作为 order 150 的独立项插入；id 改为
-`workspace-browser:session-unread`，避免和参考插件同时安装时冲突。
+`workspace-ui:session-unread`，避免和参考插件同时安装时冲突。
 
 冲突十：单入口构建。
 
@@ -322,7 +322,7 @@ order 0 与 1（实现上保留参考 id，但不再和 -100 抢同一序位）�
 
 改动：
 
-- `src/client/rows/WorkspaceBrowser.tsx`：补本地 `useSectionScroller`，
+- `src/client/rows/WorkspaceUI.tsx`：补本地 `useSectionScroller`，
   保留 `bindScrollerRef` 形状。
 - `src/client/WorkspacePicker.tsx`：移除 Menu 不接受的 `anchorRef` 传参，
   保留可选接口字段。
@@ -346,13 +346,13 @@ order 0 与 1（实现上保留参考 id，但不再和 -100 抢同一序位）�
 
 ### 第 1 批：无冲突新增功能
 
-1. 语言与设置壳。`src/client/codex-locales.ts`、
+1. 语言与设置壳。`src/client/workspace-ui-locales.ts`、
    `src/client/locales/{ja,es,fr,de,ru,pt}.ts`、
    `src/client/AboutSection.tsx`、`src/client/index.ts`。新增
    `settings.section` 与 `settings.section.icon`。
 2. Composer。`src/composer-plugin.ts`、`src/composer-prediction.ts`、
    `src/composer-models.ts`、`src/client/composer/`。Host 端点挂在
-   `/api/workspace-browser/extensions/composer`；客户端注册
+   `/api/workspace-ui/extensions/composer`；客户端注册
    `conversation.input.dock` 与 `conversation.input.overlay`。
 3. 主题。`src/theme-plugin.ts`、`src/client/theme/`。注册 14 套主题；
    Token 与玻璃属性写入 body；端点 `/theme`。
@@ -381,12 +381,12 @@ order 0 与 1（实现上保留参考 id，但不再和 -100 抢同一序位）�
 2. 状态与动作。`src/client/stores.ts`：新增 `sectionsEnabled`、
    `sections`、`sectionExpansion`、`panelNavEnabled`、`panelOrder`、
    `panelPinned`。
-3. 分区 UI。`src/client/rows/WorkspaceBrowser.tsx`：分区标题、折叠、
+3. 分区 UI。`src/client/rows/WorkspaceUI.tsx`：分区标题、折叠、
    新建、重命名、删除、上移/下移、成员菜单、跨区拖拽、分区内添加
    工作区。
 4. Host 持久化。`src/folder-layer.ts`、`src/client/folder-sync.ts`：
-   复用 `/api/workspace-browser/folders` 与
-   `.dsh/storages/workspace-browser-folders.json`。
+   复用 `/api/workspace-ui/folders` 与
+   `.dsh/storages/workspace-ui-folders.json`。
 5. 面板导航。`src/client/PanelNav.tsx`：当前树内的面板列表，支持
    常驻/更多、固定、拖拽、选择面板；默认关闭。
 6. 冲突清理。`src/client/index.ts` 不挂载参考 `observeSidebarNav`；
@@ -417,7 +417,7 @@ order 0 与 1（实现上保留参考 id，但不再和 -100 抢同一序位）�
   与当前 `sidebar.workspaces` 抢同一区域；当前实现只读面板条目，
   不接管原生 DOM。
 - 主题默认 `stock`，玻璃默认关闭。原因：升级后保持当前视觉；用户
-  在 Workspace Browser 设置里显式选择主题或开启玻璃后才写全局 Token。
+  在 Workspace UI 设置里显式选择主题或开启玻璃后才写全局 Token。
 - 设置皮肤默认启用但只在玻璃开启且官方设置弹层存在时生效，失败
   fail-closed，不影响官方设置功能。
 - Composer 默认启用；端点失败时静默回退原生输入框。输入历史只在
@@ -444,10 +444,10 @@ order 0 与 1（实现上保留参考 id，但不再和 -100 抢同一序位）�
 - `npm pack --dry-run`：118 个文件，包含全部入口、类型声明、图标、
   `INTEGRATION.md` 与 `cordis.patch.yml`。
 - 一次性 profile `wb-check` 启动成功；启用状态下
-  `/api/workspace-browser/extensions/composer` 返回
+  `/api/workspace-ui/extensions/composer` 返回
   `{"enabled":true,"prediction":true}`，`/theme`、`/settings-skin`、
   `/sidebar`、`/desktop-menu` 返回 `{"enabled":true}`。
-  `/api/workspace-browser/extensions/dependencies` 返回 401，说明路由
+  `/api/workspace-ui/extensions/dependencies` 返回 401，说明路由
   已经注册且认证栅栏生效；旧 `/folders` 同样返回 401，属于
   `connection.fetch` 的认证路径。
 - 没有修改用户的 `desktop` profile；探针服务已停止，没有残留端口。
@@ -456,7 +456,7 @@ order 0 与 1（实现上保留参考 id，但不再和 -100 抢同一序位）�
 
 - 应用启动无 boot 失败，侧栏、Recents、工作区树、会话行操作与 Composer
   正常渲染。
-- 设置工作台：Workspace Browser 导航项、双岛布局、分类导航、原生搜索
+- 设置工作台：Workspace UI 导航项、双岛布局、分类导航、原生搜索
   均生效。
 - About/生态页：项目链接、反馈链接、六个子插件说明、主题卡、Composer
   卡、依赖列表（状态/下载量/单项安装/全部更新）均渲染。
@@ -494,7 +494,7 @@ order 0 与 1（实现上保留参考 id，但不再和 -100 抢同一序位）�
 - 生态依赖页需要宿主 `pluginManager`；缺少时整个页面降级，不显示
   安装按钮。
 - 桌面菜单的重启能力只对 Electron 桌面宿主有效；Web 下没有菜单。
-- 输入历史的存储键仍保留参考实现的 `codex-ui.*` 前缀。当前插件与
+- 输入历史的存储键仍保留参考实现的 `workspace-ui.*` 前缀。当前插件与
   参考插件不应同时启用；如果未来要并行安装，需要统一改前缀并迁移
   旧数据。
 - 当前 `src/` 仍保留参考的 `sidebar/SidebarNav.tsx` 等未挂载模块，

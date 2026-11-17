@@ -4,14 +4,14 @@
  * 设计约束：
  * - **只影响预测**，不牵连 `↑`/`↓` 历史召回、宽度手柄、新会话建议卡片；
  * - 关闭后客户端**完全不发请求**，所以不产生任何辅助模型 token 花费（不需要 Host 侧再校验一次）；
- * - `hostAllowed` 来自 Host 状态端点：profile 的 `cordis.patch.yml` 给 `workspace-browser-composer`
+ * - `hostAllowed` 来自 Host 状态端点：profile 的 `cordis.patch.yml` 给 `workspace-ui-composer`
  *   配 `config: { prediction: false }` 时会被置为 `false`，此时用户开关置灰（fail-closed，
  *   站点管理员意志优先，等价于主题子插件的 `subPluginEnabled` 语义）。
  */
 
-export const PREDICTION_STORAGE_KEY = 'codex-ui.composer.prediction'
+export const PREDICTION_STORAGE_KEY = 'workspace-ui.composer.prediction'
 /** 同一窗口内跨标签页同步（storage 事件在写入方自身不触发）。 */
-export const PREDICTION_STORAGE_EVENT = 'codex-ui:prediction-change'
+export const PREDICTION_STORAGE_EVENT = 'workspace-ui:prediction-change'
 
 export type PredictionMode = 'off' | 'continue' | 'all'
 
@@ -146,7 +146,7 @@ export function setHostPredictionAllowed(allowed: boolean): void {
   publish()
 }
 
-/** 标记 workspace-browser-composer 子插件在 Host 侧的启用状态；未启用时设置卡片不渲染（对齐主题卡片）。 */
+/** 标记 workspace-ui-composer 子插件在 Host 侧的启用状态；未启用时设置卡片不渲染（对齐主题卡片）。 */
 export function setSubPluginEnabled(enabled: boolean): void {
   subPluginEnabled = enabled
   publish()

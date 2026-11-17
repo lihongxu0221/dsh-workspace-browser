@@ -5,9 +5,9 @@ import { tmpdir } from 'node:os'
 import { join, sep } from 'node:path'
 import { after, describe, it } from 'node:test'
 
-const home = mkdtempSync(join(tmpdir(), 'dsh-workspace-browser-'))
+const home = mkdtempSync(join(tmpdir(), 'dsh-workspace-ui-'))
 mkdirSync(join(home, 'storages'), { recursive: true })
-const layerFile = join(home, 'storages', 'workspace-browser-folders.json')
+const layerFile = join(home, 'storages', 'workspace-ui-folders.json')
 writeFileSync(
   layerFile,
   JSON.stringify({ extraFoldersByWorkspace: { w1: ['D:\\\\shared'] }, primaryByWorkspace: {} }),
@@ -98,7 +98,7 @@ const routeAt = (routes, path) => {
 
 /** POST a JSON body (or a raw string) to the primary route. */
 const postPrimary = (route, body) =>
-  route.fetch(new Request('http://host/api/workspace-browser/primary', {
+  route.fetch(new Request('http://host/api/workspace-ui/primary', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: typeof body === 'string' ? body : JSON.stringify(body),
@@ -106,11 +106,11 @@ const postPrimary = (route, body) =>
 
 /** GET the directory route for one query string. */
 const getDirectory = (route, query) =>
-  route.fetch(new Request(`http://host/api/workspace-browser/directory?${query}`, { method: 'GET' }))
+  route.fetch(new Request(`http://host/api/workspace-ui/directory?${query}`, { method: 'GET' }))
 
 /** POST a JSON body (or a raw string) to the reroot route. */
 const postReroot = (route, body) =>
-  route.fetch(new Request('http://host/api/workspace-browser/reroot', {
+  route.fetch(new Request('http://host/api/workspace-ui/reroot', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: typeof body === 'string' ? body : JSON.stringify(body),
@@ -169,22 +169,22 @@ describe('node half', () => {
 
   it('registers the folder-layer route', async () => {
     const { routes } = boot([])
-    const route = routeAt(routes, '/api/workspace-browser/folders')
-    const response = await route.fetch(new Request('http://host/api/workspace-browser/folders', { method: 'GET' }))
+    const route = routeAt(routes, '/api/workspace-ui/folders')
+    const response = await route.fetch(new Request('http://host/api/workspace-ui/folders', { method: 'GET' }))
     assert.deepEqual(await response.json(), { extraFoldersByWorkspace: { w1: ['D:\\\\shared'] }, primaryByWorkspace: {} })
   })
 
   it('registers the repath route, the directory probe, and the reroot route', () => {
     const { routes } = boot([])
     assert.equal(routes.length, 4)
-    assert.deepEqual(routeAt(routes, '/api/workspace-browser/primary').methods, ['POST'])
-    assert.deepEqual(routeAt(routes, '/api/workspace-browser/directory').methods, ['GET'])
-    assert.deepEqual(routeAt(routes, '/api/workspace-browser/reroot').methods, ['POST'])
+    assert.deepEqual(routeAt(routes, '/api/workspace-ui/primary').methods, ['POST'])
+    assert.deepEqual(routeAt(routes, '/api/workspace-ui/directory').methods, ['GET'])
+    assert.deepEqual(routeAt(routes, '/api/workspace-ui/reroot').methods, ['POST'])
   })
 
   it('registers a prompt context right after the sandbox policy', () => {
     const { entry } = boot([{ id: 'w1', path: 'E:/proj', sessionIds: ['s1'] }])
-    assert.equal(entry.name, 'workspace-browser:folders')
+    assert.equal(entry.name, 'workspace-ui:folders')
     assert.equal(entry.order, 111)
     assert.equal(entry.interpolate, false)
   })
@@ -208,7 +208,7 @@ describe('primary route', () => {
   it('moves the workspace record onto the canonical directory', async () => {
     const registry = fakeRegistry([record('w1', 'D:\\old')])
     const { routes } = boot([], registry)
-    const response = await postPrimary(routeAt(routes, '/api/workspace-browser/primary'), {
+    const response = await postPrimary(routeAt(routes, '/api/workspace-ui/primary'), {
       workspaceId: 'w1',
       path: targetDirectory,
     })
@@ -228,7 +228,7 @@ describe('primary route', () => {
   it('canonicalizes a path spelled with a trailing separator', async () => {
     const registry = fakeRegistry([record('w1', 'D:\\old')])
     const { routes } = boot([], registry)
-    const response = await postPrimary(routeAt(routes, '/api/workspace-browser/primary'), {
+    const response = await postPrimary(routeAt(routes, '/api/workspace-ui/primary'), {
       workspaceId: 'w1',
       path: `${targetDirectory}${sep}`,
     })
@@ -239,7 +239,7 @@ describe('primary route', () => {
   it('does not rewrite a record already on its canonical path', async () => {
     const registry = fakeRegistry([record('w1', targetDirectory)])
     const { routes } = boot([], registry)
-    const response = await postPrimary(routeAt(routes, '/api/workspace-browser/primary'), {
+    const response = await postPrimary(routeAt(routes, '/api/workspace-ui/primary'), {
       workspaceId: 'w1',
       path: targetDirectory,
     })
@@ -252,7 +252,7 @@ describe('primary route', () => {
   it('refuses an unknown workspace', async () => {
     const registry = fakeRegistry([record('w1', 'D:\\old')])
     const { routes } = boot([], registry)
-    const response = await postPrimary(routeAt(routes, '/api/workspace-browser/primary'), {
+    const response = await postPrimary(routeAt(routes, '/api/workspace-ui/primary'), {
       workspaceId: 'w9',
       path: targetDirectory,
     })
@@ -263,7 +263,7 @@ describe('primary route', () => {
 
   it('refuses when the host exposes no workspace registry', async () => {
     const { routes } = boot(undefined)
-    const response = await postPrimary(routeAt(routes, '/api/workspace-browser/primary'), {
+    const response = await postPrimary(routeAt(routes, '/api/workspace-ui/primary'), {
       workspaceId: 'w1',
       path: targetDirectory,
     })
@@ -273,7 +273,7 @@ describe('primary route', () => {
 
   it('refuses when the registry cannot look a workspace up', async () => {
     const { routes } = boot([], { list: () => [] })
-    const response = await postPrimary(routeAt(routes, '/api/workspace-browser/primary'), {
+    const response = await postPrimary(routeAt(routes, '/api/workspace-ui/primary'), {
       workspaceId: 'w1',
       path: targetDirectory,
     })
@@ -284,7 +284,7 @@ describe('primary route', () => {
   it('refuses a directory that does not exist', async () => {
     const registry = fakeRegistry([record('w1', 'D:\\old')])
     const { routes } = boot([], registry)
-    const response = await postPrimary(routeAt(routes, '/api/workspace-browser/primary'), {
+    const response = await postPrimary(routeAt(routes, '/api/workspace-ui/primary'), {
       workspaceId: 'w1',
       path: missingPath,
     })
@@ -298,7 +298,7 @@ describe('primary route', () => {
   it('refuses a path that is not a directory', async () => {
     const registry = fakeRegistry([record('w1', 'D:\\old')])
     const { routes } = boot([], registry)
-    const response = await postPrimary(routeAt(routes, '/api/workspace-browser/primary'), {
+    const response = await postPrimary(routeAt(routes, '/api/workspace-ui/primary'), {
       workspaceId: 'w1',
       path: filePath,
     })
@@ -309,7 +309,7 @@ describe('primary route', () => {
   it('refuses a directory another workspace already owns', async () => {
     const registry = fakeRegistry([record('w1', 'D:\\old'), record('w2', targetDirectory)])
     const { routes } = boot([], registry)
-    const response = await postPrimary(routeAt(routes, '/api/workspace-browser/primary'), {
+    const response = await postPrimary(routeAt(routes, '/api/workspace-ui/primary'), {
       workspaceId: 'w1',
       path: targetDirectory,
     })
@@ -324,7 +324,7 @@ describe('primary route', () => {
   it('refuses when the workspace cannot be repathed', async () => {
     const registry = fakeRegistry([record('w1', 'D:\\old', { mutable: false })])
     const { routes } = boot([], registry)
-    const response = await postPrimary(routeAt(routes, '/api/workspace-browser/primary'), {
+    const response = await postPrimary(routeAt(routes, '/api/workspace-ui/primary'), {
       workspaceId: 'w1',
       path: targetDirectory,
     })
@@ -345,7 +345,7 @@ describe('primary route', () => {
       }),
     }
     const { routes } = boot([], registry)
-    const response = await postPrimary(routeAt(routes, '/api/workspace-browser/primary'), {
+    const response = await postPrimary(routeAt(routes, '/api/workspace-ui/primary'), {
       workspaceId: 'w1',
       path: targetDirectory,
     })
@@ -356,7 +356,7 @@ describe('primary route', () => {
 
   it('refuses a malformed body', async () => {
     const { routes } = boot([], fakeRegistry([]))
-    const route = routeAt(routes, '/api/workspace-browser/primary')
+    const route = routeAt(routes, '/api/workspace-ui/primary')
     assert.deepEqual(await (await postPrimary(route, 'not json')).json(), { ok: false, error: 'the request body is not JSON' })
     assert.deepEqual(await (await postPrimary(route, '"a string"')).json(), { ok: false, error: 'the request body is not an object' })
     assert.deepEqual(await (await postPrimary(route, { path: targetDirectory })).json(), { ok: false, error: 'a workspace id is required' })
@@ -383,7 +383,7 @@ describe('primary route rescue', () => {
         },
       },
     })
-    const response = await postPrimary(routeAt(routes, '/api/workspace-browser/primary'), {
+    const response = await postPrimary(routeAt(routes, '/api/workspace-ui/primary'), {
       workspaceId: 'w1',
       path: targetDirectory,
     })
@@ -409,7 +409,7 @@ describe('primary route rescue', () => {
         },
       },
     })
-    const response = await postPrimary(routeAt(routes, '/api/workspace-browser/primary'), {
+    const response = await postPrimary(routeAt(routes, '/api/workspace-ui/primary'), {
       workspaceId: 'w1',
       path: targetDirectory,
     })
@@ -434,7 +434,7 @@ describe('primary route rescue', () => {
         },
       },
     })
-    const response = await postPrimary(routeAt(routes, '/api/workspace-browser/primary'), {
+    const response = await postPrimary(routeAt(routes, '/api/workspace-ui/primary'), {
       workspaceId: 'w1',
       path: targetDirectory,
     })
@@ -458,7 +458,7 @@ describe('primary route rescue', () => {
         },
       },
     })
-    const response = await postPrimary(routeAt(routes, '/api/workspace-browser/primary'), {
+    const response = await postPrimary(routeAt(routes, '/api/workspace-ui/primary'), {
       workspaceId: 'w1',
       path: targetDirectory,
     })
@@ -481,7 +481,7 @@ describe('primary route rescue', () => {
       agents: { get: () => undefined },
       workingDirectory: { get: () => deletedPath, set: async () => {} },
     })
-    const response = await postPrimary(routeAt(routes, '/api/workspace-browser/primary'), {
+    const response = await postPrimary(routeAt(routes, '/api/workspace-ui/primary'), {
       workspaceId: 'w1',
       path: targetDirectory,
     })
@@ -490,7 +490,7 @@ describe('primary route rescue', () => {
     // No agent registry and no working-directory service: the body is exactly
     // what the route answered before a rescue existed.
     const bare = boot([], fakeRegistry([record('w2', 'D:\\old')]))
-    const bareResponse = await postPrimary(routeAt(bare.routes, '/api/workspace-browser/primary'), {
+    const bareResponse = await postPrimary(routeAt(bare.routes, '/api/workspace-ui/primary'), {
       workspaceId: 'w2',
       path: targetDirectory,
     })
@@ -503,27 +503,27 @@ describe('primary route rescue', () => {
 describe('directory route', () => {
   it('reports an existing directory', async () => {
     const { routes } = boot([])
-    const response = await getDirectory(routeAt(routes, '/api/workspace-browser/directory'), `path=${encodeURIComponent(targetDirectory)}`)
+    const response = await getDirectory(routeAt(routes, '/api/workspace-ui/directory'), `path=${encodeURIComponent(targetDirectory)}`)
     assert.equal(response.status, 200)
     assert.deepEqual(await response.json(), { ok: true, exists: true })
   })
 
   it('reports a missing directory as absent, not as a failure', async () => {
     const { routes } = boot([])
-    const response = await getDirectory(routeAt(routes, '/api/workspace-browser/directory'), `path=${encodeURIComponent(missingPath)}`)
+    const response = await getDirectory(routeAt(routes, '/api/workspace-ui/directory'), `path=${encodeURIComponent(missingPath)}`)
     assert.equal(response.status, 200)
     assert.deepEqual(await response.json(), { ok: true, exists: false })
   })
 
   it('reports a file as absent', async () => {
     const { routes } = boot([])
-    const response = await getDirectory(routeAt(routes, '/api/workspace-browser/directory'), `path=${encodeURIComponent(filePath)}`)
+    const response = await getDirectory(routeAt(routes, '/api/workspace-ui/directory'), `path=${encodeURIComponent(filePath)}`)
     assert.deepEqual(await response.json(), { ok: true, exists: false })
   })
 
   it('refuses a probe without a path', async () => {
     const { routes } = boot([])
-    const response = await getDirectory(routeAt(routes, '/api/workspace-browser/directory'), '')
+    const response = await getDirectory(routeAt(routes, '/api/workspace-ui/directory'), '')
     assert.equal(response.status, 500)
     assert.deepEqual(await response.json(), { ok: false, error: 'a directory is required' })
   })
@@ -537,7 +537,7 @@ describe('reroot route', () => {
       sessionController: sessionController({ 'session-w1': { id: 'session-w1', header: { cwd: deletedPath } } }),
       workingDirectory: service,
     })
-    const response = await postReroot(routeAt(routes, '/api/workspace-browser/reroot'), { sessionId: 'session-w1' })
+    const response = await postReroot(routeAt(routes, '/api/workspace-ui/reroot'), { sessionId: 'session-w1' })
     assert.equal(response.status, 200)
     assert.deepEqual(await response.json(), { ok: true, changed: true, path: targetDirectory })
     assert.deepEqual(moved, [['session-w1', targetDirectory]])
@@ -550,7 +550,7 @@ describe('reroot route', () => {
       sessionController: sessionController({ 'session-w1': { id: 'session-w1' } }),
       workingDirectory: service,
     })
-    const response = await postReroot(routeAt(routes, '/api/workspace-browser/reroot'), { sessionId: 'session-w1' })
+    const response = await postReroot(routeAt(routes, '/api/workspace-ui/reroot'), { sessionId: 'session-w1' })
     assert.deepEqual(await response.json(), { ok: true, changed: false })
     assert.deepEqual(moved, [])
   })
@@ -562,7 +562,7 @@ describe('reroot route', () => {
       sessionController: sessionController({ 'session-w1': { id: 'session-w1' } }),
       workingDirectory: service,
     })
-    const response = await postReroot(routeAt(routes, '/api/workspace-browser/reroot'), { sessionId: 'session-w1' })
+    const response = await postReroot(routeAt(routes, '/api/workspace-ui/reroot'), { sessionId: 'session-w1' })
     assert.equal(response.status, 500)
     assert.deepEqual(await response.json(), { ok: false, reason: 'primary-missing', path: missingPath })
     assert.deepEqual(moved, [])
@@ -575,7 +575,7 @@ describe('reroot route', () => {
       sessionController: sessionController({ 'session-none': { id: 'session-none' } }),
       workingDirectory: service,
     })
-    const response = await postReroot(routeAt(routes, '/api/workspace-browser/reroot'), { sessionId: 'session-none' })
+    const response = await postReroot(routeAt(routes, '/api/workspace-ui/reroot'), { sessionId: 'session-none' })
     assert.deepEqual(await response.json(), { ok: false, reason: 'unknown-workspace' })
   })
 
@@ -585,7 +585,7 @@ describe('reroot route', () => {
       sessionController: sessionController({}),
       workingDirectory: service,
     })
-    const response = await postReroot(routeAt(routes, '/api/workspace-browser/reroot'), { sessionId: 'session-gone' })
+    const response = await postReroot(routeAt(routes, '/api/workspace-ui/reroot'), { sessionId: 'session-gone' })
     assert.equal(response.status, 500)
     assert.deepEqual(await response.json(), {
       ok: false,
@@ -596,13 +596,13 @@ describe('reroot route', () => {
 
   it('refuses when the host exposes no session resolution', async () => {
     const { routes } = boot([], fakeRegistry([]))
-    const response = await postReroot(routeAt(routes, '/api/workspace-browser/reroot'), { sessionId: 's' })
+    const response = await postReroot(routeAt(routes, '/api/workspace-ui/reroot'), { sessionId: 's' })
     assert.deepEqual(await response.json(), { ok: false, reason: 'the host exposes no session resolution' })
   })
 
   it('refuses when the host exposes no working directory', async () => {
     const { routes } = boot([], fakeRegistry([]), { sessionController: sessionController({ s: { id: 's' } }) })
-    const response = await postReroot(routeAt(routes, '/api/workspace-browser/reroot'), { sessionId: 's' })
+    const response = await postReroot(routeAt(routes, '/api/workspace-ui/reroot'), { sessionId: 's' })
     assert.deepEqual(await response.json(), { ok: false, reason: 'the host exposes no working directory' })
   })
 
@@ -615,7 +615,7 @@ describe('reroot route', () => {
         set: async () => { throw new Error('the write chain is busy') },
       },
     })
-    const response = await postReroot(routeAt(routes, '/api/workspace-browser/reroot'), { sessionId: 'session-w1' })
+    const response = await postReroot(routeAt(routes, '/api/workspace-ui/reroot'), { sessionId: 'session-w1' })
     assert.equal(response.status, 500)
     assert.deepEqual(await response.json(), {
       ok: false,
@@ -626,7 +626,7 @@ describe('reroot route', () => {
 
   it('refuses a malformed body or a missing Session id', async () => {
     const { routes } = boot([], fakeRegistry([]))
-    const route = routeAt(routes, '/api/workspace-browser/reroot')
+    const route = routeAt(routes, '/api/workspace-ui/reroot')
     assert.deepEqual(await (await postReroot(route, 'not json')).json(), {
       ok: false,
       reason: 'the request body is not JSON',

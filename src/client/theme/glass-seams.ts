@@ -79,7 +79,7 @@ function stamp(seam: Seam): void {
   }
 }
 
-const COMPOSER_SURFACE_ATTRIBUTE = 'data-dcu-glass-composer-surface'
+const COMPOSER_SURFACE_ATTRIBUTE = 'data-wui-glass-composer-surface'
 
 function stampAll(): void {
   for (const seam of SEAMS) stamp(seam)

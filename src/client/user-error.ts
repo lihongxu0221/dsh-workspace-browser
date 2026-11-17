@@ -1,5 +1,5 @@
 import type { TranslateNS } from '@deepseek-ai/dsh-client-ui-slots'
-import { NS, type CodexUiKey } from './codex-locales.ts'
+import { NS, type WorkspaceUiKey } from './workspace-ui-locales.ts'
 import { businessRequestErrorKey } from './business-request-error.ts'
 
 type Translator = TranslateNS<typeof NS>
@@ -15,7 +15,7 @@ export function userErrorText(error: unknown, t: Translator): string {
   return t('errors.generic')
 }
 
-const INSTALL_ERROR_KEYS: readonly [RegExp, CodexUiKey][] = [
+const INSTALL_ERROR_KEYS: readonly [RegExp, WorkspaceUiKey][] = [
   [/没有进入当前 Profile|did not enter this profile/i, 'about.installUnchanged'],
   [/pnpm 仓库不一致.*停止当前 DSH Web|pnpm store do not match.*stop the current DSH Web/i, 'about.installStoreMismatchWeb'],
   [/停止当前 DSH Web|stop the current DSH Web/i, 'about.installExitWeb'],

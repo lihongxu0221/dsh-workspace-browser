@@ -1,5 +1,5 @@
 /** 业务 REST 的状态错误；先判断 HTTP 状态，避免空响应体掩盖认证失败。 */
-import type { CodexUiKey } from './codex-locales.ts'
+import type { WorkspaceUiKey } from './workspace-ui-locales.ts'
 
 export class BusinessRequestError extends Error {
   constructor(readonly status: number) {
@@ -8,7 +8,7 @@ export class BusinessRequestError extends Error {
   }
 }
 
-export function businessRequestErrorKey(error: unknown): CodexUiKey | undefined {
+export function businessRequestErrorKey(error: unknown): WorkspaceUiKey | undefined {
   if (!(error instanceof BusinessRequestError)) return undefined
   if (error.status === 401) return 'errors.unauthorized'
   if (error.status === 403) return 'errors.forbidden'

@@ -1,5 +1,5 @@
 import type { TranslateNS } from '@deepseek-ai/dsh-client-ui-slots';
-import { NS } from './codex-locales.ts';
+import { NS } from './workspace-ui-locales.ts';
 type ProgressPhase = 'resolving' | 'downloading' | 'linking' | 'building';
 type InstallProgress = {
     active: boolean;
@@ -13,7 +13,7 @@ type InstallProgress = {
     currentPackage: string | null;
 };
 export declare function isInstallProgress(value: unknown): value is InstallProgress;
-/** Codex UI 的功能说明、配套管理插件状态与受限安装入口。 */
+/** Workspace UI 的功能说明、配套管理插件状态与受限安装入口。 */
 export declare function AboutSection(props: {
     t: TranslateNS<typeof NS>;
     close?: () => void;

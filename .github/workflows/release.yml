@@ -1,0 +1,109 @@
+name: Release
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  id-token: write
+
+concurrency:
+  group: release-master
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: ${{ github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message, '[skip ci]') }}
+    runs-on: ubuntu-latest
+    env:
+      NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24.9.0'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.28.5
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Bump patch version
+        id: version
+        run: |
+          VERSION=$(npm version patch --no-git-tag-version)
+          echo "version=${VERSION#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Build node entries
+        run: npm run build
+
+      - name: Test
+        run: npm test
+
+      - name: Contract check
+        run: npm run contract-check
+
+      - name: Checkout DSH harness for client bundle
+        uses: actions/checkout@v4
+        with:
+          repository: deepseek-ai/deepseek-harness
+          ref: dsh-v0.2.2-rc.3
+          path: .dsh-harness
+
+      - name: Install DSH harness dependencies
+        working-directory: .dsh-harness
+        run: pnpm install --frozen-lockfile
+
+      - name: Build client bundle
+        run: node scripts/build-client.mjs "$GITHUB_WORKSPACE/.dsh-harness"
+
+      - name: Verify package contents
+        run: |
+          test -f lib/client.js
+          test -f lib/index.js
+          for entry in composer settings-skin sidebar theme desktop-menu session-title; do
+            test -f "lib/${entry}.js"
+          done
+          npm pack --dry-run
+
+      - name: Publish to npm
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          if npm view "@lihongxu0221/dsh-workspace-ui@${VERSION}" version >/dev/null 2>&1; then
+            echo "Version ${VERSION} already exists; skipping publish."
+          else
+            npm publish --access public --provenance
+          fi
+
+      - name: Pack release tarball
+        run: npm pack
+
+      - name: Commit release metadata and build artifacts
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json lib
+          git commit -m "chore(release): v${{ steps.version.outputs.version }} [skip ci]"
+          git tag "v${{ steps.version.outputs.version }}"
+          git push origin HEAD:master --follow-tags
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          generate_release_notes: true
+          files: '*.tgz'

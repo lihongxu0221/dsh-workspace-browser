@@ -7,7 +7,7 @@
  * missing fence is a hard 503 rather than an unauthenticated write path.
  */
 import type { Context } from '@deepseek-ai/cordis'
-import { CODEX_UI_API_ENDPOINTS } from './business-api.ts'
+import { WORKSPACE_UI_API_ENDPOINTS } from './business-api.ts'
 import {
   dependencyStatuses,
   installDependency,
@@ -81,7 +81,7 @@ function authenticate(ctx: Context, request: HostRequest, response: HostResponse
       requestRejection?: (request: { headers?: HostRequest['headers'] }) => 401 | 403 | undefined
     } | undefined
     if (typeof connection?.requestRejection !== 'function') {
-      ctx.logger.warn('workspace-browser dependency REST authentication unavailable: no connection.requestRejection')
+      ctx.logger.warn('workspace-ui dependency REST authentication unavailable: no connection.requestRejection')
       return reject(503, '宿主认证服务暂不可用。')
     }
     const rejection = connection.requestRejection(request)
@@ -91,7 +91,7 @@ function authenticate(ctx: Context, request: HostRequest, response: HostResponse
     return true
   } catch (error) {
     const reason = error instanceof Error ? `${error.name}: ${error.message}` : typeof error
-    ctx.logger.warn('workspace-browser dependency REST authentication failed: %s', reason)
+    ctx.logger.warn('workspace-ui dependency REST authentication failed: %s', reason)
     return reject(503, '宿主认证服务暂不可用。')
   }
 }
@@ -108,7 +108,7 @@ export function registerDependencyRoutes(ctx: Context): void {
     host.effect(() => {
       const dispose = webServer.register({
         kind: 'exact',
-        path: CODEX_UI_API_ENDPOINTS.dependencies,
+        path: WORKSPACE_UI_API_ENDPOINTS.dependencies,
         handler: async (request, response) => {
           if (!authenticate(host, request, response)) return
         const url = new URL(request.url ?? '/', 'http://localhost')
@@ -169,21 +169,21 @@ export function registerDependencyRoutes(ctx: Context): void {
           response.writeHead(405)
           response.end()
         } catch (error) {
-          host.logger.warn('workspace-browser dependencies endpoint failed: %s', error)
+          host.logger.warn('workspace-ui dependencies endpoint failed: %s', error)
           response.writeHead(503, JSON_HEADERS)
           response.end(JSON.stringify({ error: publicDependencyError(error) }))
         }
       },
     })
     return () => { dispose?.() }
-  }, 'workspace-browser: dependency catalog')
+  }, 'workspace-ui: dependency catalog')
 
     host.effect(() => {
       if (typeof host.on !== 'function') return () => {}
       return (host.on as (event: string, listener: (arg: unknown) => void) => () => void)('plugin-manager/install-state', (event: unknown) => {
         noteHostInstallState(event)
       })
-    }, 'workspace-browser: plugin-manager install state')
+    }, 'workspace-ui: plugin-manager install state')
   }
   if (ctx.get('webServer') !== undefined) install(ctx)
   else ctx.inject(['webServer'], install)

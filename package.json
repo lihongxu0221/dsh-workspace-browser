@@ -1,10 +1,45 @@
 {
-  "name": "@lihongxu0221/dsh-ui-codex",
-  "description": "Workspace browser with integrated Codex UI features: Recents, project editor and source folders, workspace sections, composer prediction and history, themes and settings skin, session titles, desktop menu, mobile layout, and ecosystem dependency management",
-  "version": "0.7.1",
+  "name": "@lihongxu0221/dsh-workspace-ui",
+  "description": "Workspace and session UI for DeepSeek Harness: sidebar, Recents, project folders, sections, composer prediction and history, themes, settings workbench, and mobile layout",
+  "version": "0.8.0",
   "license": "MIT",
   "icon": "assets/icon.svg",
   "type": "module",
+  "author": "李洪旭 <262879651@qq.com>",
+  "homepage": "https://github.com/lihongxu0221/dsh-workspace-ui",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lihongxu0221/dsh-workspace-ui.git"
+  },
+  "bugs": {
+    "url": "https://github.com/lihongxu0221/dsh-workspace-ui/issues"
+  },
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "workspace",
+    "workspace-ui",
+    "sidebar",
+    "sessions",
+    "recents",
+    "project-folders",
+    "sections",
+    "composer",
+    "input-history",
+    "prediction",
+    "theme",
+    "settings",
+    "ui"
+  ],
+  "engines": {
+    "node": ">=24.9.0"
+  },
+  "packageManager": "pnpm@11.28.5",
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "main": "lib/index.js",
   "types": "lib/types/index.d.ts",
   "exports": {
@@ -41,6 +76,7 @@
       "default": "./lib/desktop-menu.js"
     },
     "./src/*": "./src/*",
+    "./locale/*.json": "./locale/*.json",
     "./icon": "./assets/icon.svg",
     "./session-title/icon": "./assets/icon.svg",
     "./settings-skin/icon": "./assets/icon.svg",
@@ -61,6 +97,7 @@
     "lib/desktop-menu.js",
     "lib/types/**/*.d.ts",
     "assets/icon.svg",
+    "locale",
     "cordis.patch.yml",
     "INTEGRATION.md",
     "CHANGELOG.md",

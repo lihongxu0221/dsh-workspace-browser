@@ -7,7 +7,7 @@
 export declare const FIXED_PANEL_IDS: readonly ["plugins"];
 /** 首次使用时默认常驻的入口（除固定入口外全部收入更多）。 */
 export declare const DEFAULT_PINNED: readonly string[];
-export declare const SIDEBAR_LAYOUT_KEY = "michengai.codex-ui.sidebar-layout.v1";
+export declare const SIDEBAR_LAYOUT_KEY = "michengai.workspace-ui.sidebar-layout.v1";
 export type SidebarZone = 'pinned' | 'more';
 export interface SidebarLayout {
     pinned: string[];

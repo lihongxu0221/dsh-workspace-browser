@@ -1,9 +1,9 @@
 import type { PropsRenderSlots } from '@deepseek-ai/dsh-client-ui-slots';
 import type { ShortcutCatalogEntry } from '@deepseek-ai/dsh-client-shortcuts/client';
-import type { WorkspaceBrowserProps } from '../contract/slots.ts';
+import type { WorkspaceUIProps } from '../contract/slots.ts';
 import type { GroupNode, SearchResultNode, SessionNode } from '../tree.ts';
 /** The standard locale seat, prop-passed from the browser root. */
-type RowTranslate = WorkspaceBrowserProps['t'];
+type RowTranslate = WorkspaceUIProps['t'];
 /**
  * Row drag wiring supplied by the tree owner. `drop` reports the half of the
  * row where the pointer released so the owner can resolve an insert anchor.

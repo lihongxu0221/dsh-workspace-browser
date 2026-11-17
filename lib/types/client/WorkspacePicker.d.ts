@@ -1,6 +1,6 @@
 /**
  * Workspace pick/add flow. WorkspacePickFlow is the reusable core (menu +
- * path error dialog) consumed directly by WorkspaceBrowser (same package) and
+ * path error dialog) consumed directly by WorkspaceUI (same package) and
  * wrapped by WorkspacePicker for the conversation empty-state slot
  * registration. Directory picking itself lives in the composed flow package's
  * slot occupant (see the contract module doc): this core only opens the flow,

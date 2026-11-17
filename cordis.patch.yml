@@ -9,22 +9,22 @@
 # editor, and source folders never mount.
 #
 # The inserted row must stay enabled while this bundle is selected. Disabling
-# only `ui-workspace-browser` leaves nobody providing `ctx.uiWorkspace`.
+# only `workspace-ui` leaves nobody providing `ctx.uiWorkspace`.
 - id: ui-workspace
   disabled: true
 
 - insert:
-    - id: workspace-browser-session-title
-      name: '@lihongxu0221/dsh-ui-codex/session-title'
-    - id: workspace-browser-theme
-      name: '@lihongxu0221/dsh-ui-codex/theme'
-    - id: workspace-browser-settings-skin
-      name: '@lihongxu0221/dsh-ui-codex/settings-skin'
-    - id: workspace-browser-composer
-      name: '@lihongxu0221/dsh-ui-codex/composer'
-    - id: workspace-browser-sidebar
-      name: '@lihongxu0221/dsh-ui-codex/sidebar'
-    - id: workspace-browser-desktop-menu
-      name: '@lihongxu0221/dsh-ui-codex/desktop-menu'
-    - id: ui-workspace-browser
-      name: '@lihongxu0221/dsh-ui-codex'
+    - id: workspace-ui-session-title
+      name: '@lihongxu0221/dsh-workspace-ui/session-title'
+    - id: workspace-ui-theme
+      name: '@lihongxu0221/dsh-workspace-ui/theme'
+    - id: workspace-ui-settings-skin
+      name: '@lihongxu0221/dsh-workspace-ui/settings-skin'
+    - id: workspace-ui-composer
+      name: '@lihongxu0221/dsh-workspace-ui/composer'
+    - id: workspace-ui-sidebar
+      name: '@lihongxu0221/dsh-workspace-ui/sidebar'
+    - id: workspace-ui-desktop-menu
+      name: '@lihongxu0221/dsh-workspace-ui/desktop-menu'
+    - id: workspace-ui
+      name: '@lihongxu0221/dsh-workspace-ui'
