@@ -83,7 +83,9 @@ jobs:
           npm pack --dry-run
 
       - name: Publish to npm
+        id: publish
         if: env.NODE_AUTH_TOKEN != ''
+        continue-on-error: true
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           if npm view "@lihongxu0221/dsh-workspace-ui@${VERSION}" version >/dev/null 2>&1; then
@@ -92,10 +94,16 @@ jobs:
             npm publish --access public --provenance
           fi
 
-      - name: Skip npm publish without NPM_TOKEN
-        if: env.NODE_AUTH_TOKEN == ''
+      - name: Report npm publish status
+        if: always()
         run: |
-          echo "::warning::NPM_TOKEN is not configured. Publishing a GitHub Release tarball only; configure the repository secret to publish to npm."
+          if [ "${{ steps.publish.outcome }}" = "success" ]; then
+            echo "npm publish succeeded."
+          elif [ "${{ steps.publish.outcome }}" = "skipped" ]; then
+            echo "::warning::NPM_TOKEN is not configured. Publishing a GitHub Release tarball only."
+          else
+            echo "::warning::npm publish failed. Publishing a GitHub Release tarball only; check the NPM_TOKEN publish permissions."
+          fi
 
       - name: Pack release tarball
         run: npm pack
