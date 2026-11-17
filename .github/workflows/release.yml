@@ -54,15 +54,17 @@ jobs:
       - name: Test
         run: npm test
 
-      - name: Contract check
-        run: npm run contract-check
-
-      - name: Checkout DSH harness for client bundle
+      - name: Checkout DSH harness for contract check and client bundle
         uses: actions/checkout@v4
         with:
           repository: deepseek-ai/deepseek-harness
           ref: dsh-v0.2.2-rc.3
           path: .dsh-harness
+
+      - name: Contract check
+        env:
+          DSH_UPSTREAM: ${{ github.workspace }}/.dsh-harness
+        run: npm run contract-check
 
       - name: Install DSH harness dependencies
         working-directory: .dsh-harness
