@@ -19,6 +19,7 @@ import type {
 import { workspaceDisplayTitle } from '@deepseek-ai/dsh-api-workspace-controller/default-workspace'
 import type { SnapshotSelectorHook } from '@deepseek-ai/dsh-client-ui-slots'
 import type { DirectoryFlowOwnerProps, WorkspacePickerProps } from './contract/slots.ts'
+import { workspaceMenuLabels } from './workspace-labels.ts'
 import css from './WorkspacePicker.module.css'
 
 const ADD_WORKSPACE = '::add-workspace'
@@ -122,10 +123,18 @@ export function WorkspacePickFlow({
   // With workspaces listed, the add action pins below the scroll region
   // (divider + always visible); otherwise it IS the menu.
   const pinAdd = !addOnly && workspaces.length > 0
+  // Rows sharing a title carry the shortest distinguishing path suffix, so two
+  // projects both called `app` stay apart without widening every row to a full
+  // path. Unique titles keep their ordinary label.
+  const labels = workspaceMenuLabels(
+    workspaces,
+    workspace => workspaceDisplayTitle(workspace.title, t('workspace.defaultName')),
+  )
   const items: MenuEntry[] = pinAdd
     ? workspaces.map(workspace => ({
       id: workspace.workspaceId,
-      label: workspaceDisplayTitle(workspace.title, t('workspace.defaultName')),
+      label: labels.get(workspace.workspaceId)
+        ?? workspaceDisplayTitle(workspace.title, t('workspace.defaultName')),
       icon: <IconFolderCloseRegular size={16} />,
       disabled: flowBusy,
     }))
