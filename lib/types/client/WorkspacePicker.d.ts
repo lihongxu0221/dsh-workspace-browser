@@ -46,13 +46,19 @@ export interface WorkspacePickFlowProps {
     onPickCancelled?: () => void;
     /** Currently active workspace (trailing check in the picker list). */
     selectedId?: WorkspaceId | undefined;
+    /**
+     * Withhold the add action unless the OS-native directory dialog is present.
+     * The new-session page mirrors the reference plugin, which offers no directory
+     * browsing at all on hosts without a native dialog (its add row simply hides).
+     */
+    requireNativeDialog?: boolean;
 }
 /**
  * Render the pick menu plus the adoption error dialog.
  * @param props - owner-controlled flow props.
  * @returns menu + dialog elements.
  */
-export declare function WorkspacePickFlow({ t, open, useWorkspaces, createWorkspace, useDirectoryFlow, renderDirectoryFlow, onPick, onClose, addOnly, onBusyChange, side, selectedId, onPickCancelled, }: WorkspacePickFlowProps): import("react").JSX.Element;
+export declare function WorkspacePickFlow({ t, open, useWorkspaces, createWorkspace, useDirectoryFlow, renderDirectoryFlow, onPick, onClose, addOnly, onBusyChange, side, selectedId, requireNativeDialog, onPickCancelled, }: WorkspacePickFlowProps): import("react").JSX.Element;
 /**
  * The conversation empty-state registration: adapts the owner share to the
  * core flow (all state and semantics live in the flow / the owner).

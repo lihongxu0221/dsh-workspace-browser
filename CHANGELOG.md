@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+- Upgrade the DSH client generation pinned in `devDependencies` from
+  `0.2.2-rc.3` to `0.2.2-rc.5` (`@deepseek-ai/cordis` stays `^4.1.0`) and
+  regenerate `pnpm-lock.yaml`; rebuild `lib/client.js`, `lib/index.js` and the
+  seven node entries against rc.5. No source behaviour change from the upgrade;
+  `contract-check` passes against rc.5 (35 peers, 106 files / 135 named imports,
+  15 client-inject ids, 0 missing) and the suite is 99/99.
+- Align the new-session workspace menu with the reference plugin: hosts without a
+  native directory dialog no longer show the "Add workspace" row
+  (`WorkspacePickFlow` gains `requireNativeDialog`, passed only by the
+  new-session page). The sidebar "＋" and section add actions keep the in-app
+  directory-flow fallback, so remote/LAN clients can still add workspaces there.
+
 ## 0.8.0
 
 - Rename the package to `@lihongxu0221/dsh-workspace-ui` so the name matches

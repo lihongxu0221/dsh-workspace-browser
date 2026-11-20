@@ -64,6 +64,12 @@ export interface WorkspacePickFlowProps {
   onPickCancelled?: () => void
   /** Currently active workspace (trailing check in the picker list). */
   selectedId?: WorkspaceId | undefined
+  /**
+   * Withhold the add action unless the OS-native directory dialog is present.
+   * The new-session page mirrors the reference plugin, which offers no directory
+   * browsing at all on hosts without a native dialog (its add row simply hides).
+   */
+  requireNativeDialog?: boolean
 }
 
 /**
@@ -84,6 +90,7 @@ export function WorkspacePickFlow({
   onBusyChange,
   side = 'bottom',
   selectedId,
+  requireNativeDialog = false,
   onPickCancelled,
 }: WorkspacePickFlowProps) {
   const workspaceSnapshot = useWorkspaces(state => state)
@@ -108,7 +115,12 @@ export function WorkspacePickFlow({
   // window still has the OS dialog on `window.__DSH_DIRECTORY_PICKER__`; use
   // that and leave the in-app dialog closed. A remote browser has no bridge
   // and keeps the composed flow.
-  const flowAvailable = slotFlow || nativeDirectoryPick() !== undefined
+  const hasNativeDialog = nativeDirectoryPick() !== undefined
+  const flowAvailable = slotFlow || hasNativeDialog
+  // The new-session page mirrors the reference plugin: with no OS-native
+  // directory dialog there is no directory browsing, so the add action is
+  // withheld even when the in-app flow (remote/LAN fallback) is mounted.
+  const addActionOffered = requireNativeDialog ? hasNativeDialog : flowAvailable
   // An occupant that unloads mid-interaction leaves nobody to cancel: an
   // open flow over an empty hole withdraws so the menu actions come back.
   // flowOpen is a dependency because the flow can also OPEN over an already
@@ -117,7 +129,7 @@ export function WorkspacePickFlow({
   useEffect(() => {
     if (flowOpen && !flowAvailable) setFlowOpen(false)
   }, [flowOpen, flowAvailable])
-  const addEntries: MenuEntry[] = flowAvailable
+  const addEntries: MenuEntry[] = addActionOffered
     ? [{ id: ADD_WORKSPACE, label: t('menu.addWorkspace'), icon: <IconPlusOutlineRegular size={16} />, disabled: flowBusy }]
     : []
   // With workspaces listed, the add action pins below the scroll region
@@ -294,6 +306,7 @@ export function WorkspacePicker({
       useDirectoryFlow={useDirectoryFlow}
       renderDirectoryFlow={owner => renderSlot('conversation.hero.workspace.directoryFlow', owner)}
       selectedId={selectedId}
+      requireNativeDialog
       onPick={onPick}
       onClose={onClose}
     />
